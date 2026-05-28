@@ -1,0 +1,21 @@
+{
+  "name": "savore",
+  "version": "1.0.0",
+  "description": "Savoré — Professional Production-Grade Food-Tech SaaS Platform",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "client:dev": "npm run dev --workspace=savore-client",
+    "server:dev": "npm run dev --workspace=savore-backend",
+    "dev": "concurrently --kill-others -n \"client,server\" -c \"cyan,green\" \"npm run client:dev\" \"npm run server:dev\"",
+    "build": "npm run build --workspace=savore-client",
+    "start": "npm start --workspace=savore-backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

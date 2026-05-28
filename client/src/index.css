@@ -1,0 +1,2323 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Inter:wght@300;400;500;600;700&family=Nunito:wght@700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- CUSTOM PREMIUM VARIABLES --- */
+:root {
+  /* Fonts - Apple SF Pro Display styled emoji prioritised stack */
+  --font-family: "Outfit", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", system-ui, sans-serif;
+  
+  /* Core Colors (Dark Scheme) */
+  --bg-primary: #0B0F14;
+  --bg-secondary: #070a0e;
+  --surface: #111827;
+  --surface-bright: #151B24;
+  --surface-hover: #1F2937;
+  --glass-bg: rgba(15, 15, 18, 0.52);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-blur: 16px;
+  
+  /* Accent Colors (Premium Warm Coral) */
+  --primary: #FF5A3C;
+  --primary-hover: #FF6B52;
+  --primary-pressed: #E24C31;
+  --primary-gradient: linear-gradient(135deg, #FF6B52 0%, #FF5A3C 100%);
+  --accent: #FF5A3C;
+  --accent-gradient: linear-gradient(135deg, #FF6B52 0%, #FF5A3C 100%);
+  --accent-glow: transparent;
+  
+  /* Text */
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  
+  /* Glassmorphic Accents */
+  --border-light: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(255, 106, 77, 0.1);
+  
+  /* Elevation Shadows & Blurs */
+  --shadow-ambient: 0 8px 30px rgba(0, 0, 0, 0.18);
+  --shadow-glow: none;
+  --shadow-floating: 0 16px 40px rgba(0, 0, 0, 0.15);
+  
+  /* Brand Logo Variables */
+  --logo-halo: rgba(255, 106, 77, 0.05);
+  --logo-border: rgba(255, 255, 255, 0.06);
+  --logo-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --logo-glow-active: none;
+  
+  /* Hero Vignette */
+  --hero-vignette-center: rgba(11, 15, 20, 0.05);
+  
+  /* Smooth Easings */
+  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-smooth: 300ms var(--ease-apple);
+  
+  /* Radii */
+  --radius-card: 20px;
+  --radius-pill: 9999px;
+  --radius-sm: 12px;
+  
+  /* Button Specific dynamic layers */
+  --btn-primary-border: rgba(255, 255, 255, 0.06);
+  --btn-primary-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  --btn-primary-hover-shadow: 0 6px 16px rgba(255, 106, 77, 0.08);
+
+  /* ── Neumorphic Shadow System (Dark) — Premium Matte Obsidian ── */
+  --neu-bg:          #111827;
+  --neu-shadow-out:  6px 6px 14px rgba(0,0,0,0.22), -4px -4px 10px rgba(255,255,255,0.01);
+  --neu-shadow-hover:7px 7px 17px rgba(0,0,0,0.25), -5px -5px 11px rgba(255,255,255,0.015);
+  --neu-shadow-in:   inset 3px 3px 8px rgba(0,0,0,0.22), inset -2px -2px 6px rgba(255,255,255,0.005);
+  --neu-border:      rgba(255,255,255,0.03);
+  /* Primary coral neumorphic — matte, no bloom */
+  --neu-primary-shadow:       6px 6px 14px rgba(0,0,0,0.22), -4px -4px 10px rgba(255,255,255,0.01), 0 0 10px rgba(255,90,60,0.03);
+  --neu-primary-shadow-hover: 7px 7px 17px rgba(0,0,0,0.25), -5px -5px 11px rgba(255,255,255,0.015), 0 0 14px rgba(255,90,60,0.05);
+  --neu-primary-shadow-in:    inset 3px 3px 8px rgba(0,0,0,0.22), inset -2px -2px 6px rgba(255,255,255,0.005);
+
+  /* Bevel Highlights — ultra-subtle, near-zero */
+  --neu-inset-highlight:       inset 1px 1px 1.5px rgba(255,255,255,0.01), inset -1px -1px 1.5px rgba(0,0,0,0.22);
+  --neu-inset-highlight-hover: inset 1.5px 1.5px 2px rgba(255,255,255,0.015), inset -1.5px -1.5px 2px rgba(0,0,0,0.25);
+  --neu-primary-inset:         inset 1px 1px 1.5px rgba(255,255,255,0.05), inset -1px -1px 1.5px rgba(0,0,0,0.18);
+  --neu-primary-inset-hover:   inset 1.5px 1.5px 2px rgba(255,255,255,0.08), inset -1.5px -1.5px 2px rgba(0,0,0,0.22);
+}
+
+/* Light Mode Overrides */
+html.light {
+  --bg-primary: #F6F3EE;
+  --bg-secondary: #ECE7DF;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-bright: rgba(255, 255, 255, 0.88);
+  --surface-hover: #ECE7DF;
+  --glass-bg: rgba(255, 255, 255, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-blur: 18px;
+  
+  --primary: #FF6A4D;
+  --primary-hover: #FF7D63;
+  --primary-pressed: #E0543A;
+  --primary-gradient: linear-gradient(135deg, #FF7D63 0%, #FF6A4D 100%);
+  --accent: #FF6A4D;
+  --accent-gradient: linear-gradient(135deg, #FF7D63 0%, #FF6A4D 100%);
+  --accent-glow: transparent;
+  
+  --text-primary: #1C1C1E;      /* Premium Apple black */
+  --text-secondary: #5F6368;    /* Apple secondary gray */
+  --text-muted: #8E8E93;        /* Muted gray */
+  
+  --border-light: rgba(0, 0, 0, 0.06); /* Apple soft border */
+  --border-glow: rgba(255, 106, 77, 0.08);
+  
+  --shadow-ambient: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-glow: none;
+  --shadow-floating: 0 16px 40px rgba(0, 0, 0, 0.05);
+  
+  --hero-vignette-center: rgba(245, 245, 247, 0.05);
+  
+  /* Brand Logo Variables */
+  --logo-halo: rgba(255, 106, 77, 0.03);
+  --logo-border: rgba(0, 0, 0, 0.04);
+  --logo-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  --logo-glow-active: none;
+  
+  /* Button Specific dynamic layers */
+  --btn-primary-border: rgba(0, 0, 0, 0.04);
+  --btn-primary-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --btn-primary-hover-shadow: 0 6px 16px rgba(255, 106, 77, 0.04);
+
+  /* ── Neumorphic Shadow System (Light) — Creamy Matte Clay ── */
+  --neu-bg:          #ECE7DF;
+  --neu-shadow-out:  6px 6px 14px rgba(0,0,0,0.04), -6px -6px 14px rgba(255,255,255,0.72);
+  --neu-shadow-hover:7px 7px 17px rgba(0,0,0,0.06), -7px -7px 17px rgba(255,255,255,0.78);
+  --neu-shadow-in:   inset 3px 3px 7px rgba(0,0,0,0.06), inset -2px -2px 6px rgba(255,255,255,0.65);
+  --neu-border:      rgba(255,255,255,0.5);
+  /* Primary coral neumorphic — soft, no glare */
+  --neu-primary-shadow:       6px 6px 14px rgba(0,0,0,0.04), -6px -6px 14px rgba(255,255,255,0.72), 0 0 10px rgba(255,90,60,0.04);
+  --neu-primary-shadow-hover: 7px 7px 17px rgba(0,0,0,0.06), -7px -7px 17px rgba(255,255,255,0.78), 0 0 14px rgba(255,90,60,0.06);
+  --neu-primary-shadow-in:    inset 3px 3px 7px rgba(0,0,0,0.04), inset -2px -2px 6px rgba(255,255,255,0.65);
+
+  /* Bevel Highlights — creamy, soft */
+  --neu-inset-highlight:       inset 1.5px 1.5px 2px rgba(255,255,255,0.5), inset -1px -1px 2px rgba(0,0,0,0.03);
+  --neu-inset-highlight-hover: inset 2px 2px 3px rgba(255,255,255,0.6), inset -1.5px -1.5px 3px rgba(0,0,0,0.04);
+  --neu-primary-inset:         inset 1.5px 1.5px 2px rgba(255,255,255,0.25), inset -1px -1px 2px rgba(0,0,0,0.08);
+  --neu-primary-inset-hover:   inset 2px 2px 3px rgba(255,255,255,0.35), inset -1.5px -1.5px 3px rgba(0,0,0,0.12);
+}
+
+/* --- SYSTEM BASICS & GLOBAL SCROLLBAR HIDING ENGINE --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome/Safari */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 450ms var(--ease-apple), color 400ms var(--ease-apple);
+}
+
+/* Custom Premium Scrollbar - Hidden Globally */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* --- GLASSMORPHISM 2.0 MOTOR --- */
+.noise-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
+:root.light .noise-overlay {
+  opacity: 0.015;
+}
+
+/* GLASS VARIANTS */
+.glass-primary, .glass-floating, .glass-soft, .glass-dark, .glass-panel, .glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.05), var(--shadow-ambient);
+  border-radius: 20px;
+  position: relative;
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth), background-color var(--transition-smooth);
+}
+
+:root.light .glass-primary, 
+:root.light .glass-floating, 
+:root.light .glass-soft, 
+:root.light .glass-dark, 
+:root.light .glass-panel,
+:root.light .glass-card,
+html.light .glass-primary, 
+html.light .glass-floating, 
+html.light .glass-soft, 
+html.light .glass-dark, 
+html.light .glass-panel,
+html.light .glass-card {
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.95), var(--shadow-ambient);
+}
+
+/* Hover Refraction Effects */
+.glass-primary:hover, .glass-floating:hover {
+  border-color: var(--border-glow);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.15), var(--shadow-glow);
+}
+
+.glass-card {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-light);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), var(--shadow-ambient);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth), background-color var(--transition-smooth);
+}
+
+.glass-card:hover {
+  transform: translateY(-6px);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.12), var(--shadow-glow);
+  border-color: var(--border-glow);
+  background: var(--surface-hover);
+}
+
+:root.light .glass-card {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), var(--shadow-ambient);
+}
+:root.light .glass-card:hover {
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.95), var(--shadow-glow);
+}
+
+/* Glass Input Styles */
+.glass-input {
+  width: 100%;
+  background: rgba(5, 5, 8, 0.38);
+  border: 1px solid var(--neu-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--neu-shadow-in);
+  transition: border-color var(--transition-smooth), box-shadow var(--transition-smooth), background-color var(--transition-smooth);
+}
+.glass-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+html.light .glass-input,
+:root.light .glass-input {
+  background: var(--bg-primary);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.02);
+  color: var(--text-primary);
+}
+html.light .glass-input::placeholder,
+:root.light .glass-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+.glass-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: inset 3px 3px 8px rgba(0,0,0,0.28), inset -2px -2px 7px rgba(255,255,255,0.02), 0 0 0 3px rgba(255,106,77,0.14);
+  background: rgba(5, 5, 8, 0.55);
+}
+html.light .glass-input:focus,
+:root.light .glass-input:focus {
+  background: var(--bg-primary);
+  border-color: var(--primary);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.04), 0 0 0 3px rgba(255, 106, 77, 0.12);
+}
+
+/* --- BUTTONS --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: "Inter", "SF Pro Display", -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 14.5px;
+  letter-spacing: -0.02em;
+  border: none;
+  cursor: pointer;
+  border-radius: 22px;
+  padding: 14px 24px;
+  min-height: 52px;
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+/* ── PRIMARY ── */
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: var(--neu-primary-inset), var(--neu-primary-shadow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  background: var(--primary-hover);
+  box-shadow: var(--neu-primary-inset-hover), var(--neu-primary-shadow-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.985);
+  background: var(--primary-pressed);
+  box-shadow: var(--neu-primary-shadow-in);
+}
+
+.btn-primary svg {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+  transition: filter 300ms var(--ease-apple);
+}
+
+.btn-primary:hover svg {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+}
+
+/* ── SECONDARY ── */
+.btn-secondary {
+  background: var(--neu-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--neu-border);
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+  background: var(--neu-bg);
+}
+
+.btn-secondary:active {
+  transform: scale(0.985);
+  box-shadow: var(--neu-shadow-in);
+  background: var(--neu-bg);
+}
+
+/* ── GHOST ── */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  transform: translateY(-1px);
+  background: var(--neu-bg);
+  color: var(--text-primary);
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+  border: 1px solid var(--neu-border);
+}
+
+.btn-ghost:active {
+  transform: scale(0.985);
+  box-shadow: var(--neu-shadow-in);
+}
+
+/* ── DANGER ── */
+.btn-danger {
+  background: #E5484D;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: var(--neu-primary-inset), 8px 8px 18px rgba(0,0,0,0.35), -6px -6px 14px rgba(255,255,255,0.03), 0 0 18px rgba(229,72,77,0.12);
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+  background: #EC5C61;
+  box-shadow: var(--neu-primary-inset-hover), 10px 10px 22px rgba(0,0,0,0.42), -7px -7px 16px rgba(255,255,255,0.035), 0 0 22px rgba(229,72,77,0.18);
+}
+
+.btn-danger:active {
+  transform: scale(0.985);
+  background: #D93D42;
+  box-shadow: var(--neu-shadow-in);
+}
+
+/* ── GLASS ── */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--neu-border);
+  color: var(--text-primary);
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+}
+
+html.light .btn-glass {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--neu-border);
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+}
+
+.btn-glass:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+}
+
+html.light .btn-glass:hover {
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+}
+
+.btn-glass:active {
+  transform: scale(0.985);
+  box-shadow: var(--neu-shadow-in);
+}
+
+/* ── PILL MODIFIER ── */
+.btn-pill {
+  border-radius: var(--radius-pill);
+  padding: 8px 20px;
+  font-size: 13px;
+  min-height: 40px;
+}
+
+/* ── DISABLED ── */
+.btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* ── ICON BUTTON ── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  border: 1px solid var(--neu-border);
+  background: var(--neu-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.btn-circle {
+  border-radius: 50% !important;
+}
+
+.btn-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+}
+
+.btn-icon:active {
+  transform: scale(0.985);
+  box-shadow: var(--neu-shadow-in);
+}
+
+.btn-icon.liked {
+  color: var(--primary) !important;
+  box-shadow: var(--neu-shadow-in), 0 0 15px rgba(255, 90, 60, 0.22) !important;
+}
+
+.btn-icon.liked svg {
+  filter: drop-shadow(0 0 6px rgba(255, 90, 60, 0.5));
+}
+
+.btn-reel-order {
+  min-height: 48px !important;
+  border-radius: 18px !important;
+  font-size: 13.5px !important;
+  padding: 10px 18px !important;
+  backdrop-filter: blur(8px);
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-glass {
+    min-height: 48px;
+    padding: 12px 20px;
+  }
+  .btn-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+  }
+}
+
+/* --- CHIPS (Category Pills) --- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 22px;
+  background: var(--neu-bg);
+  border: 1px solid var(--neu-border);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 13.5px;
+  cursor: pointer;
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.chip:hover {
+  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.chip:active {
+  box-shadow: var(--neu-shadow-in);
+  transform: scale(0.985);
+}
+
+.chip.active {
+  background: var(--primary);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: var(--neu-primary-inset), var(--neu-primary-shadow);
+}
+
+/* --- TYPOGRAPHY & LAYOUTS --- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+h1 {
+  font-weight: 300;
+  letter-spacing: 0.03em;
+}
+
+h2, h3 {
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+h4, h5, h6 {
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+p {
+  color: var(--text-secondary);
+  line-height: 1.65;
+  font-weight: 400;
+}
+
+/* --- AMBIENT NEON GLOW DECORATIONS --- */
+.ambient-glow {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.18) 0%, rgba(255, 107, 53, 0) 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-glow-tertiary {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(89, 213, 251, 0.14) 0%, rgba(89, 213, 251, 0) 70%);
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- MOTION & SCROLLS --- */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 600ms var(--ease-apple) forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes stirSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-stir {
+  animation: stirSpin 2.5s linear infinite;
+}
+
+/* ── Filter Dropdown Component System ── */
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slide-in {
+  animation: dropdownSlideIn 200ms var(--ease-apple) forwards;
+}
+
+/* Dropdown Trigger Button — theme-aware */
+.dropdown-trigger {
+  background: var(--surface-bright);
+  border: 1.5px solid var(--border-light);
+  color: var(--text-primary);
+  transition: all 200ms var(--ease-apple);
+}
+.dropdown-trigger:hover {
+  border-color: rgba(255, 106, 77, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.dropdown-trigger.active {
+  border-color: rgba(255, 106, 77, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 106, 77, 0.08);
+}
+
+/* Dropdown Menu Panel — theme-aware */
+.dropdown-menu {
+  background: var(--surface-bright);
+  border: 1.5px solid var(--border-light);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Dropdown Option Items — theme-aware hover */
+.dropdown-option {
+  transition: background 150ms ease, color 150ms ease;
+}
+.dropdown-option:hover {
+  background: var(--surface-hover);
+}
+.dropdown-option.selected {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ── Light mode dropdown refinements ── */
+html.light .dropdown-trigger {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+html.light .dropdown-trigger:hover {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+html.light .dropdown-menu {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1.5px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.10), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+html.light .dropdown-option:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* ── Location modal theme-awareness ── */
+.location-modal-panel {
+  background: var(--surface-bright);
+  border: 1.5px solid var(--border-light);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+}
+html.light .location-modal-panel {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.10);
+}
+
+/* ── Mobile filter sheet theme-awareness ── */
+.mobile-filter-sheet {
+  background: var(--surface-bright);
+  border-top: 1.5px solid var(--border-light);
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.15);
+}
+html.light .mobile-filter-sheet {
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.08);
+}
+
+.grid-layout {
+  display: grid;
+  gap: 24px;
+}
+
+.home-hero-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 40px;
+  align-items: center;
+  min-height: 580px;
+  padding: 10px 0 20px;
+  text-align: left;
+}
+
+.home-hero-grid p {
+  font-family: var(--font-family) !important;
+  font-size: 20px !important;
+  font-weight: 300 !important;
+  line-height: 1.85 !important;
+  letter-spacing: -0.015em !important;
+  color: var(--text-secondary) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+}
+
+html.light .home-hero-grid p {
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+  color: #4a4a4e !important;
+}
+
+@media (max-width: 900px) {
+  .home-hero-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding-top: 10px;
+    gap: 20px;
+  }
+}
+
+/* ── Hero Headline Typography ── */
+.hero-headline {
+  font-family: 'Nunito', 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(34px, 4.2vw, 48px); /* Professional compact size, down from 68px */
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+}
+
+.hero-headline-hover-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-right: 12px;
+}
+
+.hero-3d-letter {
+  display: inline-block;
+  font-family: 'Nunito', 'Outfit', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: inherit; /* Seamless scaling with the parent headline clamp */
+  color: var(--text-primary);
+  position: relative;
+  transition: transform 450ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              text-shadow 450ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              margin 450ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              color 300ms ease;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  
+  /* Subtle initial 3D text shadow */
+  text-shadow: 
+    0 1px 0 rgba(0, 0, 0, 0.15),
+    0 2px 0 rgba(0, 0, 0, 0.1),
+    0 3px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Premium scattered/misaligned typography rules for idle/default state */
+.hero-3d-letter:nth-child(15n+1) { transform: translateY(0.4px) translateX(-0.6px) rotate(-0.5deg); }
+.hero-3d-letter:nth-child(15n+2) { transform: translateY(-0.6px) translateX(0.5px) rotate(0.4deg); }
+.hero-3d-letter:nth-child(15n+3) { transform: translateY(0.8px) translateX(-0.4px) rotate(-0.3deg); }
+.hero-3d-letter:nth-child(15n+4) { transform: translateY(-0.4px) translateX(0.8px) rotate(0.5deg); }
+.hero-3d-letter:nth-child(15n+5) { transform: translateY(0.3px) translateX(-0.8px) rotate(-0.4deg); }
+.hero-3d-letter:nth-child(15n+6) { transform: translateY(-0.8px) translateX(0.4px) rotate(0.6deg); }
+.hero-3d-letter:nth-child(15n+7) { transform: translateY(0.6px) translateX(-0.5px) rotate(-0.5deg); }
+.hero-3d-letter:nth-child(15n+8) { transform: translateY(-0.3px) translateX(0.6px) rotate(0.3deg); }
+.hero-3d-letter:nth-child(15n+9) { transform: translateY(0.7px) translateX(-0.4px) rotate(-0.4deg); }
+.hero-3d-letter:nth-child(15n+10) { transform: translateY(-0.5px) translateX(0.5px) rotate(0.3deg); }
+.hero-3d-letter:nth-child(15n+11) { transform: translateY(0.2px) translateX(-0.3px) rotate(-0.2deg); }
+.hero-3d-letter:nth-child(15n+12) { transform: translateY(0.6px) translateX(-0.8px) rotate(-0.5deg); }
+.hero-3d-letter:nth-child(15n+13) { transform: translateY(-0.6px) translateX(0.8px) rotate(0.6deg); }
+.hero-3d-letter:nth-child(15n+14) { transform: translateY(0.3px) translateX(-0.5px) rotate(-0.3deg); }
+.hero-3d-letter:nth-child(15n+15) { transform: translateY(-0.4px) translateX(0.6px) rotate(0.4deg); }
+
+/* Smoothly align back into polished clean composition on hover of the text group */
+.hero-headline-hover-group:hover .hero-3d-letter {
+  transform: translateY(0) translateX(0) rotate(0deg);
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Staggered beautiful 3D clay-morphic pastel colors matching the LOOP reference frame */
+.hero-3d-letter:nth-child(5n+1) {
+  --letter-color: #B983FF; /* Premium purple-violet */
+  --letter-shadow-depth: #9052DE;
+}
+.hero-3d-letter:nth-child(5n+2) {
+  --letter-color: #FF8AAE; /* Pastel pink */
+  --letter-shadow-depth: #E05A84;
+}
+.hero-3d-letter:nth-child(5n+3) {
+  --letter-color: #FF6A4D; /* Savoré Coral */
+  --letter-shadow-depth: #E04B2B;
+}
+.hero-3d-letter:nth-child(5n+4) {
+  --letter-color: #5D8BF4; /* Premium blue */
+  --letter-shadow-depth: #3868D6;
+}
+.hero-3d-letter:nth-child(5n+5) {
+  --letter-color: #FFAE33; /* Warm gold/orange */
+  --letter-shadow-depth: #E0921B;
+}
+
+/* Alternate rotation directions for organic, bouncy feel */
+.hero-3d-letter:nth-child(even):hover {
+  transform: translateY(-8px) scale(1.18) rotate(-4deg);
+}
+
+.hero-3d-letter:nth-child(odd):hover {
+  transform: translateY(-8px) scale(1.18) rotate(4deg);
+}
+
+.hero-3d-letter:hover {
+  color: var(--letter-color);
+  
+  /* Clean, crisp 3D shadow stack mimicking real extruded geometry */
+  text-shadow: 
+    0 1px 0 var(--letter-shadow-depth),
+    0 2px 0 var(--letter-shadow-depth),
+    0 3px 0 var(--letter-shadow-depth),
+    0 4px 0 var(--letter-shadow-depth),
+    0 5px 0 var(--letter-shadow-depth),
+    0 6px 1px rgba(0, 0, 0, 0.2),
+    0 0 5px rgba(0, 0, 0, 0.15),
+    0 8px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* "Like Never Before" — coral accent line, matches the sizing of the letters */
+.hero-headline-accent {
+  font-family: 'Nunito', 'Outfit', system-ui, sans-serif;
+  font-weight: 900;
+  display: block;
+  font-size: inherit;
+  color: var(--primary);
+  -webkit-text-fill-color: var(--primary);
+  margin-top: 4px;
+}
+
+/* Light mode specific adjustment for optimal contrast on cream surface */
+html.light .hero-3d-letter {
+  text-shadow: 
+    0 1px 0 rgba(0, 0, 0, 0.06),
+    0 2px 0 rgba(0, 0, 0, 0.04),
+    0 3px 2px rgba(0, 0, 0, 0.08);
+}
+
+html.light .hero-3d-letter:hover {
+  text-shadow: 
+    0 1px 0 var(--letter-shadow-depth),
+    0 2px 0 var(--letter-shadow-depth),
+    0 3px 0 var(--letter-shadow-depth),
+    0 4px 0 var(--letter-shadow-depth),
+    0 5px 0 var(--letter-shadow-depth),
+    0 6px 1px rgba(0, 0, 0, 0.15),
+    0 0 5px rgba(0, 0, 0, 0.1),
+    0 8px 10px rgba(0, 0, 0, 0.12);
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Micro interaction lists */
+.hover-lift {
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Scroll-based fades */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(25px);
+  animation: scrollFadeIn 800ms var(--ease-apple) forwards;
+}
+
+@keyframes scrollFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Skeleton Loading Easing */
+.skeleton-box {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-bright) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.6s infinite var(--ease-apple);
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* shimmerPulse — global alias used by SafeImage & SafeAvatar shimmer loaders */
+@keyframes shimmerPulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Reels safe-area viewport support (iPhone notch / home indicator) ── */
+.reels-player-container {
+  /* Fallback for browsers without safe-area support */
+  padding-bottom: 24px;
+  /* Override with safe-area inset when available */
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .reels-player-container {
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Reels video fill — consistent cinematic fill across all viewport sizes */
+.reel-video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  will-change: opacity;
+  pointer-events: none !important;
+}
+
+
+/* Premium Chef Speech Bubble Stacking & Wrapper System */
+.chef-speech-bubble-wrapper {
+  position: absolute;
+  z-index: 45;
+  transition: opacity 450ms var(--ease-apple), transform 450ms var(--ease-apple);
+}
+
+/* 💻 Dynamic Layout Classes */
+.chef-speech-bubble-wrapper.layout-desktop-right {
+  bottom: 210px;
+  height: 0;
+  left: calc(100% + 16px);
+  right: auto;
+  width: 320px;
+  max-width: min(320px, calc(100vw - 200px));
+}
+
+.chef-speech-bubble-wrapper.layout-desktop-left {
+  bottom: 210px;
+  height: 0;
+  right: calc(100% + 16px);
+  left: auto;
+  width: 320px;
+  max-width: min(320px, calc(100vw - 200px));
+}
+
+.chef-speech-bubble-wrapper.layout-tablet-above {
+  bottom: 360px;
+  left: 50%;
+  width: 280px;
+  margin-left: -140px;
+  max-width: min(280px, calc(100vw - 48px));
+}
+
+.chef-speech-bubble-wrapper.layout-mobile-above {
+  bottom: 360px;
+  left: 50%;
+  width: 240px;
+  margin-left: -120px;
+  max-width: min(240px, calc(100vw - 32px));
+  min-width: 200px;
+}
+
+/* Recommendation card — kept aligned at standard 360px centered height to prevent pointer face-overlap */
+.chef-speech-bubble-wrapper.layout-tablet-above.has-recommendation {
+  bottom: 360px !important;
+}
+
+.chef-speech-bubble-wrapper.layout-mobile-above.has-recommendation {
+  bottom: 360px !important;
+}
+
+/* Compact Speech Bubble Overrides when displaying a chef recommendation */
+.chef-speech-bubble-wrapper.has-recommendation .chef-speech-bubble {
+  padding: 10px 12px !important;
+  border-radius: 16px !important;
+}
+
+.chef-speech-bubble-wrapper.has-recommendation .chef-speech-bubble > div:first-of-type {
+  margin-bottom: 6px !important;
+}
+
+.chef-speech-bubble-wrapper.has-recommendation .chef-speech-bubble > div:first-of-type span {
+  font-size: 10px !important;
+}
+
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card {
+  margin-top: 5px !important;
+  padding: 6px 7px !important;
+  border-radius: 12px !important;
+}
+
+/* Calibrate child elements in recommendation card */
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card > div:first-of-type {
+  margin-bottom: 6px !important;
+  gap: 10px !important;
+}
+
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card h4 {
+  font-size: 12.5px !important;
+  margin-bottom: 2px !important;
+}
+
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card p.text-secondary {
+  font-size: 10.5px !important;
+}
+
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card .chef-rec-price {
+  font-size: 12.5px !important;
+}
+
+/* Shrunk dish thumbnail container override */
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card .chef-rec-thumbnail {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+}
+
+/* Tighten quote text inside card */
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card .chef-rec-quote {
+  font-size: 10px !important;
+  margin: 0 0 6px !important;
+  padding-left: 6px !important;
+  line-height: 1.4 !important;
+}
+
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card > div:last-of-type {
+  gap: 7px !important;
+}
+
+/* Compact CTA buttons to reduce vertical footprint */
+.chef-speech-bubble-wrapper.has-recommendation .chef-cta-add-to-cart,
+.chef-speech-bubble-wrapper.has-recommendation .chef-cta-dismiss {
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  font-size: 10px !important;
+  border-radius: 8px !important;
+}
+
+/* Compact sound toggle */
+.chef-speech-bubble-wrapper.has-recommendation .chef-sound-toggle {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Center speech bubble vertically and override floating animation for desktop left/right layouts */
+.chef-speech-bubble-wrapper.layout-desktop-right .chef-speech-bubble,
+.chef-speech-bubble-wrapper.layout-desktop-left .chef-speech-bubble {
+  transform: translateY(-50%);
+  animation: chefBubbleFloatDesktop 10s ease-in-out infinite;
+}
+
+/* Ensure tablet/mobile above layouts use standard float and clear other transforms */
+.chef-speech-bubble-wrapper.layout-tablet-above .chef-speech-bubble,
+.chef-speech-bubble-wrapper.layout-mobile-above .chef-speech-bubble {
+  transform: none;
+  animation: chefBubbleFloat 10s ease-in-out infinite;
+}
+
+@media (max-width: 350px) {
+  .chef-speech-bubble-wrapper.layout-mobile-above {
+    width: 220px;
+    margin-left: -110px;
+    max-width: 220px;
+  }
+}
+
+/* Premium Chef Speech Bubble Glassmorphism Overhaul */
+.chef-speech-bubble {
+  padding: 14px 18px;
+  border-radius: 22px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: rgba(15, 15, 18, 0.68); /* Premium Frosted Obsidian Glass */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  position: relative;
+  text-align: center;
+
+  /* Smooth Theme & State Transitions */
+  transition: background-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              backdrop-filter 300ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  animation: chefBubbleFloat 10s ease-in-out infinite;
+
+  /* Adaptive Auto-sizing */
+  height: auto;
+  min-height: max-content;
+  overflow: visible;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.chef-speech-bubble-wrapper.layout-mobile-above .chef-speech-bubble {
+  padding: 12px 14px;
+  border-radius: 18px;
+}
+
+.chef-speech-bubble:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.chef-speech-bubble .text-secondary {
+  color: var(--text-secondary) !important;
+  opacity: 0.72 !important;
+}
+
+/* Light mode overrides for chef speech bubble */
+html.light .chef-speech-bubble {
+  background: rgba(255, 255, 255, 0.72); /* Premium frosted white glass */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+}
+
+html.light .chef-speech-bubble:hover {
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+}
+
+html.light .chef-speech-bubble .text-secondary {
+  color: var(--text-secondary) !important;
+  opacity: 0.72 !important;
+}
+
+/* Typography Refinements for Chef Speech Bubble Children */
+.chef-speech-bubble h4,
+.chef-speech-bubble span,
+.chef-speech-bubble-wrapper #chef-add-to-cart-btn {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.chef-speech-bubble p,
+.chef-speech-bubble-wrapper .chef-cta-dismiss {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif !important;
+  font-weight: 400 !important;
+  opacity: 0.72 !important;
+}
+
+/* Savoré Chef Recommendation Premium Card Layout */
+.chef-recommendation-card {
+  margin-top: 6px;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  text-align: left;
+  transition: background-color 300ms var(--ease-apple), border-color 300ms var(--ease-apple);
+}
+
+html.light .chef-recommendation-card {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* Premium Add-to-Cart CTA */
+.chef-cta-add-to-cart {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  min-height: 32px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #fff;
+  background: var(--primary);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: var(--neu-primary-inset), var(--neu-primary-shadow);
+  will-change: transform;
+}
+.chef-cta-add-to-cart:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--primary-hover);
+  box-shadow: var(--neu-primary-inset-hover), var(--neu-primary-shadow-hover);
+}
+.chef-cta-add-to-cart:active:not(:disabled) {
+  transform: scale(0.97);
+  background: var(--primary-pressed);
+  box-shadow: var(--neu-primary-shadow-in);
+}
+.chef-cta-add-to-cart:disabled {
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html.light .chef-cta-add-to-cart {
+  border: 1px solid rgba(255,255,255,0.75);
+  box-shadow: var(--neu-primary-inset), var(--neu-primary-shadow);
+}
+html.light .chef-cta-add-to-cart:hover:not(:disabled) {
+  background: var(--primary-hover);
+  box-shadow: var(--neu-primary-inset-hover), var(--neu-primary-shadow-hover);
+}
+html.light .chef-cta-add-to-cart:active:not(:disabled) {
+  background: var(--primary-pressed);
+  box-shadow: var(--neu-primary-shadow-in);
+}
+
+/* Dismiss CTA */
+.chef-cta-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 11px;
+  min-height: 32px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  background: var(--neu-bg);
+  border: 1px solid var(--neu-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+  will-change: transform;
+}
+.chef-cta-dismiss:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+  color: var(--text-primary);
+}
+.chef-cta-dismiss:active {
+  transform: scale(0.97);
+  box-shadow: var(--neu-shadow-in);
+}
+
+/* Chef Sound Toggle */
+.chef-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--neu-border);
+  background: var(--neu-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.chef-sound-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+  color: var(--text-primary);
+}
+.chef-sound-toggle:active {
+  transform: scale(0.92);
+  box-shadow: var(--neu-shadow-in);
+}
+
+/* Premium Pointer triangle bottom shifted for visual balance */
+.chef-speech-bubble-pointer {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: rgba(18, 18, 20, 0.72);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  z-index: -1;
+  transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Pointer locations & borders depending on calculated classes */
+.chef-speech-bubble-wrapper.layout-desktop-right .chef-speech-bubble-pointer {
+  left: -8px;
+  right: auto;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  border-top: none;
+  border-right: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chef-speech-bubble-wrapper.layout-desktop-left .chef-speech-bubble-pointer {
+  right: -8px;
+  left: auto;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  border-bottom: none;
+  border-left: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chef-speech-bubble-wrapper.layout-tablet-above .chef-speech-bubble-pointer {
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: -8px !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.chef-speech-bubble-wrapper.layout-mobile-above .chef-speech-bubble-pointer {
+  display: block !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: -8px !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Pointer Light theme overrides */
+html.light .chef-speech-bubble-pointer {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+html.light .chef-speech-bubble-wrapper.layout-desktop-right .chef-speech-bubble-pointer {
+  border-top: none;
+  border-right: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+html.light .chef-speech-bubble-wrapper.layout-desktop-left .chef-speech-bubble-pointer {
+  border-bottom: none;
+  border-left: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+html.light .chef-speech-bubble-wrapper.layout-tablet-above .chef-speech-bubble-pointer {
+  border-top: none !important;
+  border-left: none !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+
+/* Float animation — ultra-subtle 2px drift, 10s slow cycle */
+@keyframes chefBubbleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes chefBubbleFloatDesktop {
+  0%, 100% { transform: translateY(-50%); }
+  50% { transform: translateY(calc(-50% - 2px)); }
+}
+
+/* Savoré Interactive Logo Styles */
+@keyframes logoSweep {
+  0% {
+    left: -120%;
+  }
+  15%, 100% {
+    left: 120%;
+  }
+}
+
+.logo-sweep-element {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  animation: logoSweep 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes logoBreathingGlow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+.logo-ambient-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--logo-halo) 0%, rgba(255, 107, 53, 0) 70%);
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.logo-ambient-halo-breathing {
+  animation: logoBreathingGlow 4.5s ease-in-out infinite;
+}
+
+.logo-tile-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 4px;
+}
+
+.logo-ceramic-tile {
+  position: relative;
+  background: var(--primary-gradient);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 18px;
+  border: 1px solid var(--logo-border);
+  box-shadow: var(--logo-shadow);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow var(--transition-smooth), border-color var(--transition-smooth);
+}
+
+.logo-letter {
+  font-family: var(--font-family);
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.logo-brand-text {
+  font-family: var(--font-family);
+  font-weight: 300;
+  font-size: 22px;
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+
+
+/* Glassmorphic Toast System - Apple Style */
+.glassmorphic-toast {
+  background: rgba(22, 22, 30, 0.82); /* Elevated obsidian glass */
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f2eff4;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  letter-spacing: -0.01em;
+}
+
+:root.light .glassmorphic-toast {
+  background: rgba(255, 255, 255, 0.85); /* Clean white glass */
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06), inset 0 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+/* ── PREMIUM NEUMORPHIC THEME SWITCH SLIDER ── */
+button.btn-icon:not(.btn-circle) {
+  width: 104px !important;
+  height: 38px !important;
+  border-radius: 20px !important;
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.08), inset -1px -1px 3px rgba(255, 255, 255, 0.15), var(--neu-shadow-out) !important;
+  overflow: visible !important;
+  cursor: pointer !important;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1.25) !important;
+  text-decoration: none !important;
+  outline: none !important;
+}
+
+html.light button.btn-icon:not(.btn-circle) {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.05), inset -2px -2px 5px rgba(255, 255, 255, 0.72), var(--neu-shadow-out) !important;
+}
+
+/* Dark mode theme toggle base container — matte obsidian */
+:root button.btn-icon:not(.btn-circle) {
+  background: rgba(255, 255, 255, 0.008) !important;
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.28), inset -1px -1px 3px rgba(255, 255, 255, 0.008), var(--neu-shadow-out) !important;
+}
+
+/* Glass Handle */
+button.btn-icon:not(.btn-circle)::before {
+  content: "" !important;
+  position: absolute !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  top: -4px !important;
+  z-index: 1 !important;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1.25) !important;
+  pointer-events: none !important;
+}
+
+/* Light mode Glass Handle — soft cream */
+html.light button.btn-icon:not(.btn-circle)::before {
+  left: -3px !important;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.05) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05), -3px -3px 8px rgba(255, 255, 255, 0.68), inset 0 2px 3px rgba(255, 255, 255, 0.50), inset 0 -2px 3px rgba(0, 0, 0, 0.02) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Dark mode Glass Handle — deep matte */
+:root button.btn-icon:not(.btn-circle)::before {
+  left: calc(100% - 41px) !important;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.025) 50%, rgba(255,255,255,0.008) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.40), inset 0 2px 3px rgba(255, 255, 255, 0.12), inset 0 -2px 3px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Text label */
+button.btn-icon:not(.btn-circle)::after {
+  position: absolute !important;
+  font-family: var(--font-family) !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  z-index: 0 !important;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1.25) !important;
+  pointer-events: none !important;
+}
+
+/* Light mode label */
+html.light button.btn-icon:not(.btn-circle)::after {
+  content: "Light" !important;
+  right: 16px !important;
+  color: #55585d !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Dark mode label */
+:root button.btn-icon:not(.btn-circle)::after {
+  content: "Dark" !important;
+  left: 16px !important;
+  color: #a0a6b2 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* SVG Icon alignment and sliding */
+button.btn-icon:not(.btn-circle) svg {
+  position: absolute !important;
+  z-index: 2 !important;
+  width: 18px !important;
+  height: 18px !important;
+  top: 9px !important;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1.25) !important;
+  pointer-events: none !important;
+}
+
+/* Light mode SVG placement — soft coral icon */
+html.light button.btn-icon:not(.btn-circle) svg {
+  left: 10px !important;
+  color: #FF5A3C !important;
+  filter: drop-shadow(0 0 4px rgba(255, 90, 60, 0.28)) !important;
+}
+
+/* Dark mode SVG placement — muted white icon */
+:root button.btn-icon:not(.btn-circle) svg {
+  left: calc(100% - 28px) !important;
+  color: #d8dce8 !important;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.18)) !important;
+}
+
+/* 🧑‍🍳 IMMERSIVE LUXURY CHEF SAVORÉ AI CHAT UI STYLES */
+
+/* Expand Chat Wrapper Overrides */
+.chef-speech-bubble-wrapper.chat-expanded {
+  bottom: 110px !important; /* Calibrate height to prevent navbar overlaps */
+  width: 350px !important;
+  max-width: min(350px, calc(100vw - 32px)) !important;
+  z-index: 44 !important; /* Sit cleanly beneath standard fixed navbar headers (z-index 50) */
+  transition: all 450ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.chef-speech-bubble-wrapper.chat-expanded.layout-tablet-above {
+  left: 50% !important;
+  margin-left: -330px !important; /* Shift chat box leftward to stand side-by-side with chef */
+}
+
+.chef-speech-bubble-wrapper.chat-expanded.layout-mobile-above {
+  left: 50% !important;
+  margin-left: -175px !important; /* Keep centered on mobile viewports */
+  bottom: 90px !important; /* Calibrate height for smaller mobile viewports */
+}
+
+/* Ensure expanded chat layout overrides recommendation bubble's high bottom offset */
+.chef-speech-bubble-wrapper.chat-expanded.has-recommendation {
+  bottom: 110px !important;
+}
+
+.chef-speech-bubble-wrapper.chat-expanded.layout-mobile-above.has-recommendation {
+  bottom: 90px !important;
+}
+
+
+/* Hide speech pointer triangle when chat is expanded to look like a floating CRM panel */
+.chef-speech-bubble-wrapper.chat-expanded .chef-speech-bubble-pointer {
+  display: none !important;
+}
+
+
+/* Glassmorphic border glow for active AI chat */
+.chef-speech-bubble-wrapper.chat-expanded .chef-speech-bubble {
+  border: 1px solid rgba(255, 138, 114, 0.25) !important;
+  border-radius: 28px !important; /* Highly smoothed premium iOS-style glass corners */
+  box-shadow: 0 12px 40px rgba(255, 138, 114, 0.12), 0 8px 30px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Chat Message Styling */
+.chef-chat-msg {
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  transition: transform 250ms var(--ease-apple), opacity 250ms var(--ease-apple);
+}
+
+.chef-chat-msg.user {
+  background: linear-gradient(135deg, #FF6A4E 0%, #FF8A72 100%) !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif !important;
+}
+
+.chef-chat-msg.chef {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+}
+
+html.light .chef-chat-msg.chef {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Scrollbar customization inside Chat thread */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+html.light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+html.light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Small Quick-Input element animation on hover */
+.chef-speech-bubble .cursor-pointer {
+  transition: all 250ms var(--ease-apple);
+}
+
+.chef-speech-bubble .cursor-pointer:hover {
+  border-color: rgba(255, 138, 114, 0.2) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.light .chef-speech-bubble .cursor-pointer:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Dynamic glow backdrop when expanded */
+.chef-speech-bubble-wrapper.chat-expanded::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(circle, rgba(255, 138, 114, 0.06) 0%, rgba(255, 138, 114, 0) 70%);
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 30px;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   🚀 SAVORÉ — PREMIUM INTERACTIVE CINEMATIC NAVBAR SYSTEM
+   ──────────────────────────────────────────────────────────────── */
+
+.glass-navbar-premium {
+  /* Establish elegant centered capsule defaults with position: fixed */
+  position: fixed !important;
+  top: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) translate3d(0, 0, 0) !important;
+  margin: 0 !important; /* Perfect Auto-Centering Mechanics */
+  width: calc(100% - 48px) !important;
+  max-width: 1240px !important;
+  padding: 16px 32px !important;
+  border-radius: 20px !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.05), var(--shadow-ambient) !important;
+  
+  /* Frosted Obsidian Glass default */
+  background-color: var(--glass-bg) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+
+  /* GPU Hardware Acceleration Promotion */
+  will-change: width, padding, margin, top, border-radius, background-color, box-shadow, border-color, backdrop-filter;
+  
+  /* Cinematic VisionOS Easing Curve (400ms) */
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  z-index: 50;
+}
+
+/* Light Mode Expanded Overrides */
+html.light .glass-navbar-premium {
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.85), var(--shadow-ambient) !important;
+}
+
+/* ── HORIZONTAL SHRINK-ON-SCROLL STATE SHIFTS ── */
+.glass-navbar-premium.shrunk {
+  top: 8px !important;
+  transform: translateX(-50%) translate3d(0, 0, 0) !important;
+  margin: 0 !important;
+  
+  /* Cinematic Horizontal capsule contraction */
+  width: calc(100% - 180px) !important;
+  max-width: 980px !important;
+  padding: 10px 24px !important;
+  border-radius: 14px !important;
+
+  /* Enhanced Frosted Glassmorphism Depth (VisionOS-like lock) */
+  background-color: rgba(12, 12, 14, 0.74) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  
+  /* Deepened shadow layering and accent boundary borders */
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.16), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Light Mode Shrunk Overrides */
+html.light .glass-navbar-premium.shrunk {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.08), 
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REELS PAGE — Navbar Override
+   The reels page uses fixed inset-0, so sticky doesn't work.
+   Force navbar to fixed + highest z-index so nav links stay clickable.
+   ══════════════════════════════════════════════════════════════ */
+body.reels-page .glass-navbar-premium,
+.reels-navbar-fixed {
+  z-index: 9999999 !important;
+  pointer-events: auto !important;
+}
+
+body.reels-page .glass-navbar-premium *,
+.reels-navbar-fixed * {
+  pointer-events: auto !important;
+}
+
+body.reels-page .glass-navbar-premium.shrunk,
+.reels-navbar-fixed.shrunk {
+  z-index: 9999999 !important;
+}
+
+body.reels-page main {
+  pointer-events: none !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* ── LOGO TRANSITION & TRANSFORM PHYSICS ── */
+.glass-navbar-premium .logo-tile-container {
+  will-change: transform;
+  transform-origin: left center;
+  transform: scale(1) !important;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 300ms var(--ease-apple) !important;
+}
+
+.glass-navbar-premium.shrunk .logo-tile-container {
+  transform: scale(0.94) !important;
+}
+
+/* ── NAV LINKS SPACING SYSTEM & MICRO-INTERACTIONS ── */
+.glass-navbar-premium nav {
+  gap: 24px !important;
+  will-change: gap;
+  transition: gap 0.4s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.glass-navbar-premium.shrunk nav {
+  gap: 18px !important;
+}
+
+.glass-navbar-premium nav a {
+  position: relative;
+  padding: 6px 12px;
+  border-radius: 8px;
+  will-change: color, background-color, transform;
+  transition: 
+    color 300ms var(--ease-apple), 
+    background-color 300ms var(--ease-apple), 
+    transform 200ms var(--ease-apple) !important;
+}
+
+.glass-navbar-premium nav a:hover {
+  color: var(--primary) !important;
+  background: rgba(255, 90, 60, 0.05) !important;
+  transform: translateY(-1px);
+}
+
+html.light .glass-navbar-premium nav a:hover {
+  background: rgba(255, 90, 60, 0.06) !important;
+}
+
+.glass-navbar-premium nav a:active {
+  transform: scale(0.97) translateY(0);
+}
+
+/* ── UTILITIES & BUTTONS TIGHTENING ── */
+.glass-navbar-premium .flex.items-center.gap-4 {
+  gap: 16px !important;
+  will-change: gap;
+  transition: gap 0.4s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.glass-navbar-premium.shrunk .flex.items-center.gap-4 {
+  gap: 12px !important;
+}
+
+/* ── RESPONSIVE DESIGN ADJUSTMENTS ── */
+@media (max-width: 640px) {
+  .glass-navbar-premium {
+    width: 95% !important;
+    margin: 8px auto !important;
+    top: 8px !important;
+    padding: 10px 16px !important;
+    border-radius: 14px !important;
+  }
+  
+  .glass-navbar-premium.shrunk {
+    width: 90% !important;
+    padding: 8px 12px !important;
+    border-radius: 12px !important;
+  }
+  
+  .glass-navbar-premium .logo-tile-container {
+    transform: scale(0.96) !important;
+  }
+
+  .glass-navbar-premium.shrunk .logo-tile-container {
+    transform: scale(0.92) !important;
+  }
+
+  .glass-navbar-premium nav {
+    gap: 12px !important;
+  }
+  
+  .glass-navbar-premium.shrunk nav {
+    gap: 10px !important;
+  }
+  
+  .glass-navbar-premium nav a {
+    padding: 4px 6px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+/* Sticky Cart Column alignment fix to prevent relative offset pushing it down statically */
+.sticky-cart {
+  position: sticky !important;
+  top: 72px !important;
+}
+
+/* ── PREMIUM CINEMATIC SAVORÉ LOADER STYLES ── */
+.cinematic-loader-overlay {
+  background-color: #0b0f14;
+  color: #f9fafb;
+  z-index: 9999;
+}
+
+html.light .cinematic-loader-overlay,
+:root.light .cinematic-loader-overlay {
+  background-color: #f9f6f0; /* Soft luxury matte cream */
+  color: #0b0f14;
+}
+
+.cinematic-loader-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
+  animation: loaderFloat 5s ease-in-out infinite;
+  overflow: hidden;
+}
+
+html.light .cinematic-loader-card,
+:root.light .cinematic-loader-card {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.05);
+}
+
+.cinematic-loader-shimmer {
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 300%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.035) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: loaderShimmer 2.5s infinite linear;
+  pointer-events: none;
+  z-index: 1;
+}
+
+html.light .cinematic-loader-shimmer,
+:root.light .cinematic-loader-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.02) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+@keyframes loaderFloat {
+  0%, 100% {
+    transform: translateY(0px) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translateY(-8px) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes loaderShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ── PREMIUM ACTIVE NAVIGATION SPOTLIGHT BUTTONS ── */
+.nav-link-premium {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Muted state */
+.nav-link-premium.inactive {
+  color: var(--text-secondary) !important;
+  opacity: 0.8;
+}
+
+.nav-link-premium.inactive:hover {
+  color: var(--text-primary) !important;
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+html.light .nav-link-premium.inactive:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Active Highlight Spotlights */
+.nav-link-premium.active-highlight {
+  color: #FF6A4D !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 10px rgba(255, 106, 77, 0.35);
+}
+
+/* 1. Glowing top coral indicator line */
+.nav-link-premium.active-highlight::before {
+  content: "";
+  position: absolute;
+  top: -21px; /* Expanded state top border distance alignment */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: linear-gradient(90deg, #FF6A4D 0%, #FF8A72 100%);
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 1px 8px rgba(255, 106, 77, 0.8), 0 0 15px rgba(255, 106, 77, 0.4);
+  z-index: 10;
+  transition: top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Adjust when header is shrunk */
+.glass-navbar-premium.shrunk .nav-link-premium.active-highlight::before {
+  top: -15px; /* Shrunk state top border distance alignment */
+}
+
+/* 2. Cinematic Spotlight Beam Cone */
+.nav-link-premium.active-highlight::after {
+  content: "";
+  position: absolute;
+  top: -21px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 115% !important; /* Refined tighter width for premium, professional focus */
+  height: 52px; /* Height of the spotlight beam projection */
+  background: linear-gradient(180deg, rgba(255, 106, 77, 0.14) 0%, rgba(255, 106, 77, 0) 100%);
+  /* Keep the top of the spotlight cone exactly 32px to match the glowing bar, and stretch the bottom rays to 100% */
+  clip-path: polygon(calc(50% - 16px) 0%, calc(50% + 16px) 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
+  z-index: 1;
+  transition: top 0.4s cubic-bezier(0.22, 1, 0.36, 1), height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Adjust spotlight when header is shrunk */
+.glass-navbar-premium.shrunk .nav-link-premium.active-highlight::after {
+  top: -15px;
+  height: 44px;
+}
+/* ── WEATHER CONCIERGE INTEGRATION ── */
+.weather-concierge-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid var(--border-glow);
+  border-radius: 24px;
+  padding: 8px 18px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: default;
+  box-shadow: var(--shadow-glow);
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  user-select: none;
+  margin-bottom: 24px;
+}
+
+html.light .weather-concierge-badge {
+  background: rgba(246, 243, 238, 0.85);
+  border-color: rgba(255, 106, 77, 0.18);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.weather-concierge-badge:hover {
+  border-color: rgba(255, 106, 77, 0.25);
+  box-shadow: var(--shadow-glow);
+}
+
+/* 3. Refined Modern Geometric Weather Line */
+.weather-classic-line {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+  font-size: 13.5px !important; /* Elegant, clean, compact size */
+  font-weight: 500 !important; /* Premium medium weight */
+  letter-spacing: 0.05em !important; /* Airy tracking inspired by 'Restaurant BBQ Buffet' logo subtext */
+  line-height: 1.6 !important;
+  color: var(--text-secondary) !important;
+  opacity: 0.85 !important;
+  text-shadow: none !important; /* Pure sharp text rendering without fuzzy glows */
+  margin-top: 4px;
+}
+
+/* Light mode specific refinements for optimal contrast */
+html.light .weather-classic-line {
+  color: #4a4a4e !important;
+  opacity: 0.95 !important;
+}
+
+/* 1. Pulse Telemetry Dot */
+.weather-pulse-dot {
+  width: 7px;
+  height: 7px;
+  background-color: #FF6A4D;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #FF6A4D, 0 0 16px rgba(255, 106, 77, 0.4);
+  animation: telemetryPulse 2s infinite alternate;
+}
+
+@keyframes telemetryPulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* 2. Weather SVG Rotations and Driftings */
+.weather-icon-spin svg {
+  animation: weatherIconWiggle 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes weatherIconWiggle {
+  0% {
+    transform: rotate(-4deg);
+  }
+  100% {
+    transform: rotate(4deg);
+  }
+}
+
+/* Specific SVG animations */
+.weather-svg-sun {
+  transform-origin: center;
+  animation: sun-spin 12s linear infinite;
+}
+
+.weather-svg-rain-drop {
+  animation: rain-fall 1.4s infinite linear;
+}
+
+.weather-svg-rain-drop:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.weather-svg-rain-drop:nth-child(3) {
+  animation-delay: 0.8s;
+}
+
+.weather-svg-cloud {
+  animation: cloud-drift 4s ease-in-out infinite alternate;
+}
+
+.weather-svg-cloud-back {
+  animation: cloud-drift-back 5s ease-in-out infinite alternate;
+}
+
+.weather-svg-wind {
+  animation: wind-blow 2.8s ease-in-out infinite alternate;
+}
+
+/* Keyframe Animations */
+@keyframes sun-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rain-fall {
+  0% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}
+
+@keyframes cloud-drift {
+  0% {
+    transform: translateX(-1.5px);
+  }
+  100% {
+    transform: translateX(1.5px);
+  }
+}
+
+@keyframes cloud-drift-back {
+  0% {
+    transform: translateX(1px);
+  }
+  100% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes wind-blow {
+  0% {
+    transform: translateX(-2px) scaleX(0.9);
+  }
+  100% {
+    transform: translateX(2px) scaleX(1.1);
+  }
+}
