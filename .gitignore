@@ -38,3 +38,6 @@ lerna-debug.log*
 # AI Agent Conversation Logs & Cache
 brain/
 .gemini/
+
+# Server Uploads and Media Assets
+server/uploads/

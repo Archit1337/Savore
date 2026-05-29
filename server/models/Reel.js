@@ -49,6 +49,11 @@ const reelSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    thumbnailUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,

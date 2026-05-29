@@ -26,6 +26,59 @@ const dest2 = path.join(uploadsDir, 'culinary_2.mp4');
 let localVideo1 = '/uploads/culinary_1.mp4';
 let localVideo2 = '/uploads/culinary_2.mp4';
 
+const VIDEO_TEMPLATES = {
+  pizza_1: {
+    url: 'https://giordanos.com/wp-content/uploads/2022/11/pizza.mp4',
+    fallback: 'savory',
+    filename: 'template_pizza_1.mp4'
+  },
+  pizza_2: {
+    url: 'https://tomatowellness.com/wp-content/uploads/2026/01/Eat-Real-Food-Pizza-.mp4',
+    fallback: 'savory',
+    filename: 'template_pizza_2.mp4'
+  },
+  burger_1: {
+    url: 'https://www.aisle3nj.com/wp-content/uploads/2019/04/cheyenne-burger.mp4',
+    fallback: 'savory',
+    filename: 'template_burger_1.mp4'
+  },
+  burger_2: {
+    url: 'https://thewannagency.com/wp-content/uploads/2025/03/Burger.mp4',
+    fallback: 'savory',
+    filename: 'template_burger_2.mp4'
+  },
+  coffee_1: {
+    url: 'https://thetig.meghanpedia.com/wp-content/uploads/2019/01/coffee.mp4',
+    fallback: 'sweet',
+    filename: 'template_coffee_1.mp4'
+  },
+  salad_1: {
+    url: 'https://rollupmke.com/wp-content/uploads/2024/12/short-cut-salad.mp4',
+    fallback: 'savory',
+    filename: 'template_salad_1.mp4'
+  },
+  steak_1: {
+    url: 'https://www.mynameissnickerdoodle.com/wp-content/uploads/2025/08/Steak.mp4',
+    fallback: 'savory',
+    filename: 'template_steak_1.mp4'
+  },
+  pasta_1: {
+    url: 'https://absolu80.com/wp-content/uploads/2023/05/video-for-Meet-Our-Chef.mp4',
+    fallback: 'savory',
+    filename: 'template_pasta_1.mp4'
+  },
+  sweet_1: {
+    url: 'https://raw.githubusercontent.com/aperture-data/Cookbook/main/notebooks/simple/data/crepe_flambe.mp4',
+    fallback: 'culinary_1.mp4',
+    filename: 'template_sweet_1.mp4'
+  },
+  savory_1: {
+    url: 'https://www.andrew.cmu.edu/user/payu/GreekRecipes/images/cooking.mp4',
+    fallback: 'culinary_2.mp4',
+    filename: 'template_savory_1.mp4'
+  }
+};
+
 const downloadFile = (url, dest) => {
   return new Promise((resolve, reject) => {
     if (fs.existsSync(dest)) {
@@ -40,7 +93,7 @@ const downloadFile = (url, dest) => {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
       },
-      timeout: 15000
+      timeout: 3000 // 3s ultra-fast timeout
     }, (response) => {
       if (response.statusCode !== 200) {
         fs.unlink(dest, () => {});
@@ -70,16 +123,65 @@ const downloadFile = (url, dest) => {
 };
 
 const prepareVideos = async () => {
+  console.log('📦 Buffering premium cuisine-specific video templates locally...');
+  
+  // Clean up only corrupted/incomplete template_*.mp4 files to prevent corrupted video playback, preserving fully downloaded assets
   try {
-    console.log('📦 Buffering premium culinary video assets locally...');
-    await downloadFile(video1Url, dest1);
-    await downloadFile(video2Url, dest2);
-    console.log('✅ Local video assets verified and ready.');
-  } catch (error) {
-    console.warn('⚠️ Warning: Failed to buffer videos locally, falling back to direct absolute URLs:', error.message);
-    localVideo1 = video1Url;
-    localVideo2 = video2Url;
+    console.log('🧹 Scanning and cleaning only corrupted/incomplete templates to prevent corrupted video playback...');
+    const files = fs.readdirSync(uploadsDir);
+    for (const file of files) {
+      if (file.startsWith('template_') && file.endsWith('.mp4')) {
+        const filePath = path.join(uploadsDir, file);
+        const stats = fs.statSync(filePath);
+        if (stats.size < 10240) { // < 10KB is likely aborted/corrupted
+          console.log(`🗑️ Deleting incomplete/corrupted template: ${file}`);
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Warning: Failed to scan/clean up templates:', err.message);
   }
+  
+  // Make sure base fallbacks exist first
+  try {
+    if (!fs.existsSync(dest1)) {
+      console.log(`📥 Downloading sweet base fallback...`);
+      await downloadFile(video1Url, dest1);
+    }
+    if (!fs.existsSync(dest2)) {
+      console.log(`📥 Downloading savory base fallback...`);
+      await downloadFile(video2Url, dest2);
+    }
+  } catch (err) {
+    console.warn('⚠️ Failed to ensure base fallback videos:', err.message);
+  }
+
+  // Download or copy all templates
+  for (const [key, meta] of Object.entries(VIDEO_TEMPLATES)) {
+    const templateDest = path.join(uploadsDir, meta.filename);
+    if (fs.existsSync(templateDest)) {
+      console.log(`ℹ️ Template already exists: ${meta.filename}`);
+      continue;
+    }
+
+    try {
+      console.log(`📥 Downloading template for ${key}: ${meta.url}...`);
+      await downloadFile(meta.url, templateDest);
+      console.log(`✅ Downloaded template for ${key}`);
+    } catch (err) {
+      console.warn(`⚠️ Failed to download template for ${key}, falling back:`, err.message);
+      // Copy sweet or savory base file
+      const fallbackSrc = meta.fallback === 'sweet' || meta.fallback === 'culinary_1.mp4' ? dest1 : dest2;
+      if (fs.existsSync(fallbackSrc)) {
+        fs.copyFileSync(fallbackSrc, templateDest);
+        console.log(`✨ Gracefully copied base fallback for template ${key}`);
+      } else {
+        console.error(`🚨 Fatal: Fallback base file not found for ${key}!`);
+      }
+    }
+  }
+  console.log('✅ All video templates buffered and verified.');
 };
 
 const CULINARY_REELS = [
@@ -544,57 +646,143 @@ const seedDatabase = async () => {
       'Cannot wait to try this on my next date night!'
     ];
 
-    // 5. Seeding High-Density Vertical Reels (8-12 premium culinary reels per restaurant)
-    console.log('🎥 Seeding 200+ Premium Vertical Video Reels (8-12 per restaurant)...');
+    // Helper function to dynamically map a dish to a template key
+    const getTemplateKeyForDish = (dish, rest) => {
+      const dishCat = (dish.category || '').toLowerCase();
+      const dishDesc = (dish.description || '').toLowerCase();
+      const dishName = (dish.name || '').toLowerCase();
+      const cuisines = rest.cuisines.map(c => c.toLowerCase());
+      const tags = rest.tags.map(t => t.toLowerCase());
+
+      if (dishCat.includes('pizza') || dishName.includes('pizza')) {
+        return 'pizza';
+      }
+      if (dishCat.includes('burger') || dishName.includes('burger')) {
+        return 'burger';
+      }
+      if (dishCat.includes('coffee') || dishName.includes('espresso') || dishName.includes('drip') || cuisines.includes('coffee') || cuisines.includes('cafe')) {
+        return 'coffee';
+      }
+      if (dishCat.includes('pasta') || dishName.includes('tagliolini') || dishName.includes('gnocchi') || cuisines.includes('pasta')) {
+        return 'pasta';
+      }
+      if (dishCat.includes('salad') || dishName.includes('salad') || dishName.includes('green') || dishCat.includes('salad') || dishDesc.includes('salad')) {
+        return 'salad';
+      }
+      if (dishCat.includes('steak') || dishName.includes('ribeye') || dishName.includes('meat') || dishName.includes('brisket') || dishName.includes('kebab') || cuisines.includes('steak') || cuisines.includes('barbecue') || dishCat.includes('barbecue') || dishName.includes('lamb') || dishName.includes('chicken')) {
+        return 'steak';
+      }
+
+      // Check sweet/dessert category
+      const isSweet = dishCat.includes('dessert') || 
+                      dishCat.includes('pastries') || 
+                      dishCat.includes('gelato') || 
+                      dishCat.includes('bakery') || 
+                      dishCat.includes('sweet') || 
+                      dishCat.includes('cake') || 
+                      dishCat.includes('crepe') ||
+                      dishName.includes('chocolate') ||
+                      dishName.includes('soufflé') ||
+                      dishName.includes('macaron') ||
+                      dishName.includes('waffle') ||
+                      dishDesc.includes('sweet') ||
+                      cuisines.includes('desserts') ||
+                      cuisines.includes('gelato') ||
+                      cuisines.includes('pastries') ||
+                      tags.includes('sweet') ||
+                      tags.includes('dessert');
+      
+      return isSweet ? 'sweet' : 'savory';
+    };
+
+    // Helper function to pull contextually rich, specific reviews/comments
+    const getCategoryComments = (templateKey, dishName) => {
+      const generic = [
+        'Omg this looks absolutely incredible! Ordering right now! 😍',
+        'Stunning plate presentation, Chef! True gastronomy.',
+        'Highly recommend this dish, the aroma is out of this world.',
+        'A true masterpiece of culinary arts. Flawless!',
+        'Just received my order, it is cooked absolutely to perfection!'
+      ];
+
+      const categorySpecific = {
+        pizza: [
+          'That cheese pull is out of this world! 🧀🔥',
+          'The crust looks incredibly airy and light!',
+          'Best woodfired pizza in town, period.'
+        ],
+        burger: [
+          'Double patty goodness! 🍔 Look at that juicy stack!',
+          'My absolute favorite cheat meal. High fidelity!',
+          'Gimme that wagyu juice! 🤤'
+        ],
+        coffee: [
+          'Morning fuel done right! ☕ Beautiful extraction.',
+          'Aromatic notes of jasmine are indeed wonderful.',
+          'Aesthetic coffee vibes, absolutely premium!'
+        ],
+        salad: [
+          'Clean eating never looked so good! 🌿 Nutrients galore.',
+          'The dressing looks out of this world.',
+          'Avocado power! Freshness level 100.'
+        ],
+        steak: [
+          'Perfect medium rare blush. Real wood fire! 🥩',
+          'The sear on that cut is absolutely unreal.',
+          'Melt in your mouth steak perfection.'
+        ],
+        pasta: [
+          'Rustic carb heaven! 🍝 That parmesan gloss is beautiful.',
+          'Handrolled daily? You can taste the quality!',
+          'A work of culinary art.'
+        ],
+        sweet: [
+          'Pure sweet heaven! Molten dark chocolate gloss is therapeutic... 🍫',
+          'Macarons look perfect. Staged like a jewelry store!',
+          'Warm soufflé on a date night is unmatched!'
+        ],
+        savory: [
+          'Exquisite prep, chef! 🥢 Looks extremely fresh.',
+          'Cannot wait to order this on my next weekend brunch!',
+          'Visual perfection and incredible flavor density.'
+        ]
+      };
+
+      return [...generic, ...(categorySpecific[templateKey] || [])];
+    };
+
+    // 5. Seeding High-Density Vertical Reels (1 unique reel per featured menu item across all restaurants)
+    console.log('🎥 Seeding 100% Unique, Cuisine-Accurate, Menu-Linked Vertical Reels...');
     let totalReelsSeeded = 0;
 
     for (let r = 0; r < seededRestaurants.length; r++) {
       const restaurant = seededRestaurants[r];
       const dishes = seededFoodItems.filter(f => f.restaurant.toString() === restaurant._id.toString());
       
-      // Determine number of reels for this restaurant (between 1 and 2)
-      const numReels = Math.floor(Math.random() * 2) + 1; // 1 to 2 reels per restaurant
-
-      for (let j = 0; j < numReels; j++) {
-        const selectedDish = dishes[j % dishes.length] || dishes[0];
+      for (let j = 0; j < dishes.length; j++) {
+        const selectedDish = dishes[j];
         
-        // Determine whether this dish/restaurant is sweet or savory
-        const dishCat = (selectedDish.category || '').toLowerCase();
-        const dishDesc = (selectedDish.description || '').toLowerCase();
-        const dishName = (selectedDish.name || '').toLowerCase();
-        const restCuisines = restaurant.cuisines.map(c => c.toLowerCase());
-        const restTags = restaurant.tags.map(t => t.toLowerCase());
+        // Dynamic cuisine template classification
+        const baseKey = getTemplateKeyForDish(selectedDish, restaurant);
         
-        const isSweet = dishCat.includes('dessert') || 
-                        dishCat.includes('pastries') || 
-                        dishCat.includes('gelato') || 
-                        dishCat.includes('bakery') || 
-                        dishCat.includes('sweet') || 
-                        dishCat.includes('cake') || 
-                        dishCat.includes('crepe') ||
-                        dishName.includes('chocolate') ||
-                        dishName.includes('soufflé') ||
-                        dishName.includes('macaron') ||
-                        dishName.includes('waffle') ||
-                        dishDesc.includes('sweet') ||
-                        restCuisines.includes('desserts') ||
-                        restCuisines.includes('gelato') ||
-                        restCuisines.includes('pastries') ||
-                        restTags.includes('sweet') ||
-                        restTags.includes('dessert');
-                        
-        const videoUrl = isSweet ? localVideo1 : localVideo2;
-        const reelType = isSweet ? 'sweet' : 'savory';
-        const reelMeta = CULINARY_REELS.find(item => item.type === reelType) || CULINARY_REELS[0];
+        // Filter the templates to find options for this base cuisine
+        const templateOptions = Object.keys(VIDEO_TEMPLATES).filter(k => k.startsWith(baseKey));
+        
+        // Pick one option sequentially to distribute evenly
+        const templateKey = templateOptions[(r + j) % templateOptions.length] || templateOptions[0];
+        const templateMeta = VIDEO_TEMPLATES[templateKey];
+        
+        // Construct 100% unique videoUrl using query parameters to prevent duplicate asset crossovers
+        const videoUrl = `/uploads/${templateMeta.filename}?r=${restaurant._id}&d=${selectedDish._id}`;
 
-        // Gather comments
+        // Gather contextually appropriate comments (using baseKey for category comments mapping)
+        const poolOfComments = getCategoryComments(baseKey, selectedDish.name);
         const randomComments = [];
-        const numComments = Math.floor(Math.random() * 3) + 1; // 1 to 3 comments
+        const numComments = Math.floor(Math.random() * 3) + 2; // 2 to 4 comments per reel
         for (let c = 0; c < numComments; c++) {
-          const text = commentTexts[Math.floor(Math.random() * commentTexts.length)];
+          const text = poolOfComments[Math.floor(Math.random() * poolOfComments.length)];
           const allUsers = [customer, admin, ...owners];
           
-          // Occasional customer commenting, otherwise pick owners/admins
           let selectedUser = allUsers[Math.floor(Math.random() * allUsers.length)];
           if (selectedUser._id.toString() === customer._id.toString() && Math.random() > 0.05) {
             const fallbackUsers = [admin, ...owners];
@@ -608,23 +796,36 @@ const seedDatabase = async () => {
           randomComments.push(commentObj._id);
         }
 
-        // Custom, highly realistic, hand-crafted culinary captions based on dish, category, restaurant
+        // Custom, highly realistic, hand-crafted culinary captions based on template category
         let caption = '';
-        const savoryTemplates = [
-          `The incredible sizzle of our signature dishes! 🔥 Watch our culinary artisans plate the exquisite ${selectedDish.name} at @${restaurant.name}. #foodie #trending #savore #cooking`,
-          `Precision prep in action! 🔪 Watch how we craft the perfect ${selectedDish.name} here at @${restaurant.name}. High-fidelity gastronomy. #culinary #chefmode #savore #fresh`,
-          `Fresh ingredients, masterful execution. 🌟 Our chefs are bringing you the beautiful ${selectedDish.name} live from the kitchen of @${restaurant.name}! #finedining #chefsofinstagram #savore #plating`,
-          `Behind the scenes of pure culinary perfection. 🍽️ A sneak peek at the staging and plating of ${selectedDish.name} at @${restaurant.name}. #michelinstar #foodie #savore #savory`
-        ];
-        
+        const cityHashtag = restaurant.city.toLowerCase().replace(/\s+/g, '');
         const sweetTemplates = [
-          `Watch our master pastry chef flambé the delicate crepes to caramelized perfection! 🎬🥞 Spotlighting the stunning ${selectedDish.name} at @${restaurant.name}! #sweettooth #pastryart #savore #flambe`,
-          `Pure dessert magic in the making! ✨ Molten goodness and sweet elegance as we prepare the famous ${selectedDish.name} at @${restaurant.name}. #chocolate #dessertporn #savore #sweet`,
-          `The art of fine baking and slow-churned sweetness. 🍨 Presenting our artisanal ${selectedDish.name} at @${restaurant.name}. Crafted for true connoisseurs. #gelato #pastrychef #savore #dessert`,
-          `Indulge in sweet luxury. 🍓 Handcrafted with passion and organic ingredients, the ${selectedDish.name} at @${restaurant.name} is a masterpiece. #dessert #yum #savore #baking`
+          `Watch our master pastry chef flambé the delicate crepes to caramelized perfection! 🎬🥞 Spotlighting the stunning ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}! #sweettooth #pastryart #savore #flambe #${cityHashtag}`,
+          `Pure dessert magic in the making! ✨ Molten goodness and sweet elegance as we prepare the famous ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. #chocolate #dessertporn #savore #sweet #${cityHashtag}`,
+          `The art of fine baking and slow-churned sweetness. 🍨 Presenting our artisanal ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. Crafted for true connoisseurs. #gelato #pastrychef #savore #dessert #${cityHashtag}`,
+          `Indulge in sweet luxury. 🍓 Handcrafted with passion and organic ingredients, the ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city} is a masterpiece. #dessert #yum #savore #baking #${cityHashtag}`
         ];
         
-        if (isSweet) {
+        const savoryTemplates = [
+          `The incredible sizzle of our fresh, hand-crafted ${selectedDish.name}! 🌟 Watch our culinary artisans plate this signature dish at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. #foodie #trending #savore #cooking #culinary #${cityHashtag}`,
+          `Precision prep and masterful execution! 🔪 Watch how we craft the perfect ${selectedDish.name} here at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. High-fidelity gastronomy. #culinary #chefmode #savore #fresh #${cityHashtag}`,
+          `Fresh ingredients, beautiful flavors. 🌟 Bringing you the premium ${selectedDish.name} live from the kitchen of @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}! #finedining #chefsofinstagram #savore #plating #${cityHashtag}`,
+          `Behind the scenes of pure culinary perfection. 🍽️ Staging and plating the exquisite ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. #michelinstar #foodie #savore #savory #${cityHashtag}`
+        ];
+        
+        if (templateKey === 'pizza') {
+          caption = `Stone-baked to bubbly perfection! 🍕 Watch the organic cheese melt and bubble on our hot signature ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. Real ingredients, real woodfire. #pizza #fresh #cheesepull #savore #${cityHashtag}`;
+        } else if (templateKey === 'burger') {
+          caption = `The ultimate flavor stack! 🍔 Sizzling gourmet patties, melted cheddar, and secret sauces in our hot ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. Watch it stack up! #burger #juicy #streetfood #savore #${cityHashtag}`;
+        } else if (templateKey === 'coffee') {
+          caption = `Artisanal brewing and slow drippings! ☕ Feeling the morning aromatic notes with our master-crafted ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. High-fidelity caffeine luxury. #coffee #barista #espresso #savore #${cityHashtag}`;
+        } else if (templateKey === 'salad') {
+          caption = `Fresh, crisp, and nutrient-dense! 🥗 Prepping our gorgeous organic plant-based ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. Indulgent clean plating at its finest. #healthy #vegan #cleanplating #savore #${cityHashtag}`;
+        } else if (templateKey === 'steak') {
+          caption = `Seared and slow-grilled to caramelized perfection! 🔥 Watch the fire roar as we sear the premium dry-aged ${selectedDish.name} over oak coals at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. #steak #grill #asador #savore #${cityHashtag}`;
+        } else if (templateKey === 'pasta') {
+          caption = `Handrolled pasta tossed in boiling Parmigiano reduction! 🍝 Savor the rustic-luxury carbohydrate bliss of our fresh ${selectedDish.name} at @${restaurant.name} in ${restaurant.locality}, ${restaurant.city}. #pasta #italian #rustic #savore #${cityHashtag}`;
+        } else if (templateKey === 'sweet') {
           caption = sweetTemplates[j % sweetTemplates.length];
         } else {
           caption = savoryTemplates[j % savoryTemplates.length];
@@ -632,7 +833,12 @@ const seedDatabase = async () => {
 
         // Add additional dynamic tags to make search and tags list beautiful
         const cleanRestName = restaurant.name.replace(/\s+/g, '').replace(/[']/g, '').toLowerCase();
-        const customTags = [...reelMeta.tags, selectedDish.category.toLowerCase().replace(/\s+/g, ''), cleanRestName];
+        const customTags = [
+          templateKey,
+          selectedDish.category.toLowerCase().replace(/\s+/g, ''),
+          cleanRestName,
+          cityHashtag
+        ];
 
         await Reel.create({
           videoUrl: videoUrl,
@@ -645,11 +851,12 @@ const seedDatabase = async () => {
           locality: restaurant.locality,
           region: restaurant.locality,
           cuisineType: selectedDish.category || 'Mains',
-          likes: Math.random() < 0.035 ? [customer._id, admin._id] : [admin._id],
+          likes: Math.random() < 0.35 ? [customer._id, admin._id] : [admin._id],
           views: Math.floor(Math.random() * 5000) + 1200,
           comments: randomComments,
           orderNowClicks: Math.floor(Math.random() * 400) + 100,
-          orderConversions: Math.floor(Math.random() * 80) + 15
+          orderConversions: Math.floor(Math.random() * 80) + 15,
+          thumbnailUrl: selectedDish.image || ''
         });
         totalReelsSeeded++;
       }

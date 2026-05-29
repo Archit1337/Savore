@@ -8,7 +8,6 @@ export const ReelsContext = createContext();
 const MOCK_REELS = [
   {
     _id: 'mock-reel-1',
-    // Free cooking demo video from Google's public sample video bucket
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     caption: 'Perfecting the signature French Duck Breast with citrus orange glaze. 🍊 Crispy skin and tender, melt-in-your-mouth duck breast.',
     likes: ['user-1', 'user-2'],
@@ -20,6 +19,14 @@ const MOCK_REELS = [
     restaurantDetails: {
       name: "L'Ambroisie",
       coverImage: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80'
+    },
+    featuredDish: {
+      _id: 'mock-dish-1',
+      name: 'Roasted Duck Breast',
+      description: 'Crispy pan-seared duck breast drizzled with wild orange glaze.',
+      price: 45.0,
+      image: 'https://images.unsplash.com/photo-1518492104633-130d0cc84637?auto=format&fit=crop&w=400&q=80',
+      category: 'Mains'
     },
     fallbackDish: {
       _id: 'mock-dish-1',
@@ -48,6 +55,14 @@ const MOCK_REELS = [
       name: 'Truffle Burger House',
       coverImage: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80'
     },
+    featuredDish: {
+      _id: 'mock-dish-2',
+      name: 'Truffle Wagyu Burger',
+      description: 'Savoir-faire wagyu beef burger layered with molten aged cheddar and truffle aioli.',
+      price: 23.0,
+      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80',
+      category: 'Burgers'
+    },
     fallbackDish: {
       _id: 'mock-dish-2',
       name: 'Truffle Wagyu Burger',
@@ -74,6 +89,14 @@ const MOCK_REELS = [
     restaurantDetails: {
       name: 'Sakura Sushi',
       coverImage: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=800&q=80'
+    },
+    featuredDish: {
+      _id: 'mock-dish-3',
+      name: 'Signature Dragon Roll',
+      description: 'Eel and cucumber inside, layered with avocado, spicy tuna, and unagi glaze.',
+      price: 22.0,
+      image: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?auto=format&fit=crop&w=400&q=80',
+      category: 'Sushi'
     },
     fallbackDish: {
       _id: 'mock-dish-3',
@@ -102,6 +125,14 @@ const MOCK_REELS = [
       name: 'Le Petit Chocolat',
       coverImage: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=800&q=80'
     },
+    featuredDish: {
+      _id: 'mock-dish-4',
+      name: 'Valrhona Soufflé',
+      description: 'Warm 70% dark chocolate souffle with organic cocoa butter.',
+      price: 16.0,
+      image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&q=80',
+      category: 'Warm Cakes'
+    },
     fallbackDish: {
       _id: 'mock-dish-4',
       name: 'Valrhona Soufflé',
@@ -128,6 +159,14 @@ const MOCK_REELS = [
     restaurantDetails: {
       name: 'Asador Steakhouse',
       coverImage: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'
+    },
+    featuredDish: {
+      _id: 'mock-dish-5',
+      name: 'Dry-Aged Ribeye',
+      description: 'A 400g ribeye steak aged 45 days, seared over open flames with sea salt crystals.',
+      price: 55.0,
+      image: 'https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=400&q=80',
+      category: 'Steaks'
     },
     fallbackDish: {
       _id: 'mock-dish-5',
