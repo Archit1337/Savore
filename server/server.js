@@ -50,10 +50,10 @@ app.use(
   })
 );
 
-// Rate Limiter to mitigate DDoS (100 requests per 15 minutes)
+// Rate Limiter to mitigate DDoS (10000 requests per 15 mins in dev, 100 in prod)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'development' ? 10000 : 100,
   message: {
     success: false,
     error: 'Too many requests from this IP, please try again after 15 minutes',

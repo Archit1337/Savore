@@ -411,7 +411,11 @@ export default function ReelsFeed() {
       >
         {/* 🎬 REAL-TIME EDGE BLUR AMBIENT VIDEO LAYER BACKGROUND */}
         <div 
-          className="absolute -top-[10%] -left-[10%] w-[120%] h-[120%] z-0 pointer-events-none blur-[35px] brightness-[0.6] dark:brightness-[0.45] opacity-25 dark:opacity-38 transition-all duration-500"
+          className="absolute -top-[10%] -left-[10%] w-[120%] h-[120%] z-0 pointer-events-none transition-all duration-500 overflow-hidden"
+          style={{
+            filter: 'blur(55px) brightness(0.68)',
+            opacity: isReelsDark ? 0.42 : 0.32,
+          }}
         >
           <AnimatePresence mode="wait">
             <motion.video 
@@ -430,10 +434,10 @@ export default function ReelsFeed() {
               playsInline
               preload="metadata"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.8 }}
-              className="reel-video-element w-full h-full pointer-events-none"
+              className="reel-video-element w-full h-full object-cover pointer-events-none"
             />
           </AnimatePresence>
         </div>

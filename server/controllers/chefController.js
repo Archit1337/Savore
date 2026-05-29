@@ -107,10 +107,17 @@ const buildSystemPrompt = (context, availableDishes = [], isRecommendationOnly =
     pageGuideline = "The user is exploring the home discovery page. Give a premium, context-rich culinary discovery suggestion.";
   }
 
-  return `You are Chef Savoré — a passionate, witty, Michelin-starred culinary AI assistant embedded in a luxury food ordering platform.
+  return `You are Chef Savoré — a passionate, witty, Michelin-starred culinary AI assistant embedded in Savoré, a luxury food ordering platform.
 You speak with warmth, culinary expertise, and a touch of refined French flair (using expressions like "Magnifique!", "Voilà!", "Bon appétit!").
 Keep your responses highly coherent, context-aware, food-focused, and concise (strictly under 3 sentences). Never break character.
 Maintain short-term conversational consistency: if the user previously specified a cuisine, diet (like vegetarian), or flavor (like spicy) in the history, combine those criteria dynamically!
+
+Savoré Platform Knowledge Base (Use this to answer questions about the website):
+- Savoré is a premium cinematic food-tech SaaS built on the MERN stack (React 19, Express, Node, MongoDB).
+- Cinematic Reels Feed: Swipe through lag-free, preloaded short-form video reels of dishes. Users can double-tap to like (floating heart animations), check community comments, and buy/order instantly using the card overlay.
+- Weather-Aware Recommendations: Location APIs determine the user's city (Mumbai street-food, Bengaluru cafes, Delhi curries/kebabs) and map weather states dynamically (e.g. warm soups on rainy/chilly days, chilled gelatos and fresh smoothies on hot days).
+- Hardened Security: Dual-token JWT (access & refresh) rotation protocol for secure session management. Segregated roles for Customers and Merchants (Restaurant Owners who have a metrics & menu dashboard).
+- Stripe Gateway: Secure PCI-compliant payment integrations using tokenized Stripe Elements and server-side webhooks (listening to Stripe webhook event 'payment_intent.succeeded' to safely process orders).
 
 Operational Parameters:
 - Location Context: ${city}, ${locality}. ${locationGuideline}
@@ -127,10 +134,13 @@ ${JSON.stringify(availableDishes.map(d => ({ id: d._id, name: d.name, category: 
 
 You MUST respond strictly with a valid JSON object matching the following structure:
 {
-  "reply": "A concise, engaging, French-flaired response addressing the conversation and presenting your suggestion.",
-  "recommendedDishId": "Select the MongoDB '_id' of the dish from the available menu to recommend. Set to null if not recommending a specific dish.",
+  "reply": "A concise, engaging, French-flaired response addressing the conversation.",
+  "recommendedDishId": "Select the MongoDB '_id' of the dish from the available menu to recommend. CRITICAL: Set to null unless the user explicitly asks for a recommendation, asks for food suggestions, or clicks/taps on you for a dish. If the user is just saying hello, greeting you, or asking general non-food questions, you MUST set this to null.",
   "quote": "A 1-sentence passionate description of the recommended dish (only if recommendedDishId is not null)."
-}`;
+}
+
+CRITICAL RULE FOR DISH RECOMMENDATIONS:
+Only recommend a dish (set 'recommendedDishId' to a valid MongoDB ID) if the user explicitly asks for a food suggestion, asks for a recommendation, says they are hungry, or craves a flavor/dish. If the user is just greeting you (e.g. saying 'hey', 'hello', 'bonjour'), asking general questions, or talking about website features, you MUST set 'recommendedDishId' to null and 'quote' to null.`;
 };
 
 /**
@@ -171,6 +181,65 @@ const getFailsafeChefResponse = async (messageText, context, history = []) => {
   }
 
   const msgLower = (messageText || "").toLowerCase();
+  
+  // High-Priority Platform Knowledge Fallbacks
+  let customReply = null;
+  if (msgLower.includes("reel") || msgLower.includes("swipe") || msgLower.includes("video") || msgLower.includes("scroll")) {
+    customReply = "Ah, our Cinematic Reels! Swipe through lag-free vertical food videos, double-tap to like with floating hearts, and add items directly to your cart in one smooth touch. Magnifique, non?";
+  } else if (msgLower.includes("stripe") || msgLower.includes("payment") || msgLower.includes("secure") || msgLower.includes("pay") || msgLower.includes("card")) {
+    customReply = "Rest assured, mon ami! All payments are processed via secure, PCI-compliant Stripe Element tokenization. Our backend listens to Stripe webhooks for safe order processing!";
+  } else if (msgLower.includes("weather") || msgLower.includes("rain") || msgLower.includes("sun") || msgLower.includes("temperature")) {
+    customReply = "Mais oui! Savoré maps weather state to hot or cold gourmet items dynamically—like suggesting a warm comforting ramen on rainy days, or a fresh gelato on hot sunny afternoons!";
+  } else if (msgLower.includes("jwt") || msgLower.includes("auth") || msgLower.includes("security") || msgLower.includes("password") || msgLower.includes("token")) {
+    customReply = "Savoré uses dual-token JWT (Access & Refresh) rotation protocols. This prevents session hijacking and keeps your private data locked tighter than my secret spice drawer!";
+  } else if (msgLower.includes("merchant") || msgLower.includes("owner") || msgLower.includes("dashboard") || msgLower.includes("role") || msgLower.includes("rbac")) {
+    customReply = "Our platform features robust Role-Based Access Controls (RBAC), offering premium Customer portals and rich Merchant Dashboards for restaurant menu and sales management. Exquisite engineering!";
+  } else if (msgLower.includes("how it works") || msgLower.includes("what is this") || msgLower.includes("savore") || msgLower.includes("platform") || msgLower.includes("framework")) {
+    customReply = "Voilà! Savoré is a premium MERN-stack culinary SaaS that connects beautiful, short-form food reels directly with high-end, on-demand food delivery. A true culinary masterpiece!";
+  }
+
+  if (customReply) {
+    return {
+      reply: customReply,
+      recommendation: null
+    };
+  }
+
+  // Check if the user is explicitly asking for food suggestions, recommendations, or clicked/tapped the chef Mascot
+  const isAskingForRecommendation = 
+    msgLower.includes("recommend") || 
+    msgLower.includes("suggest") || 
+    msgLower.includes("eat") || 
+    msgLower.includes("food") || 
+    msgLower.includes("dish") || 
+    msgLower.includes("hungry") || 
+    msgLower.includes("crave") || 
+    msgLower.includes("spicy") || 
+    msgLower.includes("sweet") || 
+    msgLower.includes("veg") || 
+    msgLower.includes("menu") || 
+    msgLower.includes("order") || 
+    msgLower.includes("what should i") || 
+    msgLower.includes("give me") ||
+    msgLower.includes("pizza") ||
+    msgLower.includes("pasta") ||
+    msgLower.includes("burger") ||
+    msgLower.includes("coffee") ||
+    msgLower.includes("salad") ||
+    msgLower.includes("dessert") ||
+    msgLower.includes("steak") ||
+    messageText === 'recommend';
+
+  if (!isAskingForRecommendation) {
+    let greetingReply = "Ah, bonjour mon ami! I am ready to cook up some culinary genius. Ask me anything or click on me for a recommendation! 👨‍🍳✨";
+    if (msgLower.includes("hello") || msgLower.includes("hi") || msgLower.includes("hey") || msgLower.includes("bonjour") || msgLower.includes("yo")) {
+      greetingReply = "Ah, bonjour! It is a pleasure to meet a fellow culinary lover. How can Chef Savoré assist your palate today? 👨‍🍳✨";
+    }
+    return {
+      reply: greetingReply,
+      recommendation: null
+    };
+  }
   
   // Scrape history for preferences to keep conversational memory alive in fallback
   let prefSpicy = prefs.spicyLevel === 'high' || prefs.spicyLevel === 'spicy' || msgLower.includes("spicy") || msgLower.includes("hot") || msgLower.includes("chili") || msgLower.includes("chilly");
