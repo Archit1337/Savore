@@ -147,12 +147,45 @@ const MOCK_REELS = [
 
 const EMPTY_FEED = { reels: [], page: 1, totalPages: 1 };
 
+// Helper to extract the base Mongoose/Mock ID of a reel, scrubbing virtual loop tags
+const getBaseReelId = (id) => {
+  if (!id) return '';
+  return id.split('-loop')[0].split('-inflated')[0];
+};
+
+// Helper to auto-inflate small catalogs up to a virtual minimum of 15 elements to prevent swiping dead-locks
+const inflateFeedIfNeeded = (feedArray) => {
+  if (!feedArray || feedArray.length === 0) return [];
+  if (feedArray.length >= 5) return feedArray;
+
+  let inflated = [...feedArray];
+  let loopCount = 0;
+  while (inflated.length < 15 && loopCount < 5) {
+    const loopPrefix = `loop-inflated-${Date.now()}-${loopCount}-${Math.random()}`;
+    const duplicated = feedArray.map((r, i) => ({
+      ...r,
+      _id: `${getBaseReelId(r._id)}-loop-inflated-${loopPrefix}-${i}`
+    }));
+    inflated = [...inflated, ...duplicated];
+    loopCount++;
+  }
+  return inflated;
+};
+
 export const ReelsProvider = ({ children }) => {
-  const [reels, setReelsState] = useState([]);
+  const [reels, rawSetReelsState] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Intercept state updates to automatically apply virtual auto-inflation
+  const setReelsState = (newVal) => {
+    rawSetReelsState((prev) => {
+      const nextVal = typeof newVal === 'function' ? newVal(prev) : newVal;
+      return inflateFeedIfNeeded(nextVal);
+    });
+  };
 
   // Derived / Stub States for backwards compatibility
   const [currentFeedKey, setCurrentFeedKey] = useState('global');
@@ -167,9 +200,7 @@ export const ReelsProvider = ({ children }) => {
 
   // Stable setReels implementation
   const setReels = (newReels) => {
-    setReelsState((prev) => {
-      return typeof newReels === 'function' ? newReels(prev) : newReels;
-    });
+    setReelsState(newReels);
   };
 
   // Fetch Reels Feed (Universal discovery experience, ignoring city filtering)
@@ -205,14 +236,14 @@ export const ReelsProvider = ({ children }) => {
             const prevReels = reels;
             if (isLooping) {
               // Suffix IDs during looping to ensure perfect React key uniqueness
-              const mappedNewReels = newReels.map((r) => ({
+              const mappedNewReels = newReels.map((r, i) => ({
                 ...r,
-                _id: `${r._id}-loop-${Date.now()}-${Math.random()}`
+                _id: `${getBaseReelId(r._id)}-loop-${Date.now()}-${i}-${Math.random()}`
               }));
               updatedReels = [...prevReels, ...mappedNewReels];
             } else {
-              const existingIds = prevReels.map((r) => r._id);
-              const filteredNew = newReels.filter((r) => !existingIds.includes(r._id));
+              const existingIds = prevReels.map((r) => getBaseReelId(r._id));
+              const filteredNew = newReels.filter((r) => !existingIds.includes(getBaseReelId(r._id)));
               updatedReels = [...prevReels, ...filteredNew];
             }
           }
@@ -247,12 +278,13 @@ export const ReelsProvider = ({ children }) => {
 
   const toggleLikeReel = async (reelId, userId) => {
     const previousReels = reels;
+    const cleanId = getBaseReelId(reelId);
 
-    // Optimistically toggle like locally
+    // Optimistically toggle like locally across ALL virtual duplicates
     if (userId) {
-      setReelsState((prev) => 
+      rawSetReelsState((prev) => 
         prev.map((r) => {
-          if (r._id === reelId) {
+          if (getBaseReelId(r._id) === cleanId) {
             const alreadyLiked = (r.likes || []).includes(userId);
             const updatedLikes = alreadyLiked
               ? (r.likes || []).filter((id) => id.toString() !== userId)
@@ -265,28 +297,29 @@ export const ReelsProvider = ({ children }) => {
     }
 
     try {
-      const res = await api.post(`/reels/${reelId}/like`);
+      const res = await api.post(`/reels/${cleanId}/like`);
       if (res.data && res.data.success) {
         const { likes } = res.data;
-        setReelsState((prev) => 
-          prev.map((r) => (r._id === reelId ? { ...r, likes } : r))
+        rawSetReelsState((prev) => 
+          prev.map((r) => (getBaseReelId(r._id) === cleanId ? { ...r, likes } : r))
         );
         return res.data.isLiked;
       }
     } catch (err) {
       console.error('Failed to toggle like on reel, rolling back:', err.message);
-      setReelsState(previousReels);
+      rawSetReelsState(previousReels);
     }
   };
 
   const commentOnReel = async (reelId, commentText) => {
+    const cleanId = getBaseReelId(reelId);
     try {
-      const res = await api.post(`/reels/${reelId}/comments`, { text: commentText });
+      const res = await api.post(`/reels/${cleanId}/comments`, { text: commentText });
       if (res.data && res.data.success) {
         const newComment = res.data.data;
-        setReelsState((prev) =>
+        rawSetReelsState((prev) =>
           prev.map((r) =>
-            r._id === reelId
+            getBaseReelId(r._id) === cleanId
               ? { ...r, comments: [...(r.comments || []), newComment] }
               : r
           )
@@ -300,16 +333,18 @@ export const ReelsProvider = ({ children }) => {
   };
 
   const logReelView = async (reelId) => {
+    const cleanId = getBaseReelId(reelId);
     try {
-      await api.post(`/reels/${reelId}/view`);
+      await api.post(`/reels/${cleanId}/view`);
     } catch (err) {
       console.warn('Silent analytics tracking failed for reel view:', err.message);
     }
   };
 
   const logReelOrderClick = async (reelId) => {
+    const cleanId = getBaseReelId(reelId);
     try {
-      await api.post(`/reels/${reelId}/click-order`);
+      await api.post(`/reels/${cleanId}/click-order`);
     } catch (err) {
       console.warn('Silent analytics tracking failed for reel order click:', err.message);
     }

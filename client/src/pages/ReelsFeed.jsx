@@ -216,7 +216,8 @@ export default function ReelsFeed() {
   const handleNextReel = () => {
     if (activeIndex < reels.length - 1) {
       setActiveIndex((prev) => prev + 1);
-      if (activeIndex === reels.length - 2) {
+      // Preload next batch much earlier (when 4 or fewer items are left in the queue)
+      if (reels.length - activeIndex <= 4) {
         fetchReelsFeed(false, activeCity);
       }
     }
