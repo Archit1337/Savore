@@ -71,6 +71,7 @@ const getRestaurants = async (req, res, next) => {
       data: restaurants || [],
       page,
       totalPages,
+      totalRestaurants,
     });
   } catch (error) {
     next(error);

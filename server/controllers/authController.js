@@ -36,7 +36,7 @@ const register = async (req, res, next) => {
       username,
       email,
       password,
-      role: role || 'customer',
+      role: 'customer', // STOPS PRIVILEGE ESCALATION: Always force public sign-ups to be Customers
       address: address || '',
     });
 
@@ -692,6 +692,30 @@ const setDefaultAddress = async (req, res, next) => {
   }
 };
 
+// @desc    Delete user account / profile
+// @route   DELETE /api/auth/profile
+// @access  Private
+const deleteAccount = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      res.status(404);
+      return next(new Error('User not found'));
+    }
+
+    // Perform database deletion
+    await User.findByIdAndDelete(req.user.id);
+
+    res.json({
+      success: true,
+      data: {},
+      message: 'Your account has been permanently deleted successfully.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -709,4 +733,5 @@ module.exports = {
   editAddress,
   deleteAddress,
   setDefaultAddress,
+  deleteAccount,
 };

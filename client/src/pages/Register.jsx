@@ -7,7 +7,7 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('customer'); // default
+  const role = 'customer'; // Default role is strictly Diner Customer
   const [address, setAddress] = useState('');
   const [validationError, setValidationError] = useState('');
   const { registerUser, error, loading } = useContext(AuthContext);
@@ -126,30 +126,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Role selector buttons */}
-          <div>
-            <label className="block text-[13px] font-semibold text-text-secondary mb-2">
-              Join Savoré As
-            </label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                className={`chip flex-1 py-3 px-4 flex gap-2 justify-center ${role === 'customer' ? 'active' : ''}`}
-                onClick={() => setRole('customer')}
-              >
-                <User size={16} />
-                Client Diner
-              </button>
-              <button
-                type="button"
-                className={`chip flex-1 py-3 px-4 flex gap-2 justify-center ${role === 'restaurant' ? 'active' : ''}`}
-                onClick={() => setRole('restaurant')}
-              >
-                <Store size={16} />
-                Restaurant Owner
-              </button>
-            </div>
-          </div>
 
           {/* Default address */}
           <div>

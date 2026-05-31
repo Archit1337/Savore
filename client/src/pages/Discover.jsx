@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Clock, Star, Filter, Tag, Compass, ChevronRight, 
   MapPin, ChevronDown, X, Navigation, SlidersHorizontal, Check, 
-  Home, Briefcase, Building, Sparkles, IndianRupee, Globe
+  Home, Briefcase, Building, Sparkles, IndianRupee, Globe, AlertTriangle
 } from 'lucide-react';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
@@ -93,6 +93,36 @@ const getPriceRangeLabel = (range) => {
   return 'All budgets';
 };
 
+const IndiaMap = ({ size = 18, className = "" }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`${className} transition-all duration-300`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ 
+        display: 'inline-block', 
+        verticalAlign: 'middle',
+        filter: hovered 
+          ? 'drop-shadow(0 0 8px rgba(255, 90, 60, 0.95)) drop-shadow(0 0 2px rgba(255, 90, 60, 0.4))'
+          : 'drop-shadow(0 0 2px rgba(255, 90, 60, 0.4))',
+        transform: hovered ? 'scale(1.1)' : 'scale(1)',
+        cursor: 'pointer'
+      }}
+    >
+      <path d="M12 3l.8.9.2 1.5-.3 1-1.7 1-.5 1 1 2 1.3.5 1.7-.5 1.3 1 .9.5.8-.9.6.5-.5 1-2.1 1-.8 1-.9-.5-.4 1 .4 1.5-.8 1.5-.9 3.5-1-3.5-.9-1.5-1-1-1.8-.5-1-.5-.4-1 .4-1 1-.5.4-1-.4-1 .4-1 .9-.5.8-1 1.3-1.5.4-1.5.8-1.5z" />
+    </svg>
+  );
+};
+
 export default function Discover() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -113,6 +143,7 @@ export default function Discover() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Search parameters in url
   const searchQuery = searchParams.get('search') || '';
@@ -209,6 +240,7 @@ export default function Discover() {
           if (list.length > 0) {
             setRestaurants(list);
             setTotalPages(res.data.totalPages || 1);
+            setTotalCount(res.data.totalRestaurants || list.length);
             return; // validated results found — skip mock fallback
           }
           // Fall through to mock if validated list is empty
@@ -252,6 +284,7 @@ export default function Discover() {
 
           setRestaurants(paginated);
           setTotalPages(Math.max(1, Math.ceil(filtered.length / limit)));
+          setTotalCount(filtered.length);
         }
       } catch (err) {
         console.error('Discover pipeline fetch error:', err.message);
@@ -326,6 +359,17 @@ export default function Discover() {
     return dist ? `${dist.toFixed(1)} km away` : 'Nearby';
   };
 
+  const isRestaurantOutOfRange = (rest) => {
+    let dist = rest.distance;
+    if (dist === undefined && rest.coordinates?.coordinates) {
+      const restLng = rest.coordinates.coordinates[0];
+      const restLat = rest.coordinates.coordinates[1];
+      dist = calculateDistance(activeCoords.lat, activeCoords.lng, restLat, restLng);
+    }
+    const isDifferentCity = rest.city && activeCity && rest.city.toLowerCase().trim() !== activeCity.toLowerCase().trim();
+    return isDifferentCity || (dist && dist > 50);
+  };
+
   const currentLocalities = CITY_LOCALITIES[activeCity] || [];
 
   return (
@@ -388,7 +432,7 @@ export default function Discover() {
         <div className="hidden lg:flex flex-col gap-2 pr-2 text-right">
           <span className="text-[10px] text-text-muted uppercase tracking-wider font-extrabold">Personalized Taste</span>
           <span className="text-base font-bold text-primary flex items-center gap-1.5 justify-end">
-            <Sparkles size={16} /> Trending {exploreNationwide ? 'in India' : `in ${activeCity}`}
+            <IndiaMap size={18} /> Trending {exploreNationwide ? 'in India' : `in ${activeCity}`}
           </span>
         </div>
       </div>
@@ -619,7 +663,7 @@ export default function Discover() {
         <div className="flex-1">
           <div className="mb-4 pl-1 text-left flex justify-between items-center">
             <span className="text-xs font-bold text-text-muted">
-              Found {restaurants.length} dining options {exploreNationwide ? 'across India' : `in ${activeCity}`}
+              Found {totalCount} dining options {exploreNationwide ? 'across India' : `in ${activeCity}`}
             </span>
           </div>
 
@@ -690,10 +734,16 @@ export default function Discover() {
                     {/* Delivery metadata footer */}
                     <div className="p-5 pt-0">
                       <div className="flex justify-between items-center border-t border-[var(--border-light)] pt-3 text-[12px] text-text-muted font-bold">
-                        <span className="flex items-center gap-1">
-                          <Clock size={12} className="text-text-muted" />
-                          {rest.deliveryTime} mins
-                        </span>
+                        {isRestaurantOutOfRange(rest) ? (
+                          <span className="flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/20 py-0.5 px-2 rounded-md text-[10px] uppercase tracking-wide font-extrabold animate-pulse">
+                            <AlertTriangle size={10} className="text-red-500" /> Out of Local Range
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <Clock size={12} className="text-text-muted" />
+                            {rest.deliveryTime} mins
+                          </span>
+                        )}
                         
                         <span className="text-primary font-bold">
                           {computedDistanceStr(rest)}

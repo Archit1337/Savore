@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Flame, Sparkles, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building } from 'lucide-react';
+import { Search, Flame, Sparkles, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle } from 'lucide-react';
 import MascotChef from '../components/MascotChef';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
@@ -328,8 +328,20 @@ export default function Home() {
     savedAddresses,
     selectManualCity,
     detectGpsLocation,
+    calculateDistance,
     gpsLoading
   } = useContext(LocationContext);
+
+  const isRestaurantOutOfRange = (rest) => {
+    let dist = rest.distance;
+    if (dist === undefined && rest.coordinates?.coordinates) {
+      const restLng = rest.coordinates.coordinates[0];
+      const restLat = rest.coordinates.coordinates[1];
+      dist = calculateDistance(activeCoords.lat, activeCoords.lng, restLat, restLng);
+    }
+    const isDifferentCity = rest.city && activeCity && rest.city.toLowerCase().trim() !== activeCity.toLowerCase().trim();
+    return isDifferentCity || (dist && dist > 50);
+  };
 
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -833,10 +845,16 @@ export default function Home() {
                     </div>
 
                     <div className="flex justify-between border-t-[1.5px] border-[var(--border-light)] pt-[18px] text-[13px] text-[var(--text-muted)] font-semibold">
-                      <span className="flex items-center gap-[5px]">
-                        <Clock size={13} />
-                        {rest.deliveryTime} mins
-                      </span>
+                      {isRestaurantOutOfRange(rest) ? (
+                        <span className="flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/20 py-0.5 px-2 rounded-md text-[10px] uppercase tracking-wide font-extrabold animate-pulse">
+                          <AlertTriangle size={10} className="text-red-500" /> Out of Local Range
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-[5px]">
+                          <Clock size={13} />
+                          {rest.deliveryTime} mins
+                        </span>
+                      )}
                       <span>
                         Delivery: {rest.deliveryFee === 0 ? 'FREE' : formatPrice(rest.deliveryFee)}
                       </span>

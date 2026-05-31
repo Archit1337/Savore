@@ -17,6 +17,7 @@ const {
   editAddress,
   deleteAddress,
   setDefaultAddress,
+  deleteAccount,
 } = require('../controllers/authController');
 const { validateRegister, validateLogin } = require('../middleware/validators');
 const { protect } = require('../middleware/authMiddleware');
@@ -30,6 +31,7 @@ router.get('/me', protect, getMe);
 
 // User Profile & Settings Paths
 router.put('/profile', protect, updateProfile);
+router.delete('/profile', protect, deleteAccount);
 router.put('/password', protect, updatePassword);
 router.post('/avatar', protect, uploadImage.single('avatar'), uploadAvatar);
 router.get('/social', protect, getUserSocialHistory);
