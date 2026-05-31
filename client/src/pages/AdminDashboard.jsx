@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, ShoppingBag, Database, Users, 
   Film, RefreshCw, Star, ArrowUpRight, IndianRupee, 
-  Trash2, Eye, ClipboardList, CheckCircle2, AlertCircle
+  Trash2, Eye, ClipboardList, CheckCircle2, AlertCircle,
+  Building
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { OrderContext } from '../context/OrderContext';
@@ -28,7 +29,12 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'moderation'
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'requests', or 'moderation'
+
+  // Partnership Request states
+  const [partnershipRequests, setPartnershipRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [adminNotesInputs, setAdminNotesInputs] = useState({});
 
   // Mock moderation database
   const [flaggedReels, setFlaggedReels] = useState([
@@ -79,6 +85,47 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchPartnershipRequests = async () => {
+    setRequestsLoading(true);
+    try {
+      const res = await api.get('/auth/partnership-requests');
+      if (res.data && res.data.success) {
+        setPartnershipRequests(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load partnership requests:', err.message);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const handleApproveRequest = async (id) => {
+    try {
+      const notes = adminNotesInputs[id] || 'Verified and approved successfully.';
+      const res = await api.put(`/auth/partnership-requests/${id}/approve`, { adminNotes: notes });
+      if (res.data && res.data.success) {
+        alert('Partnership request approved successfully! User is now promoted to Restaurant Owner.');
+        await fetchPartnershipRequests();
+        await fetchGlobalStats();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to approve request.');
+    }
+  };
+
+  const handleRejectRequest = async (id) => {
+    try {
+      const notes = adminNotesInputs[id] || 'Application does not meet our operational requirements.';
+      const res = await api.put(`/auth/partnership-requests/${id}/reject`, { adminNotes: notes });
+      if (res.data && res.data.success) {
+        alert('Partnership request rejected.');
+        await fetchPartnershipRequests();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to reject request.');
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -92,6 +139,7 @@ export default function AdminDashboard() {
     const loadAll = async () => {
       await fetchOrdersData(1);
       await fetchGlobalStats();
+      await fetchPartnershipRequests();
     };
     loadAll();
   }, [isAuthenticated, isAdmin, navigate]);
@@ -140,6 +188,14 @@ export default function AdminDashboard() {
             }`}
           >
             <ClipboardList size={14} className="mr-1.5" /> Global Orders
+          </button>
+          <button 
+            onClick={() => setActiveTab('requests')}
+            className={`btn btn-pill text-[13px] flex items-center ${
+              activeTab === 'requests' ? 'btn-primary text-white bg-primary' : 'bg-transparent text-text-secondary'
+            }`}
+          >
+            <Building size={14} className="mr-1.5" /> Culinary Requests
           </button>
           <button 
             onClick={() => setActiveTab('moderation')}
@@ -283,6 +339,129 @@ export default function AdminDashboard() {
           ) : (
             <div className="text-center py-10 text-text-secondary">
               No master orders recorded in the system yet.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: PLATFORM PARTNERSHIP REQUESTS */}
+      {activeTab === 'requests' && (
+        <div className="glass-panel p-8 rounded-[24px]">
+          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <h3 className="text-xl font-bold flex items-center gap-2.5 text-text-primary">
+              <Building size={20} className="text-primary animate-stir" />
+              Restaurant Partnership Requests
+            </h3>
+            <button onClick={fetchPartnershipRequests} className="chip btn-pill text-[12px] flex items-center">
+              <RefreshCw size={12} className="mr-1.5" /> Refresh List
+            </button>
+          </div>
+
+          {requestsLoading ? (
+            <div className="py-10 text-center">
+              <RefreshCw className="animate-stir text-text-muted" size={24} />
+            </div>
+          ) : partnershipRequests.length > 0 ? (
+            <div className="flex flex-col gap-6">
+              {partnershipRequests.map((req) => (
+                <div 
+                  key={req._id} 
+                  className="bg-[var(--surface-bright)] border border-[var(--border-light)] p-6 rounded-2xl text-left"
+                >
+                  <div className="flex justify-between items-start flex-wrap gap-4 border-b border-[var(--border-light)]/45 pb-4 mb-4">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <h4 className="text-lg font-black text-text-primary">{req.restaurantName}</h4>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold uppercase ${
+                          req.status === 'pending' ? 'bg-orange-500/10 text-primary border border-primary/20' :
+                          req.status === 'approved' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                          'bg-red-500/10 text-red-500 border border-red-500/20'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-secondary mt-1">
+                        Applied by <strong>{req.user?.username}</strong> ({req.user?.email})
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-text-muted">{new Date(req.createdAt).toLocaleString()}</span>
+                  </div>
+
+                  {/* Body Specs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <div className="flex flex-col gap-3">
+                      {req.description && (
+                        <p className="text-sm text-text-primary italic leading-relaxed">
+                          "{req.description}"
+                        </p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2 text-xs font-semibold text-text-secondary">
+                        <span className="px-2.5 py-1 bg-surface border border-[var(--border-light)] rounded-lg">
+                          📍 {req.locality}, {req.city} ({req.pincode})
+                        </span>
+                        <span className="px-2.5 py-1 bg-surface border border-[var(--border-light)] rounded-lg">
+                          🏷️ Price: {req.priceRange}
+                        </span>
+                        {req.cuisines?.length > 0 && (
+                          <span className="px-2.5 py-1 bg-surface border border-[var(--border-light)] rounded-lg">
+                            🍜 Cuisines: {req.cuisines.join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      {req.coverImage && (
+                        <div className="w-full h-24 rounded-xl overflow-hidden bg-slate-900 border border-[var(--border-light)]">
+                          <img src={req.coverImage} alt={req.restaurantName} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+
+                      {req.status === 'pending' && (
+                        <div className="flex flex-col gap-3">
+                          <div>
+                            <label className="block text-[11px] font-extrabold uppercase text-text-muted mb-1.5">Audit notes / feedback</label>
+                            <input 
+                              type="text" 
+                              className="glass-input !h-9 text-xs" 
+                              placeholder="e.g. Approved. Address verified."
+                              value={adminNotesInputs[req._id] || ''}
+                              onChange={(e) => setAdminNotesInputs(prev => ({ ...prev, [req._id]: e.target.value }))}
+                            />
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleApproveRequest(req._id)}
+                              className="btn btn-pill bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-4"
+                            >
+                              Approve & Provision
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(req._id)}
+                              className="btn btn-pill bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 px-4 border-none"
+                            >
+                              Reject Application
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {req.status !== 'pending' && req.adminNotes && (
+                        <div className="p-3.5 rounded-xl bg-surface border border-[var(--border-light)] text-xs text-text-secondary leading-relaxed">
+                          <strong>Admin Feedback:</strong> "{req.adminNotes}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-text-secondary">
+              No partnership applications logged in the system.
             </div>
           )}
         </div>

@@ -758,7 +758,10 @@ export default function Discover() {
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-4 mt-10 mb-20 select-none">
                   <button 
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    onClick={() => {
+                      setPage(p => Math.max(1, p - 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     disabled={page === 1}
                     className={`btn btn-secondary btn-pill border border-[var(--border-light)] ${page === 1 ? 'btn-disabled' : ''}`}
                   >
@@ -768,7 +771,10 @@ export default function Discover() {
                     Page {page} of {totalPages}
                   </span>
                   <button 
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => {
+                      setPage(p => Math.min(totalPages, p + 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     disabled={page === totalPages}
                     className={`btn btn-secondary btn-pill border border-[var(--border-light)] ${page === totalPages ? 'btn-disabled' : ''}`}
                   >

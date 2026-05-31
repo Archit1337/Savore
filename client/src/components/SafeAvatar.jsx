@@ -1,6 +1,6 @@
 // Savoré — Premium SafeAvatar Component with Initials & SVG Fallback
 // All styling via explicit inline CSS — NO Tailwind dependency
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SafeAvatar({
@@ -13,11 +13,37 @@ export default function SafeAvatar({
   const [status, setStatus] = useState('loading'); // loading, loaded, error
 
   useEffect(() => {
-    setStatus(src ? 'loading' : 'error');
+    const isInvalid = !src || 
+                      src.includes('/null') || 
+                      src.includes('/undefined') || 
+                      src === 'http://localhost:5000/' || 
+                      src === 'http://localhost:5000';
+                      
+    if (isInvalid) {
+      setStatus('error');
+      return;
+    }
+
+    setStatus('loading');
+
+    // Safe fallback timeout - if image takes > 3.5s to load, fall back to initials
+    const timer = setTimeout(() => {
+      setStatus((prev) => (prev === 'loading' ? 'error' : prev));
+    }, 3500);
+
+    return () => clearTimeout(timer);
   }, [src]);
 
   const handleLoad = () => setStatus('loaded');
   const handleError = () => setStatus('error');
+
+  const imageRef = useRef(null);
+
+  useEffect(() => {
+    if (status === 'loading' && imageRef.current && imageRef.current.complete) {
+      setStatus('loaded');
+    }
+  }, [src, status]);
 
   // Derive initials from alt string
   const getInitials = (name) => {
@@ -58,9 +84,10 @@ export default function SafeAvatar({
       {/* 2. Actual image — fully styled via Tailwind classes */}
       {src && status !== 'error' && (
         <img
+          ref={imageRef}
           src={src}
           alt={alt}
-          loading="lazy"
+          loading="eager"
           onLoad={handleLoad}
           onError={handleError}
           className={`absolute inset-0 w-full h-full object-cover object-center rounded-full block transition-opacity duration-350 ease-in-out ${

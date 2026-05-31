@@ -18,9 +18,14 @@ const {
   deleteAddress,
   setDefaultAddress,
   deleteAccount,
+  becomePartner,
+  getMyPartnershipRequest,
+  getAllPartnershipRequests,
+  approvePartnershipRequest,
+  rejectPartnershipRequest,
 } = require('../controllers/authController');
 const { validateRegister, validateLogin } = require('../middleware/validators');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requireRole } = require('../middleware/authMiddleware');
 const { uploadImage } = require('../middleware/uploadMiddleware');
 
 router.post('/register', validateRegister, register);
@@ -37,6 +42,13 @@ router.post('/avatar', protect, uploadImage.single('avatar'), uploadAvatar);
 router.get('/social', protect, getUserSocialHistory);
 router.post('/restaurants/:id/favorite', protect, toggleFavoriteRestaurant);
 router.post('/dishes/:id/favorite', protect, toggleFavoriteDish);
+
+// Partnership Onboarding & Moderation Paths
+router.post('/become-partner', protect, becomePartner);
+router.get('/partnership-request/my', protect, getMyPartnershipRequest);
+router.get('/partnership-requests', protect, requireRole(['admin']), getAllPartnershipRequests);
+router.put('/partnership-requests/:id/approve', protect, requireRole(['admin']), approvePartnershipRequest);
+router.put('/partnership-requests/:id/reject', protect, requireRole(['admin']), rejectPartnershipRequest);
 
 // User Address Management Paths
 router.get('/addresses', protect, getAddresses);

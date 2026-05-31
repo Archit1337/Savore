@@ -1,7 +1,8 @@
-import React, { useContext, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useContext, useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Discover from './pages/Discover';
 import ReelsFeed from './pages/ReelsFeed';
@@ -13,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
+import BecomePartner from './pages/BecomePartner';
 import { AuthContext } from './context/AuthContext';
 import { ChefMoodProvider } from './components/ChefSystem/ChefMoodEngine';
 import CinematicLoader from './components/CinematicLoader';
@@ -40,11 +42,23 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+// ScrollToTop resets viewport scroll positions on SPA navigation
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   const [appLoading, setAppLoading] = useState(true);
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ChefMoodProvider>
         <AnimatePresence mode="wait">
           {appLoading && (
@@ -77,6 +91,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['customer', 'restaurant', 'admin']}>
                   <UserProfile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/partner" 
+              element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <BecomePartner />
                 </ProtectedRoute>
               } 
             />
@@ -120,8 +142,11 @@ export default function App() {
             {/* Fallback Catch-all Route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </main>
-      </div>
+          </main>
+
+          {/* Global Premium Footer */}
+          <Footer />
+        </div>
       </ChefMoodProvider>
     </BrowserRouter>
   );

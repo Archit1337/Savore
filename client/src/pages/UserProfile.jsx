@@ -81,6 +81,29 @@ export default function UserProfile() {
   const [avatarPreview, setAvatarPreview] = useState('');
   const [avatarLoading, setAvatarLoading] = useState(false);
 
+  // Danger Zone deletion states
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    soundController?.playClick();
+    setDeleteLoading(true);
+    try {
+      const res = await api.delete('/auth/profile');
+      if (res.data && res.data.success) {
+        soundController?.playSuccess();
+        alert('Your Savoré account was successfully deleted. We hope to see you again!');
+        logoutUser();
+        navigate('/');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete account.');
+    } finally {
+      setDeleteLoading(false);
+      setDeleteModalOpen(false);
+    }
+  };
+
   // Address tab CRUD & form states
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -421,19 +444,26 @@ export default function UserProfile() {
   if (!user) return null;
 
   return (
-    <div className="container py-10 px-6 pb-24 text-left fade-in">
+    <div className="container px-6 text-left fade-in" style={{ marginTop: '-4.5rem', paddingTop: '0.5rem', paddingBottom: '7rem' }}>
       
       {/* 1. PREMIUM DUAL-THEME PROFILE HEADER */}
       <div className="relative glass-panel rounded-[28px] overflow-hidden mb-10 border-[1.5px] border-[var(--border-glow)] shadow-[var(--shadow-glow)]">
         {/* Soft gradient banner underlay */}
-        <div className="h-36 bg-[linear-gradient(135deg,_rgba(255,106,77,0.12)_0%,_rgba(7,10,14,0.45)_100%)] dark:bg-[linear-gradient(135deg,_rgba(255,106,77,0.08)_0%,_rgba(0,0,0,0.65)_100%)] w-full relative">
+        <div className="h-36 bg-[linear-gradient(135deg,_rgba(255,106,77,0.12)_0%,_rgba(7,10,14,0.45)_100%)] dark:bg-[linear-gradient(135deg,_rgba(255,106,77,0.08)_0%,_rgba(0,0,0,0.65)_100%)] w-full relative overflow-hidden">
           <div className="absolute inset-0 backdrop-filter blur-xl opacity-60 pointer-events-none" />
+          {(avatarPreview || (user.profilePicture && !user.profilePicture.includes('null') && !user.profilePicture.includes('undefined'))) && (
+            <img 
+              src={avatarPreview || resolveMediaUrl(user.profilePicture)} 
+              alt="Profile Cover Banner" 
+              className="absolute inset-0 w-full h-full object-cover filter blur-[8px] opacity-40 dark:opacity-20 scale-110 transition-all duration-500"
+            />
+          )}
         </div>
 
         {/* Profile Meta Section */}
         <div className="p-8 -mt-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 flex-wrap relative z-10">
           
-          <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-end">
+          <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-center text-center sm:text-left">
             
             {/* Avatar upload wrapper with dynamic preview, save/cancel & remove controls */}
             <div className="flex flex-col items-center gap-2 select-none shrink-0">
@@ -498,7 +528,7 @@ export default function UserProfile() {
 
             {/* Main credentials info */}
             <div>
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
                 <h1 className="text-2xl font-extrabold tracking-tight text-text-primary">{user.username}</h1>
                 
                 {/* Foodie Badge */}
@@ -521,7 +551,7 @@ export default function UserProfile() {
               )}
 
               {/* Join Date */}
-              <div className="flex items-center gap-1.5 text-text-secondary text-[12.5px] mt-3 font-semibold">
+              <div className="flex items-center gap-1.5 text-text-secondary text-[12.5px] mt-3 font-semibold justify-center sm:justify-start">
                 <Calendar size={14} className="text-primary" />
                 <span>Gastronome since {joinDate}</span>
               </div>
@@ -1341,12 +1371,84 @@ export default function UserProfile() {
                   </form>
                 </div>
 
+                {/* Danger Zone Account Deletion */}
+                <div className="glass-panel p-8 rounded-[24px] border border-red-500/20 bg-red-500/[0.02] shadow-[0_0_15px_rgba(239,68,68,0.05)]">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-500 text-left">
+                    <ShieldAlert size={20} />
+                    Danger Zone
+                  </h3>
+                  <p className="text-sm text-text-secondary mb-6 leading-relaxed text-left">
+                    Permanently delete your entire Savoré gastronomical profile. This will instantly wipe all active orders, saved kitchen lists, comments history, and role credentials. This action is irreversible.
+                  </p>
+
+                  <button 
+                    type="button" 
+                    onClick={() => { soundController?.playClick(); setDeleteModalOpen(true); }}
+                    className="btn bg-red-500 hover:bg-red-600 text-white font-extrabold text-xs py-3 px-6 rounded-xl border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)] transition-all active:scale-[0.98]"
+                  >
+                    Delete Account Permanently
+                  </button>
+                </div>
+
               </div>
             )}
 
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* 4. DANGER ZONE CONFIRMATION MODAL OVERLAY */}
+      <AnimatePresence>
+        {deleteModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-6 select-none">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteModalOpen(false)}
+              className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer animate-fade-in"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-[var(--surface-bright)] border border-red-500/20 rounded-[24px] p-8 max-w-[480px] w-full relative z-10 text-left shadow-2xl overflow-y-auto text-[var(--text-primary)]"
+            >
+              <div className="flex items-center gap-3 border-b border-border-light/45 pb-4 mb-4">
+                <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500">
+                  <ShieldAlert size={20} className="animate-pulse" />
+                </div>
+                <h3 className="text-lg font-bold text-text-primary">Irreversible Account Deletion</h3>
+              </div>
+
+              <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                Are you absolutely sure you want to permanently delete your Savoré profile? This will terminate your session and completely purge your database record. This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { soundController?.playClick(); setDeleteModalOpen(false); }}
+                  className="py-2.5 px-4 rounded-xl text-xs font-bold transition-all border border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all bg-red-500 hover:bg-red-600 text-white border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)] ${
+                    deleteLoading ? 'opacity-70 pointer-events-none' : ''
+                  }`}
+                >
+                  {deleteLoading ? 'Purging Profile...' : 'Confirm Permanent Deletion'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

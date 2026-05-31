@@ -50,11 +50,11 @@ export default function ReelsFeed() {
   };
   // In-video overlays (bottom description panel + action rail pill) — ultra-transparent so video is fully prioritized
   const reelsOverlayGlassStyle = {
-    backgroundColor: isReelsDark ? 'rgba(12, 12, 14, 0.22)' : 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: 'rgba(12, 12, 14, 0.42)', // Consistent dark translucent glass for superb contrast
     backdropFilter: 'blur(10px)',
     WebkitBackdropFilter: 'blur(10px)',
-    border: isReelsDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(255, 255, 255, 0.22)',
-    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)'
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)'
   };
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -75,6 +75,7 @@ export default function ReelsFeed() {
   const containerRef = useRef(null);
   const orderBtnRef = useRef(null);
   const lastActiveIndexChangeTime = useRef(Date.now());
+  const hasAutoScrolled = useRef(false);
 
   // Load initial feed on mount
   useEffect(() => {
@@ -102,9 +103,10 @@ export default function ReelsFeed() {
   // Auto-scroll to selected initial reel from location state
   useEffect(() => {
     const initialReelId = location.state?.initialReelId;
-    if (initialReelId && reels.length > 0) {
+    if (initialReelId && reels.length > 0 && !hasAutoScrolled.current) {
       const targetIdx = reels.findIndex(r => r._id === initialReelId || r._id.startsWith(initialReelId));
-      if (targetIdx !== -1 && targetIdx !== activeIndex) {
+      if (targetIdx !== -1) {
+        hasAutoScrolled.current = true;
         setActiveIndex(targetIdx);
         // Clear location state after navigation so it doesn't snap back on state updates
         window.history.replaceState({}, document.title);
@@ -540,8 +542,8 @@ export default function ReelsFeed() {
             {/* ← Back button — above drag layer, navigate(-1) returns to previous page */}
             <button
               onClick={() => navigate(-1)}
-              style={reelsGlassStyle}
-              className="absolute top-5 left-5 w-10 h-10 rounded-full z-[20] flex items-center justify-center text-text-primary shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+              style={reelsOverlayGlassStyle}
+              className="absolute top-5 left-5 w-10 h-10 rounded-full z-[20] flex items-center justify-center text-white border border-white/10 shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-transform"
               title="Go Back"
               aria-label="Go back"
             >
@@ -551,8 +553,8 @@ export default function ReelsFeed() {
             {/* 🔇 Mute Toggle — above drag layer */}
             <button
               onClick={() => setIsMuted(!isMuted)}
-              style={reelsGlassStyle}
-              className="absolute top-5 right-5 w-10 h-10 rounded-full z-[20] flex items-center justify-center text-text-primary shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+              style={reelsOverlayGlassStyle}
+              className="absolute top-5 right-5 w-10 h-10 rounded-full z-[20] flex items-center justify-center text-white border border-white/10 shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-transform"
               title={isMuted ? 'Unmute video' : 'Mute video'}
             >
               {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -807,7 +809,7 @@ export default function ReelsFeed() {
                   />
                   <h3 
                     onClick={() => navigate(`/restaurant/${activeReel.restaurant}`)}
-                    className="text-[13.5px] font-semibold cursor-pointer inline-flex items-center gap-1.5 text-text-primary hover:text-primary transition-colors"
+                    className="text-[13.5px] font-semibold cursor-pointer inline-flex items-center gap-1.5 text-white hover:text-primary transition-colors"
                   >
                     @{activeReel.restaurantDetails?.name || 'Chef Gastronomy'}
                     <span className="text-[7px] bg-primary text-white py-0.5 px-1 rounded-[5px] font-extrabold tracking-wider shrink-0 uppercase animate-pulse">VERIFIED</span>
@@ -815,7 +817,7 @@ export default function ReelsFeed() {
                 </div>
                 
                 <p 
-                  className="text-[11.5px] leading-normal mb-2.5 text-text-secondary line-clamp-2 hover:line-clamp-none transition-all duration-300 cursor-help"
+                  className="text-[11.5px] leading-normal mb-2.5 text-white/80 line-clamp-2 hover:line-clamp-none transition-all duration-300 cursor-help"
                 >
                   {activeReel.caption}
                 </p>
@@ -832,7 +834,7 @@ export default function ReelsFeed() {
                       disabled={flyPressed || isOutOfRegion}
                       className={`w-full flex items-center justify-center gap-1.5 text-[11.5px] font-bold py-2 px-3 rounded-[12px] transition-all duration-300 min-h-[36px] border-none ${
                         isOutOfRegion
-                          ? 'bg-[var(--surface-bright)] text-[var(--text-muted)] cursor-not-allowed opacity-60'
+                          ? 'bg-white/10 text-white/50 cursor-not-allowed'
                           : 'bg-primary hover:bg-primary-hover active:bg-primary-pressed text-white shadow-[0_3px_10px_rgba(255,90,60,0.25)] cursor-pointer'
                       }`}
                     >
@@ -860,10 +862,10 @@ export default function ReelsFeed() {
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={handleLikeClick}
-                    className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all duration-300 border border-[var(--border-light)] cursor-pointer ${
+                    className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all duration-300 border border-white/10 cursor-pointer ${
                       isLiked 
                         ? 'bg-primary text-white shadow-[0_0_12px_rgba(255,90,60,0.45)] border-transparent' 
-                        : 'bg-surface-bright/20 hover:bg-surface-bright/40 text-text-primary'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
                     }`}
                     title={isLiked ? "Unlike recipe" : "Like recipe"}
                   >
@@ -875,7 +877,7 @@ export default function ReelsFeed() {
                       <Heart size={16} fill={isLiked ? "white" : "none"} />
                     </motion.div>
                   </motion.button>
-                  <span className="text-[9.5px] font-semibold mt-1 text-text-secondary">
+                  <span className="text-[9.5px] font-semibold mt-1 text-white/80">
                     {activeReel.likes?.length || 0}
                   </span>
                 </div>
@@ -886,26 +888,26 @@ export default function ReelsFeed() {
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
-                    className="w-[38px] h-[38px] rounded-full flex items-center justify-center bg-surface-bright/20 hover:bg-surface-bright/40 text-text-primary transition-all duration-300 border border-[var(--border-light)] cursor-pointer"
+                    className="w-[38px] h-[38px] rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition-all duration-300 border border-white/10 cursor-pointer"
                     title="View comments"
                   >
                     <MessageSquare size={16} />
                   </motion.button>
-                  <span className="text-[9.5px] font-semibold mt-1 text-text-secondary">
+                  <span className="text-[9.5px] font-semibold mt-1 text-white/80">
                     {activeReel.comments?.length || 0}
                   </span>
                 </div>
 
                 {/* Scroll/Swipe indicators */}
                 <div 
-                  className="flex flex-col gap-1.5 pt-2 border-t border-[var(--border-light)]"
+                  className="flex flex-col gap-1.5 pt-2 border-t border-white/10"
                 >
                   <motion.button 
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={(e) => { e.stopPropagation(); handlePrevReel(); }} 
                     disabled={activeIndex === 0}
-                    className="w-[32px] h-[32px] rounded-full flex items-center justify-center transition-all duration-300 bg-surface-bright/20 hover:bg-surface-bright/40 disabled:opacity-40 disabled:pointer-events-none text-text-primary border border-[var(--border-light)] cursor-pointer"
+                    className="w-[32px] h-[32px] rounded-full flex items-center justify-center transition-all duration-300 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:pointer-events-none text-white border border-white/10 cursor-pointer"
                     title="Previous Reel"
                   >
                     <ArrowUp size={12} />
@@ -915,7 +917,7 @@ export default function ReelsFeed() {
                     whileTap={{ scale: 0.92 }}
                     onClick={(e) => { e.stopPropagation(); handleNextReel(); }} 
                     disabled={activeIndex === reels.length - 1}
-                    className="w-[32px] h-[32px] rounded-full flex items-center justify-center transition-all duration-300 bg-surface-bright/20 hover:bg-surface-bright/40 disabled:opacity-40 disabled:pointer-events-none text-text-primary border border-[var(--border-light)] cursor-pointer"
+                    className="w-[32px] h-[32px] rounded-full flex items-center justify-center transition-all duration-300 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:pointer-events-none text-white border border-white/10 cursor-pointer"
                     title="Next Reel"
                   >
                     <ArrowDown size={12} />

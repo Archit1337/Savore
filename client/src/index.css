@@ -805,30 +805,44 @@ html.light .home-hero-grid p {
     0 1px 0 rgba(0, 0, 0, 0.15),
     0 2px 0 rgba(0, 0, 0, 0.1),
     0 3px 2px rgba(0, 0, 0, 0.15);
+
+  /* Infinite fluid floating motion */
+  transform: translateY(var(--idle-y, 0px)) translateX(var(--idle-x, 0px)) rotate(var(--idle-rotate, 0deg));
+  animation: heroLetterDrift 6s ease-in-out infinite;
+}
+
+@keyframes heroLetterDrift {
+  0%, 100% {
+    transform: translateY(var(--idle-y, 0px)) translateX(var(--idle-x, 0px)) rotate(var(--idle-rotate, 0deg));
+  }
+  50% {
+    transform: translateY(calc(var(--idle-y, 0px) - 7px)) translateX(var(--idle-x, 0px)) rotate(var(--idle-rotate, 0deg));
+  }
 }
 
 /* Premium scattered/misaligned typography rules for idle/default state */
-.hero-3d-letter:nth-child(15n+1) { transform: translateY(0.4px) translateX(-0.6px) rotate(-0.5deg); }
-.hero-3d-letter:nth-child(15n+2) { transform: translateY(-0.6px) translateX(0.5px) rotate(0.4deg); }
-.hero-3d-letter:nth-child(15n+3) { transform: translateY(0.8px) translateX(-0.4px) rotate(-0.3deg); }
-.hero-3d-letter:nth-child(15n+4) { transform: translateY(-0.4px) translateX(0.8px) rotate(0.5deg); }
-.hero-3d-letter:nth-child(15n+5) { transform: translateY(0.3px) translateX(-0.8px) rotate(-0.4deg); }
-.hero-3d-letter:nth-child(15n+6) { transform: translateY(-0.8px) translateX(0.4px) rotate(0.6deg); }
-.hero-3d-letter:nth-child(15n+7) { transform: translateY(0.6px) translateX(-0.5px) rotate(-0.5deg); }
-.hero-3d-letter:nth-child(15n+8) { transform: translateY(-0.3px) translateX(0.6px) rotate(0.3deg); }
-.hero-3d-letter:nth-child(15n+9) { transform: translateY(0.7px) translateX(-0.4px) rotate(-0.4deg); }
-.hero-3d-letter:nth-child(15n+10) { transform: translateY(-0.5px) translateX(0.5px) rotate(0.3deg); }
-.hero-3d-letter:nth-child(15n+11) { transform: translateY(0.2px) translateX(-0.3px) rotate(-0.2deg); }
-.hero-3d-letter:nth-child(15n+12) { transform: translateY(0.6px) translateX(-0.8px) rotate(-0.5deg); }
-.hero-3d-letter:nth-child(15n+13) { transform: translateY(-0.6px) translateX(0.8px) rotate(0.6deg); }
-.hero-3d-letter:nth-child(15n+14) { transform: translateY(0.3px) translateX(-0.5px) rotate(-0.3deg); }
-.hero-3d-letter:nth-child(15n+15) { transform: translateY(-0.4px) translateX(0.6px) rotate(0.4deg); }
+.hero-3d-letter:nth-child(15n+1) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 0s; }
+.hero-3d-letter:nth-child(15n+2) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 0.4s; }
+.hero-3d-letter:nth-child(15n+3) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 0.8s; }
+.hero-3d-letter:nth-child(15n+4) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 1.2s; }
+.hero-3d-letter:nth-child(15n+5) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 1.6s; }
+.hero-3d-letter:nth-child(15n+6) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 2s; }
+.hero-3d-letter:nth-child(15n+7) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 2.4s; }
+.hero-3d-letter:nth-child(15n+8) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 2.8s; }
+.hero-3d-letter:nth-child(15n+9) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 3.2s; }
+.hero-3d-letter:nth-child(15n+10) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 3.6s; }
+.hero-3d-letter:nth-child(15n+11) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 4s; }
+.hero-3d-letter:nth-child(15n+12) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 4.4s; }
+.hero-3d-letter:nth-child(15n+13) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 4.8s; }
+.hero-3d-letter:nth-child(15n+14) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 5.2s; }
+.hero-3d-letter:nth-child(15n+15) { --idle-y: 0px; --idle-x: 0px; --idle-rotate: 0deg; animation-delay: 5.6s; }
 
 /* Smoothly align back into polished clean composition on hover of the text group */
 .hero-headline-hover-group:hover .hero-3d-letter {
   transform: translateY(0) translateX(0) rotate(0deg);
   margin-left: 0;
   margin-right: 0;
+  animation: none !important;
 }
 
 /* Staggered beautiful 3D clay-morphic pastel colors matching the LOOP reference frame */
@@ -855,11 +869,13 @@ html.light .home-hero-grid p {
 
 /* Alternate rotation directions for organic, bouncy feel */
 .hero-3d-letter:nth-child(even):hover {
-  transform: translateY(-8px) scale(1.18) rotate(-4deg);
+  transform: translateY(-20px) scale(1.18) rotate(-4deg);
+  animation: none !important;
 }
 
 .hero-3d-letter:nth-child(odd):hover {
-  transform: translateY(-8px) scale(1.18) rotate(4deg);
+  transform: translateY(-20px) scale(1.18) rotate(4deg);
+  animation: none !important;
 }
 
 .hero-3d-letter:hover {

@@ -5,6 +5,7 @@ const Reel = require('../models/Reel');
 const Comment = require('../models/Comment');
 const Restaurant = require('../models/Restaurant');
 const FoodItem = require('../models/FoodItem');
+const PartnershipRequest = require('../models/PartnershipRequest');
 
 
 const generateAccessToken = (id) => {
@@ -716,6 +717,217 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
+// @desc    Submit a new partnership request
+// @route   POST /api/auth/become-partner
+// @access  Private
+const becomePartner = async (req, res, next) => {
+  try {
+    const { 
+      restaurantName, 
+      description, 
+      coverImage, 
+      city, 
+      locality, 
+      state, 
+      pincode, 
+      priceRange, 
+      cuisines, 
+      tags 
+    } = req.body;
+
+    if (!restaurantName) {
+      res.status(400);
+      return next(new Error('Restaurant name is required'));
+    }
+    if (!pincode) {
+      res.status(400);
+      return next(new Error('Pincode is required'));
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      res.status(404);
+      return next(new Error('User not found'));
+    }
+
+    if (user.role !== 'customer') {
+      res.status(400);
+      return next(new Error('Only customer accounts can request to partner'));
+    }
+
+    // Check if there is an active/pending partnership request or if they already have one approved
+    const existingRequest = await PartnershipRequest.findOne({ 
+      user: req.user.id, 
+      status: { $in: ['pending', 'approved'] } 
+    });
+
+    if (existingRequest) {
+      res.status(400);
+      return next(new Error(`You already have a partnership request in status: ${existingRequest.status}`));
+    }
+
+    // Create a new partnership request
+    const request = await PartnershipRequest.create({
+      user: req.user.id,
+      restaurantName,
+      description: description || '',
+      coverImage: coverImage || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800',
+      city: city || 'Mumbai',
+      locality: locality || 'Bandra',
+      state: state || 'Maharashtra',
+      pincode,
+      priceRange: priceRange || '₹₹',
+      cuisines: cuisines || [],
+      tags: tags || []
+    });
+
+    res.status(201).json({
+      success: true,
+      data: request,
+      message: 'Partnership application submitted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get current user's active partnership request
+// @route   GET /api/auth/partnership-request/my
+// @access  Private
+const getMyPartnershipRequest = async (req, res, next) => {
+  try {
+    const request = await PartnershipRequest.findOne({ user: req.user.id }).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      data: request
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all partnership requests (Admin only)
+// @route   GET /api/auth/partnership-requests
+// @access  Private/Admin
+const getAllPartnershipRequests = async (req, res, next) => {
+  try {
+    const requests = await PartnershipRequest.find()
+      .populate('user', 'username email')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: requests
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Approve partnership request (Admin only)
+// @route   PUT /api/auth/partnership-requests/:id/approve
+// @access  Private/Admin
+const approvePartnershipRequest = async (req, res, next) => {
+  try {
+    const { adminNotes } = req.body;
+    const request = await PartnershipRequest.findById(req.params.id);
+
+    if (!request) {
+      res.status(404);
+      return next(new Error('Partnership request not found'));
+    }
+
+    if (request.status !== 'pending') {
+      res.status(400);
+      return next(new Error(`This request has already been ${request.status}`));
+    }
+
+    // Verify user exists
+    const applicant = await User.findById(request.user);
+    if (!applicant) {
+      res.status(404);
+      return next(new Error('Applicant user not found'));
+    }
+
+    // Check if they already own a restaurant
+    const existingRestaurant = await Restaurant.findOne({ owner: request.user });
+    if (existingRestaurant) {
+      res.status(400);
+      return next(new Error('This user already owns a registered restaurant'));
+    }
+
+    // Create the operational Restaurant document
+    const restaurant = await Restaurant.create({
+      name: request.restaurantName,
+      description: request.description,
+      coverImage: request.coverImage || 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80',
+      city: request.city,
+      locality: request.locality,
+      state: request.state,
+      pincode: request.pincode,
+      priceRange: request.priceRange,
+      cuisines: request.cuisines,
+      tags: request.tags,
+      owner: request.user,
+      coordinates: {
+        type: 'Point',
+        coordinates: [72.8258, 19.0596] // standard Mumbai fallback coordinates
+      }
+    });
+
+    // Update applicant role to 'restaurant'
+    applicant.role = 'restaurant';
+    await applicant.save();
+
+    // Update partnership request status
+    request.status = 'approved';
+    if (adminNotes !== undefined) request.adminNotes = adminNotes;
+    await request.save();
+
+    res.json({
+      success: true,
+      data: request,
+      restaurant,
+      message: 'Partnership request approved and restaurant registered successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reject partnership request (Admin only)
+// @route   PUT /api/auth/partnership-requests/:id/reject
+// @access  Private/Admin
+const rejectPartnershipRequest = async (req, res, next) => {
+  try {
+    const { adminNotes } = req.body;
+    const request = await PartnershipRequest.findById(req.params.id);
+
+    if (!request) {
+      res.status(404);
+      return next(new Error('Partnership request not found'));
+    }
+
+    if (request.status !== 'pending') {
+      res.status(400);
+      return next(new Error(`This request has already been ${request.status}`));
+    }
+
+    // Update partnership request status
+    request.status = 'rejected';
+    request.adminNotes = adminNotes || 'Application does not meet our active operational requirements.';
+    await request.save();
+
+    res.json({
+      success: true,
+      data: request,
+      message: 'Partnership request rejected successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -734,4 +946,9 @@ module.exports = {
   deleteAddress,
   setDefaultAddress,
   deleteAccount,
+  becomePartner,
+  getMyPartnershipRequest,
+  getAllPartnershipRequests,
+  approvePartnershipRequest,
+  rejectPartnershipRequest,
 };
