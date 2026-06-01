@@ -23,13 +23,30 @@ const {
   getAllPartnershipRequests,
   approvePartnershipRequest,
   rejectPartnershipRequest,
+  generateOTP,
+  verifyOTP,
 } = require('../controllers/authController');
 const { validateRegister, validateLogin } = require('../middleware/validators');
 const { protect, requireRole } = require('../middleware/authMiddleware');
 const { uploadImage } = require('../middleware/uploadMiddleware');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for OTP generation: maximum 2 requests per minute to prevent mail spamming
+const otpGenerateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 2,
+  message: {
+    success: false,
+    message: 'Too many OTP requests. Please wait 60 seconds before trying again.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 router.post('/register', validateRegister, register);
 router.post('/login', validateLogin, login);
+router.post('/otp/generate', otpGenerateLimiter, generateOTP);
+router.post('/otp/verify', verifyOTP);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', protect, getMe);

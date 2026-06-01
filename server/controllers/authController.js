@@ -6,6 +6,10 @@ const Comment = require('../models/Comment');
 const Restaurant = require('../models/Restaurant');
 const FoodItem = require('../models/FoodItem');
 const PartnershipRequest = require('../models/PartnershipRequest');
+const OTP = require('../models/OTP');
+const { sendOTPEmail } = require('../utils/emailService');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 
 const generateAccessToken = (id) => {
@@ -928,6 +932,134 @@ const rejectPartnershipRequest = async (req, res, next) => {
   }
 };
 
+// @desc    Generate OTP and send it via email
+// @route   POST /api/auth/otp/generate
+// @access  Public
+const generateOTP = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400);
+      return next(new Error('Please provide an email address'));
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if the user is already signed up (required per flow)
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      res.status(404);
+      return next(new Error('This email is not registered. Please sign up first.'));
+    }
+
+    // Generate secure 6-digit OTP
+    const rawOtp = crypto.randomInt(100000, 1000000).toString();
+
+    // Hash the OTP using bcryptjs
+    const salt = await bcrypt.genSalt(10);
+    const otpHash = await bcrypt.hash(rawOtp, salt);
+
+    // Set expiration to 5 minutes from now
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    // Delete any existing OTP entries for this email
+    await OTP.deleteMany({ email: normalizedEmail });
+
+    // Store hashed OTP in database
+    await OTP.create({
+      email: normalizedEmail,
+      otpHash,
+      expiresAt,
+    });
+
+    // Send email with raw OTP code
+    await sendOTPEmail(normalizedEmail, rawOtp);
+
+    res.status(200).json({
+      success: true,
+      message: 'A secure 6-digit verification code has been sent to your email.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify OTP and log user in
+// @route   POST /api/auth/otp/verify
+// @access  Public
+const verifyOTP = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      res.status(400);
+      return next(new Error('Please provide an email and OTP passcode'));
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Fetch active OTP document
+    const otpDoc = await OTP.findOne({ email: normalizedEmail });
+    if (!otpDoc) {
+      res.status(400);
+      return next(new Error('The verification code has expired or does not exist. Please request a new one.'));
+    }
+
+    // Check brute-force attempts
+    if (otpDoc.attempts >= 3) {
+      await OTP.deleteOne({ _id: otpDoc._id });
+      res.status(400);
+      return next(new Error('Too many failed attempts. This code has been invalidated. Please request a new one.'));
+    }
+
+    // Compare raw entered OTP with stored bcrypt hash
+    const isMatch = await bcrypt.compare(otp, otpDoc.otpHash);
+    if (!isMatch) {
+      otpDoc.attempts += 1;
+      await otpDoc.save();
+
+      const remainingAttempts = 3 - otpDoc.attempts + 1; // plus 1 because the 4th failed attempt invalidates
+      res.status(400);
+      return next(new Error(`Invalid verification code. You have ${remainingAttempts} attempts remaining.`));
+    }
+
+    // Success! Immediately delete the OTP document to prevent reuse (replay attacks)
+    await OTP.deleteOne({ _id: otpDoc._id });
+
+    // Find and log in user
+    const user = await User.findOne({ email: normalizedEmail }).select('+refreshTokens');
+    if (!user) {
+      res.status(404);
+      return next(new Error('User not found.'));
+    }
+
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    user.refreshTokens.push(refreshToken);
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        username: user.username,
+        name: user.name || '',
+        email: user.email,
+        role: user.role,
+        address: user.address,
+        profilePicture: user.profilePicture,
+        preferences: user.preferences,
+        accessToken,
+        refreshToken,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -951,4 +1083,6 @@ module.exports = {
   getAllPartnershipRequests,
   approvePartnershipRequest,
   rejectPartnershipRequest,
+  generateOTP,
+  verifyOTP,
 };

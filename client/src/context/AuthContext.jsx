@@ -70,6 +70,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // OTP Login verification handler
+  const loginWithOTP = async (email, otp) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.post('/auth/otp/verify', { email, otp });
+      const { accessToken, refreshToken, ...profile } = res.data.data;
+      
+      localStorage.setItem('savore_access_token', accessToken);
+      localStorage.setItem('savore_refresh_token', refreshToken);
+      setUser(profile);
+      return profile;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Check if session is active on startup
   useEffect(() => {
     const initAuth = async () => {
@@ -118,6 +138,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     loginUser,
+    loginWithOTP,
     registerUser,
     logoutUser,
     updateUserProfile,
