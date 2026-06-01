@@ -373,7 +373,7 @@ export default function Discover() {
   const currentLocalities = CITY_LOCALITIES[activeCity] || [];
 
   return (
-    <div className="container fade-in -mt-10 md:-mt-14 pt-2 px-6 pb-48 relative">
+    <div className="container fade-in -mt-10 md:-mt-14 pt-2 px-6 relative" style={{ paddingBottom: '14rem' }}>
       
       {/* 1. HEADER AND INDIAN LOCATION PICKER CAPSULE */}
       <div className="text-left mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
