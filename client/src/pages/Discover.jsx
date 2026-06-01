@@ -373,7 +373,7 @@ export default function Discover() {
   const currentLocalities = CITY_LOCALITIES[activeCity] || [];
 
   return (
-    <div className="container fade-in -mt-10 md:-mt-14 pt-2 px-6 relative" style={{ paddingBottom: '14rem' }}>
+    <div className="container fade-in -mt-10 md:-mt-14 pt-2 px-6 relative" style={{ paddingBottom: '2.5rem' }}>
       
       {/* 1. HEADER AND INDIAN LOCATION PICKER CAPSULE */}
       <div className="text-left mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
@@ -756,7 +756,7 @@ export default function Discover() {
 
               {/* Pagination indicators */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-4 mt-10 mb-20 select-none">
+                <div className="flex justify-center items-center gap-4 mt-8 mb-8 select-none">
                   <button 
                     onClick={() => {
                       setPage(p => Math.max(1, p - 1));
