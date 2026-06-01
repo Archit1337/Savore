@@ -617,7 +617,7 @@ export default function Home() {
                     className="weather-concierge-badge cursor-pointer inline-flex items-center gap-2 select-none active:scale-[0.98] transition-all !mb-0"
                     title="Switch your Indian delivery region"
                   >
-                    <MapPin size={13} className="text-primary animate-stir" />
+                    <MapPin size={13} className="text-primary" />
                     <span className="flex items-center gap-1 font-bold tracking-[0.06em] text-[12px] uppercase">
                       <span className="text-[var(--text-muted)]">Delivering to:</span>
                       <strong className="text-[var(--text-primary)] font-bold tracking-normal lowercase">{activeLocality}, {activeCity}</strong>
@@ -895,7 +895,7 @@ export default function Home() {
             >
               <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
                 <h3 className="text-base font-bold flex items-center gap-2">
-                  <MapPin size={16} className="text-primary animate-stir" />
+                  <MapPin size={16} className="text-primary" />
                   Select Delivery Location
                 </h3>
                 <button onClick={() => setLocationModalOpen(false)} className="btn-icon btn-circle w-7 h-7">

@@ -996,7 +996,7 @@ export default function UserProfile() {
                       >
                         <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
                           <h3 className="text-base font-bold flex items-center gap-2">
-                            <MapPin size={16} className="text-primary animate-stir" />
+                            <MapPin size={16} className="text-primary" />
                             {isEditingAddress ? 'Edit Delivery Address' : 'Add New Delivery Address'}
                           </h3>
                           <button onClick={() => setAddressModalOpen(false)} className="btn-icon btn-circle w-7 h-7">

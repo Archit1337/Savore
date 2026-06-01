@@ -384,7 +384,7 @@ export default function Discover() {
             className="glass-floating inline-flex items-center gap-2 border border-[var(--border-glow)] rounded-[16px] py-2 px-4 text-primary font-extrabold text-[12px] uppercase tracking-[0.08em] mb-4 cursor-pointer hover:bg-white/[0.04] transition-all select-none hover:-translate-y-[1px] active:scale-[0.98]"
             title="Switch your Indian delivery region"
           >
-            <MapPin size={13} className="animate-stir text-primary" />
+            <MapPin size={13} className="text-primary" />
             <span>Delivering to: <strong className="text-text-primary text-[11.5px] tracking-normal font-bold lowercase">{exploreNationwide ? 'nationwide (all cities)' : `${activeLocality}, ${activeCity}`}</strong></span>
             <ChevronDown size={12} className="text-text-muted transition-transform" />
           </div>
@@ -819,7 +819,7 @@ export default function Discover() {
             >
               <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
                 <h3 className="text-base font-bold flex items-center gap-2">
-                  <MapPin size={16} className="text-primary animate-stir" />
+                  <MapPin size={16} className="text-primary" />
                   Select Delivery Location
                 </h3>
                 <button onClick={() => setLocationModalOpen(false)} className="btn-icon btn-circle w-7 h-7">
