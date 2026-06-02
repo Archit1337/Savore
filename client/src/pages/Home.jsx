@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Flame, Sparkles, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle } from 'lucide-react';
+import { Search, Flame, Sparkles, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import MascotChef from '../components/MascotChef';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
@@ -347,7 +347,24 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [reelsPreview, setReelsPreview] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
+  const [activeBatchIndex, setActiveBatchIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const handleNextBatch = () => {
+    if ((activeBatchIndex + 1) * 3 < restaurants.length) {
+      setActiveBatchIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrevBatch = () => {
+    if (activeBatchIndex > 0) {
+      setActiveBatchIndex(prev => prev - 1);
+    }
+  };
+
+  useEffect(() => {
+    setActiveBatchIndex(0);
+  }, [restaurants]);
   
   // Live Weather Concierge State
   const [weatherData, setWeatherData] = useState({
@@ -516,15 +533,18 @@ export default function Home() {
           setReelsPreview(MOCK_REELS);
         }
 
-        // Fetch restaurants
-        const restRes = await api.get('/restaurants?page=1&limit=3').catch((err) => {
+        // Fetch restaurants (querying a larger limit to sort all elite kitchens by rating)
+        const restRes = await api.get('/restaurants?page=1&limit=1000').catch((err) => {
           console.warn('API restaurants preview failed, using local mock data:', err.message);
           return null;
         });
         if (restRes && restRes.data && restRes.data.data && restRes.data.data.length > 0) {
-          setRestaurants(restRes.data.data);
+          // Sort descending based on rating (highest rated first)
+          const sortedRestaurants = [...restRes.data.data].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          setRestaurants(sortedRestaurants);
         } else {
-          setRestaurants(MOCK_RESTAURANTS);
+          const sortedMock = [...MOCK_RESTAURANTS].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          setRestaurants(sortedMock);
         }
       } catch (err) {
         console.error('Failed to load home preview data:', err.message);
@@ -800,88 +820,119 @@ export default function Home() {
               <Navigation size={26} className="text-[var(--accent)]" />
               <h2 className="text-[32px] tracking-[0.02em] font-light">Curated Elite Kitchens</h2>
             </div>
-            <button 
-              onClick={() => navigate('/discover')} 
-              className="btn btn-secondary btn-pill text-[13px] border-[1.5px] border-[var(--border-light)] px-[22px] py-2.5"
-            >
-              Explore All Kitchens →
-            </button>
+            <div className="flex items-center gap-3">
+              {restaurants.length > 3 && (
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={handlePrevBatch}
+                    className="btn btn-secondary btn-pill p-2.5 flex items-center justify-center border-[1.5px] border-[var(--border-light)] disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={activeBatchIndex === 0}
+                    aria-label="Previous Batch"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button 
+                    onClick={handleNextBatch}
+                    className="btn btn-secondary btn-pill p-2.5 flex items-center justify-center border-[1.5px] border-[var(--border-light)] disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={(activeBatchIndex + 1) * 3 >= restaurants.length}
+                    aria-label="Next Batch"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+              <button 
+                onClick={() => navigate('/discover')} 
+                className="btn btn-secondary btn-pill text-[13px] border-[1.5px] border-[var(--border-light)] px-[22px] py-2.5"
+              >
+                Explore All Kitchens →
+              </button>
+            </div>
           </div>
 
-          <div 
-            className="grid grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-[30px]"
-          >
-            {loading ? (
-              Array(3).fill(0).map((_, i) => (
-                <div key={i} className="glass-primary skeleton-box h-[320px] opacity-40" />
-              ))
-            ) : restaurants.length > 0 ? (
-              restaurants.map((rest) => (
-                <motion.div 
-                  key={rest._id} 
-                  whileHover={{ y: -8 }}
-                  onClick={() => navigate(`/restaurant/${rest._id}`)}
-                  className="glass-card p-0 overflow-hidden cursor-pointer rounded-[28px] border-[1.5px] border-[var(--border-light)]"
-                >
-                  <div className="noise-overlay" />
-                  
-                  {/* Cover Image with soft zoom capability */}
-                  <div className="w-full aspect-[16/10] relative overflow-hidden rounded-t-[inherit]">
-                    <SafeImage 
-                      src={resolveMediaUrl(rest.coverImage)} 
-                      alt={rest.name} 
-                      className="w-full h-full duration-800 transition-transform ease-apple"
-                    />
-                    
-                    {/* Rating Badge */}
-                    <div 
-                      className="absolute top-4 right-4 bg-[#0a0a0d]/70 backdrop-blur-[10px] rounded-[12px] px-3 py-1 flex items-center gap-1.25 border-[1.5px] border-white/10"
+          <div className="relative min-h-[340px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeBatchIndex}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="grid grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-[30px]"
+              >
+                {loading ? (
+                  Array(3).fill(0).map((_, i) => (
+                    <div key={i} className="glass-primary skeleton-box h-[320px] opacity-40" />
+                  ))
+                ) : restaurants.length > 0 ? (
+                  restaurants.slice(activeBatchIndex * 3, (activeBatchIndex + 1) * 3).map((rest) => (
+                    <motion.div 
+                      key={rest._id} 
+                      whileHover={{ y: -8 }}
+                      onClick={() => navigate(`/restaurant/${rest._id}`)}
+                      className="glass-card p-0 overflow-hidden cursor-pointer rounded-[28px] border-[1.5px] border-[var(--border-light)]"
                     >
-                      <Star size={13} fill="#ffc83b" stroke="#ffc83b" />
-                      <span className="text-[13px] font-extrabold text-white">{rest.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
+                      <div className="noise-overlay" />
+                      
+                      {/* Cover Image with soft zoom capability */}
+                      <div className="w-full aspect-[16/10] relative overflow-hidden rounded-t-[inherit]">
+                        <SafeImage 
+                          src={resolveMediaUrl(rest.coverImage)} 
+                          alt={rest.name} 
+                          className="w-full h-full duration-800 transition-transform ease-apple"
+                        />
+                        
+                        {/* Rating Badge */}
+                        <div 
+                          className="absolute top-4 right-4 bg-[#0a0a0d]/70 backdrop-blur-[10px] rounded-[12px] px-3 py-1 flex items-center gap-1.25 border-[1.5px] border-white/10"
+                        >
+                          <Star size={13} fill="#ffc83b" stroke="#ffc83b" />
+                          <span className="text-[13px] font-extrabold text-white">{rest.rating.toFixed(1)}</span>
+                        </div>
+                      </div>
 
-                  {/* Meta details */}
-                  <div className="p-[26px] text-left">
-                    <h3 className="text-[22px] mb-2 font-normal">{rest.name}</h3>
-                    <p className="text-[14px] text-[var(--text-secondary)] mb-4 block h-11 overflow-hidden leading-[1.5]">
-                      {rest.description}
-                    </p>
-                    
-                    {/* Cuisines Tags */}
-                    <div className="flex flex-wrap gap-1.5 mb-4.5">
-                      {rest.tags.slice(0, 3).map(t => (
-                        <span key={t} className="text-[11px] font-bold text-[var(--text-muted)] bg-[var(--surface-container)] px-2.5 py-[5px] rounded-[8px]">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
+                      {/* Meta details */}
+                      <div className="p-[26px] text-left">
+                        <h3 className="text-[22px] mb-2 font-normal">{rest.name}</h3>
+                        <p className="text-[14px] text-[var(--text-secondary)] mb-4 block h-11 overflow-hidden leading-[1.5]">
+                          {rest.description}
+                        </p>
+                        
+                        {/* Cuisines Tags */}
+                        <div className="flex flex-wrap gap-1.5 mb-4.5">
+                          {rest.tags.slice(0, 3).map(t => (
+                            <span key={t} className="text-[11px] font-bold text-[var(--text-muted)] bg-[var(--surface-container)] px-2.5 py-[5px] rounded-[8px]">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
 
-                    <div className="flex justify-between border-t-[1.5px] border-[var(--border-light)] pt-[18px] text-[13px] text-[var(--text-muted)] font-semibold">
-                      {isRestaurantOutOfRange(rest) ? (
-                        <span className="flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/20 py-0.5 px-2 rounded-md text-[10px] uppercase tracking-wide font-extrabold animate-pulse">
-                          <AlertTriangle size={10} className="text-red-500" /> Out of Local Range
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-[5px]">
-                          <Clock size={13} />
-                          {rest.deliveryTime} mins
-                        </span>
-                      )}
-                      <span>
-                        Delivery: {rest.deliveryFee === 0 ? 'FREE' : formatPrice(rest.deliveryFee)}
-                      </span>
-                    </div>
+                        <div className="flex justify-between border-t-[1.5px] border-[var(--border-light)] pt-[18px] text-[13px] text-[var(--text-muted)] font-semibold">
+                          {isRestaurantOutOfRange(rest) ? (
+                            <span className="flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/20 py-0.5 px-2 rounded-md text-[10px] uppercase tracking-wide font-extrabold animate-pulse">
+                              <AlertTriangle size={10} className="text-red-500" /> Out of Local Range
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-[5px]">
+                              <Clock size={13} />
+                              {rest.deliveryTime} mins
+                            </span>
+                          )}
+                          <span>
+                            Delivery: {rest.deliveryFee === 0 ? 'FREE' : formatPrice(rest.deliveryFee)}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="glass-primary flex-center h-[140px] text-[var(--text-secondary)] col-span-full">
+                    <div className="noise-overlay" />
+                    No curated kitchens registered.
                   </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="glass-primary flex-center h-[140px] text-[var(--text-secondary)] col-span-full">
-                <div className="noise-overlay" />
-                No curated kitchens registered.
-              </div>
-            )}
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </motion.section>
       </div>
