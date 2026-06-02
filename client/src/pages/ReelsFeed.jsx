@@ -798,6 +798,10 @@ export default function ReelsFeed() {
               {/* Bottom Integrated Cinematic Glass Panel */}
               <div 
                 style={reelsOverlayGlassStyle}
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="absolute bottom-4 left-3.5 right-11 p-3 rounded-[20px] z-[3] text-left transition-all duration-300 text-text-primary animate-fade-in"
               >
                 <div className="flex items-center gap-2 mb-1.5">
@@ -854,6 +858,10 @@ export default function ReelsFeed() {
               {/* Right Floating Actions (Translucent Frosted Glass Sidebar Pill - Lifted to top-[38%] to avoid layout collisions) */}
               <div 
                 style={reelsOverlayGlassStyle}
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="absolute top-[38%] -translate-y-1/2 right-3 flex flex-col items-center gap-3 py-2.5 px-1.5 rounded-[20px] z-[4]"
               >
                 {/* Like Heart Button */}
