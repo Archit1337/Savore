@@ -499,13 +499,19 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch reels preview
-        const reelsRes = await api.get('/reels?page=1&limit=3').catch((err) => {
+        // Fetch reels preview (requesting a larger limit to sort the most trending on likes + comments)
+        const reelsRes = await api.get('/reels?page=1&limit=1000').catch((err) => {
           console.warn('API reels preview failed, using local mock data:', err.message);
           return null;
         });
         if (reelsRes && reelsRes.data && reelsRes.data.data && reelsRes.data.data.length > 0) {
-          setReelsPreview(reelsRes.data.data);
+          // Sort descending based on likes + comments count
+          const sortedReels = [...reelsRes.data.data].sort((a, b) => {
+            const scoreA = (a.likes?.length || 0) + (a.comments?.length || 0);
+            const scoreB = (b.likes?.length || 0) + (b.comments?.length || 0);
+            return scoreB - scoreA;
+          });
+          setReelsPreview(sortedReels.slice(0, 3));
         } else {
           setReelsPreview(MOCK_REELS);
         }
@@ -789,9 +795,17 @@ export default function Home() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mt-[120px] text-left"
         >
-          <div className="flex items-center gap-2.5 mb-8">
-            <Navigation size={26} className="text-[var(--accent)]" />
-            <h2 className="text-[32px] tracking-[0.02em] font-light">Curated Elite Kitchens</h2>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2.5">
+              <Navigation size={26} className="text-[var(--accent)]" />
+              <h2 className="text-[32px] tracking-[0.02em] font-light">Curated Elite Kitchens</h2>
+            </div>
+            <button 
+              onClick={() => navigate('/discover')} 
+              className="btn btn-secondary btn-pill text-[13px] border-[1.5px] border-[var(--border-light)] px-[22px] py-2.5"
+            >
+              Explore All Kitchens →
+            </button>
           </div>
 
           <div 
