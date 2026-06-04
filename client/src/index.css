@@ -1003,6 +1003,14 @@ html.light .hero-3d-letter:hover {
   transition: opacity 450ms var(--ease-apple), transform 450ms var(--ease-apple);
 }
 
+.chef-speech-bubble-wrapper p {
+  text-shadow: none !important;
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  font-weight: 400 !important;
+  letter-spacing: normal !important;
+}
+
 /* 💻 Dynamic Layout Classes */
 .chef-speech-bubble-wrapper.layout-desktop-right {
   bottom: 210px;
@@ -1055,7 +1063,7 @@ html.light .hero-3d-letter:hover {
 }
 
 .chef-speech-bubble-wrapper.has-recommendation .chef-speech-bubble > div:first-of-type {
-  margin-bottom: 6px !important;
+  margin-bottom: 3px !important;
 }
 
 .chef-speech-bubble-wrapper.has-recommendation .chef-speech-bubble > div:first-of-type span {
@@ -1063,14 +1071,14 @@ html.light .hero-3d-letter:hover {
 }
 
 .chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card {
-  margin-top: 5px !important;
+  margin-top: 3px !important;
   padding: 6px 7px !important;
   border-radius: 12px !important;
 }
 
 /* Calibrate child elements in recommendation card */
 .chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card > div:first-of-type {
-  margin-bottom: 6px !important;
+  margin-bottom: 3px !important;
   gap: 10px !important;
 }
 
@@ -1079,8 +1087,12 @@ html.light .hero-3d-letter:hover {
   margin-bottom: 2px !important;
 }
 
-.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card p.text-secondary {
+.chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card p.text-text-secondary {
   font-size: 10.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  letter-spacing: normal !important;
+  text-shadow: none !important;
 }
 
 .chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card .chef-rec-price {
@@ -1097,9 +1109,19 @@ html.light .hero-3d-letter:hover {
 /* Tighten quote text inside card */
 .chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card .chef-rec-quote {
   font-size: 10px !important;
-  margin: 0 0 6px !important;
+  margin: 0 0 4px !important;
   padding-left: 6px !important;
   line-height: 1.4 !important;
+  max-height: 42px;
+  overflow-y: auto;
+  font-weight: 400 !important;
+  letter-spacing: normal !important;
+  text-shadow: none !important;
+}
+
+.chef-bubble-text {
+  max-height: 110px;
+  overflow-y: auto;
 }
 
 .chef-speech-bubble-wrapper.has-recommendation .chef-recommendation-card > div:last-of-type {

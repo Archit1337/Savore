@@ -117,7 +117,7 @@ export default function Checkout() {
   };
 
   return (
-    <div className="container fade-in py-10 px-6 pb-20 text-left">
+    <div className="container fade-in px-6 text-left" style={{ marginTop: '-6.5rem', paddingTop: '0.5rem', paddingBottom: '6rem', minHeight: 'calc(100vh - 320px)' }}>
       
       {/* Checkout Stepper Header */}
       <div className="glass-panel flex justify-between py-4 px-8 rounded-[16px] mb-8 items-center">

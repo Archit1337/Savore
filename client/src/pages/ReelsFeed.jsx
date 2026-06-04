@@ -68,6 +68,15 @@ export default function ReelsFeed() {
   const [isBuffering, setIsBuffering] = useState(false);
   const [hasVideoError, setHasVideoError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const failedVideoIds = useRef(new Set());
   const videoRefs = useRef([]);
@@ -276,6 +285,11 @@ export default function ReelsFeed() {
   // Double Click / Double Tap Triggering Premium Center Pulse
   const handleVideoDoubleClick = (e) => {
     e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      showToast("Sign in to like this reel ❤️");
+      return;
+    }
     
     // Trigger like if not already liked
     const isLiked = activeReel?.likes?.includes(user?._id);
@@ -564,13 +578,13 @@ export default function ReelsFeed() {
 
             {/* Swipe gesture and Double click gesture layer */}
             <motion.div 
-              drag="y"
+              drag={isMobile ? "y" : false}
               dragConstraints={{ top: 0, bottom: 0 }}
               dragElastic={0.4}
               onDragEnd={handleDragEnd}
               onDoubleClick={handleVideoDoubleClick}
               onTap={handleVideoTap}
-              className="w-full h-full relative cursor-grab"
+              className={`w-full h-full relative ${isMobile ? 'cursor-grab' : ''}`}
             >
               {/* Main Video Element with Seamless Cinematic Crossfade */}
               <AnimatePresence mode="popLayout">

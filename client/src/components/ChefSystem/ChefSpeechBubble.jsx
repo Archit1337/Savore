@@ -1,6 +1,7 @@
 // Savoré — Modular Chef Speech Bubble & Conversational Chat UI
 
 import React, { useContext, useRef, useEffect, useState, useLayoutEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, Flame, Award, Volume2, VolumeX, ShoppingBag, X, 
@@ -39,6 +40,77 @@ const highlightKeywords = (text) => {
   });
 };
 
+const ChefHatIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M6 18V17a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v1" />
+    <path d="M5 14c-1.5-1.5-1-4 .5-5 .8-.5 1.7-.5 2.5 0M19 14c1.5-1.5 1-4-.5-5-.8-.5-1.7-.5-2.5 0" />
+    <path d="M8 9a4 4 0 0 1 8 0" />
+    <rect x="7" y="17" width="10" height="3" rx="1.5" />
+  </svg>
+);
+
+const SushiIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <ellipse cx="12" cy="12" rx="9" ry="5" />
+    <ellipse cx="12" cy="12" rx="5" ry="2.5" />
+    <ellipse cx="12" cy="10" rx="2" ry="1" />
+    <path d="M3 12v3.5c0 2 4 3.5 9 3.5s9-1.5 9-3.5V12" />
+  </svg>
+);
+
+const PizzaIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M15 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM11 15a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
+    <path d="M20 3.7c-.5-.3-1.1-.3-1.6 0L4 12.2c-.6.3-.9.9-.9 1.6 0 .7.4 1.3.9 1.6 1.7 1 3.7 1.6 5.8 1.6 2.3 0 4.5-.6 6.3-1.7l3-1.8c.6-.3.9-.9.9-1.6 0-.7-.4-1.3-.9-1.6L20 3.7z" />
+    <path d="M4.3 12.6c3.2-1.9 6.8-2.9 10.5-2.9h.2" />
+  </svg>
+);
+
+const WineIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M6 3h12v7c0 3.3-2.7 6-6 6s-6-2.7-6-6V3z" />
+    <path d="M12 16v5M8 21h8" />
+  </svg>
+);
+
+const ClocheIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 4V3M5 17h14c1.1 0 2-.9 2-2 0-5.5-4.5-10-10-10S2 9.5 2 15c0 1.1.9 2 2 2zM2 20h20" />
+  </svg>
+);
+
+const FlameIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+  </svg>
+);
+
+const DiningBowlIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M2 10h20M2 10a10 10 0 0 0 20 0M6 10c0-3.5 2.5-6 6-6s6 2.5 6 6" />
+    <path d="M12 2v2M8 4c.5 1 1.5 2 4 2s3.5-1 4-2" />
+  </svg>
+);
+
+const LAUNCH_ICONS = [
+  ChefHatIcon,
+  SushiIcon,
+  PizzaIcon,
+  WineIcon,
+  ClocheIcon,
+  FlameIcon,
+  DiningBowlIcon
+];
+
+const getLoaderIconForText = (text) => {
+  if (!text) return 0;
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % LAUNCH_ICONS.length;
+};
+
 export default function ChefSpeechBubble() {
   const {
     showBubble, bubbleText, commentType, recommendation,
@@ -48,6 +120,18 @@ export default function ChefSpeechBubble() {
     chatHistory, isAIThinking, isChatExpanded, setIsChatExpanded,
     sendMessageToChef, clearChefConversation
   } = useChefMood();
+
+  const navigate = useNavigate();
+
+  const handleRestaurantNavigation = (e) => {
+    e.stopPropagation();
+    const restId = recommendation?.restaurantObj?._id || recommendation?.restaurantObj?.id;
+    if (restId) {
+      soundController.playClick();
+      navigate(`/restaurant/${restId}`);
+      resetBubble();
+    }
+  };
 
   const { showToast } = useToast();
   const { addToCart } = useContext(CartContext);
@@ -172,15 +256,17 @@ export default function ChefSpeechBubble() {
               {/* 🏆 Glassmorphic Header */}
               <div className={`flex justify-between items-center ${isChatExpanded ? 'p-3.5 border-b border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] rounded-t-[28px]' : 'mb-2'}`}>
                 <div className="flex items-center gap-1.5 text-primary">
-                  {isChatExpanded ? (
-                    <Sparkles size={13} className="text-[#FF8A72] animate-pulse" />
-                  ) : commentType === 'thinking' ? (
-                    <Flame size={13} className="animate-pulse text-[#ffb300]" />
-                  ) : recommendation ? (
-                    <Award size={13} className="text-primary" />
-                  ) : (
-                    <Sparkles size={13} />
-                  )}
+                  {(() => {
+                    const iconIdx = getLoaderIconForText(bubbleText);
+                    const SelectedIcon = LAUNCH_ICONS[iconIdx];
+                    return (
+                      <SelectedIcon 
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          commentType === 'thinking' ? 'animate-pulse text-[#ffb300]' : 'text-[#FF8A72]'
+                        }`} 
+                      />
+                    );
+                  })()}
                   <span className="text-[10px] uppercase tracking-[0.08em] font-bold font-sans opacity-85">
                     {isChatExpanded 
                       ? 'Chef Savoré'
@@ -305,7 +391,11 @@ export default function ChefSpeechBubble() {
                       >
                         <div className="flex items-center gap-2.5 mb-[7px]">
                           {recommendation.image && (
-                            <div className="chef-rec-thumbnail w-10 h-10 rounded-[8px] overflow-hidden shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.15)] border border-white/5">
+                            <div 
+                              onClick={handleRestaurantNavigation}
+                              className="chef-rec-thumbnail w-10 h-10 rounded-[8px] overflow-hidden shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.15)] border border-white/5 cursor-pointer hover:opacity-90 transition-all"
+                              title={`Go to ${recommendation.restaurant}`}
+                            >
                               <SafeImage
                                 src={resolveMediaUrl(recommendation.image)}
                                 alt={recommendation.dish}
@@ -315,7 +405,11 @@ export default function ChefSpeechBubble() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-[12.5px] font-semibold text-text-primary m-0 mb-0.5 font-sans whitespace-nowrap overflow-hidden text-ellipsis">
+                            <h4 
+                              onClick={handleRestaurantNavigation}
+                              className="text-[12.5px] font-semibold text-text-primary m-0 mb-0.5 font-sans whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer hover:text-primary hover:underline transition-all"
+                              title={`Go to ${recommendation.restaurant}`}
+                            >
                               {recommendation.dish}
                             </h4>
                             <p className="text-text-secondary text-[10.5px] m-0 font-sans">
@@ -412,7 +506,11 @@ export default function ChefSpeechBubble() {
                       {/* Dish card row */}
                       <div className="flex items-center gap-2.5 mb-[7px]">
                         {recommendation.image && (
-                          <div className="chef-rec-thumbnail w-11 h-11 rounded-[10px] overflow-hidden shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.18)] border border-white/5">
+                          <div 
+                            onClick={handleRestaurantNavigation}
+                            className="chef-rec-thumbnail w-11 h-11 rounded-[10px] overflow-hidden shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.18)] border border-white/5 cursor-pointer hover:opacity-90 transition-all"
+                            title={`Go to ${recommendation.restaurant}`}
+                          >
                             <SafeImage
                               src={resolveMediaUrl(recommendation.image)}
                               alt={recommendation.dish}
@@ -422,7 +520,11 @@ export default function ChefSpeechBubble() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-[13px] font-semibold text-inherit m-0 mb-0.5 font-sans whitespace-nowrap overflow-hidden text-ellipsis">
+                          <h4 
+                            onClick={handleRestaurantNavigation}
+                            className="text-[13px] font-semibold text-inherit m-0 mb-0.5 font-sans whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer hover:text-primary hover:underline transition-all"
+                            title={`Go to ${recommendation.restaurant}`}
+                          >
                             {recommendation.dish}
                           </h4>
                           <p className="text-text-secondary text-[11px] m-0 font-sans">
@@ -475,6 +577,7 @@ export default function ChefSpeechBubble() {
                           animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
                           exit={{ opacity: 0, filter: 'blur(3px)', y: -4 }}
                           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                          className="chef-bubble-text"
                         >
                           {highlightKeywords(bubbleText)}
                         </motion.div>

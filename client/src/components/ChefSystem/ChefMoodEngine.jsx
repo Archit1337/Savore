@@ -158,14 +158,65 @@ export const ChefMoodProvider = ({ children }) => {
       const data = response.data;
 
       if (data.success) {
-        if (data.recommendation) {
-          setRecommendation(data.recommendation);
+        let finalRec = data.recommendation;
+        let finalReply = data.reply;
+
+        const isLocationMatch = finalRec && 
+          finalRec.restaurantObj && 
+          finalRec.restaurantObj.city && 
+          activeCity && 
+          finalRec.restaurantObj.city.toLowerCase().trim() === activeCity.toLowerCase().trim();
+
+        if (!isLocationMatch) {
+          finalRec = null;
+        }
+
+        if (!finalRec) {
+          console.log(`📡 [Chef Local Fallback] Recommendation is out of zone (${activeCity}). Selecting local menu...`);
+          // Fetch restaurants matching activeCity dynamically
+          const restRes = await api.get(`/restaurants?city=${encodeURIComponent(activeCity)}&limit=100`);
+          const localRests = restRes.data?.data || [];
+          const cityRests = localRests.filter(r => r.city && r.city.toLowerCase().trim() === activeCity.toLowerCase().trim());
+
+          if (cityRests.length > 0) {
+            const selectedRest = cityRests[Math.floor(Math.random() * cityRests.length)];
+            const menuRes = await api.get(`/restaurants/${selectedRest._id}`);
+            const menuItems = menuRes.data?.data?.menu || [];
+
+            if (menuItems.length > 0) {
+              const selectedDish = menuItems[Math.floor(Math.random() * menuItems.length)];
+
+              // Obtain michelin-star review text from chat endpoint
+              const chatRes = await api.post('/chef/chat', {
+                message: `Act as Chef Savoré. In under 12 words, describe passionately with French flair why the user should order '${selectedDish.name}' from '${selectedRest.name}'.`,
+                context: getActiveContext(),
+                history: []
+              });
+
+              const chefMessage = chatRes.data?.reply || `Ah, mon ami! You must experience the delectable '${selectedDish.name}' from the master chefs at '${selectedRest.name}' today!`;
+              
+              finalRec = {
+                _id: selectedDish._id,
+                dish: selectedDish.name,
+                price: selectedDish.price,
+                image: selectedDish.image,
+                quote: chefMessage,
+                restaurant: selectedRest.name,
+                restaurantObj: selectedRest
+              };
+              finalReply = chefMessage;
+            }
+          }
+        }
+
+        if (finalRec) {
+          setRecommendation(finalRec);
           setCurrentMood('active');
-          setBubbleText(data.reply || "Voilà! Here is my special recommendation for you today! 🍕");
+          setBubbleText(finalReply || "Voilà! Here is my special recommendation for you today! 🍕");
           setCommentType('rare');
           soundController.playPop();
         } else {
-          setBubbleText(data.reply || "Mon dieu! I couldn’t select a unique dish from our curated menus today!");
+          setBubbleText("Mon dieu! I couldn’t select a unique dish from our curated menus in your area today!");
           setCurrentMood('idle');
           setCommentType('common');
         }
@@ -212,8 +263,19 @@ export const ChefMoodProvider = ({ children }) => {
         setChatHistory(prev => [...prev, { sender: 'chef', text: data.reply }]);
         setBubbleText(data.reply);
         
-        if (data.recommendation) {
-          setRecommendation(data.recommendation);
+        let finalChatRec = data.recommendation;
+        const isChatLocationMatch = finalChatRec && 
+          finalChatRec.restaurantObj && 
+          finalChatRec.restaurantObj.city && 
+          activeCity && 
+          finalChatRec.restaurantObj.city.toLowerCase().trim() === activeCity.toLowerCase().trim();
+
+        if (finalChatRec && !isChatLocationMatch) {
+          finalChatRec = null;
+        }
+
+        if (finalChatRec) {
+          setRecommendation(finalChatRec);
           setCurrentMood('active');
           setCommentType('rare');
           soundController.playPop();
