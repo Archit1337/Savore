@@ -13,6 +13,24 @@ import { LocationContext, CITIES, CITY_LOCALITIES, CITY_COORDINATES } from '../c
 
 
 
+const getCityCoordsLabel = (cityName) => {
+  const coords = {
+    'Mumbai': '19.076° N, 72.877° E',
+    'Delhi': '28.613° N, 77.209° E',
+    'Bengaluru': '12.971° N, 77.594° E',
+    'Hyderabad': '17.385° N, 78.486° E',
+    'Chennai': '13.082° N, 80.270° E',
+    'Kolkata': '22.572° N, 88.363° E',
+    'Pune': '18.520° N, 73.856° E',
+    'Ahmedabad': '23.022° N, 72.571° E',
+    'Jaipur': '26.912° N, 75.787° E',
+    'Chandigarh': '30.733° N, 76.779° E',
+    'Goa': '15.299° N, 74.124° E',
+    'Kochi': '9.931° N, 76.267° E'
+  };
+  return coords[cityName] || '20.593° N, 78.962° E';
+};
+
 const CATEGORIES = [
   { name: 'All Cuisines', tag: '' },
   { name: 'Premium Dining', tag: 'Premium Dining' },
@@ -1145,7 +1163,7 @@ export default function Home() {
                 <h4 className="text-[11px] font-extrabold text-text-muted mb-3.5 uppercase tracking-wider">
                   Browse Major Indian Cities
                 </h4>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {CITIES.map((city) => {
                     const isSelected = activeCity === city;
                     return (
@@ -1156,19 +1174,22 @@ export default function Home() {
                           selectManualCity(city);
                           setLocationModalOpen(false);
                         }}
-                        className={`h-9 rounded-[10px] text-xs font-bold border cursor-pointer transition-all ${
+                        className={`h-[52px] rounded-xl text-[11px] font-bold border cursor-pointer transition-all flex flex-col items-center justify-center gap-0.5 ${
                           isSelected
                             ? 'bg-primary border-primary text-white shadow-sm'
-                            : 'bg-[var(--surface)] border-border-light text-text-secondary hover:text-text-primary hover:bg-[var(--surface-hover)]'
+                            : 'bg-white/[0.02] border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/[0.06]'
                         }`}
                       >
-                        {city}
+                        <span>{city}</span>
+                        <span className={`text-[8px] font-normal tracking-wide ${isSelected ? 'text-white/60' : 'text-text-muted/65'}`}>
+                          {getCityCoordsLabel(city)}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-
+              <div className="h-8" />
             </motion.div>
           </div>
         )}
