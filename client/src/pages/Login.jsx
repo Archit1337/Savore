@@ -121,7 +121,7 @@ export default function Login() {
   };
 
   return (
-    <div className="flex-center flex-1 py-[30px] px-6 relative -mt-10 md:-mt-14">
+    <div className="flex-center flex-1 py-[30px] px-6 relative -mt-16 md:-mt-20">
       {/* Background ambient overlays */}
       <div className="ambient-glow top-[10%] left-[10%]" />
       <div className="ambient-glow-tertiary bottom-[10%] right-[10%]" />
@@ -324,16 +324,6 @@ export default function Login() {
             Register here
           </Link>
         </p>
-
-        {/* Demo credentials guide card */}
-        <div className="mt-8 bg-[var(--surface-container)] rounded-[12px] p-4 border border-[var(--border-light)] text-[12px] leading-relaxed select-none">
-          <span className="font-bold text-primary block mb-1.5">
-            🔑 Demo Testing Credentials (Password: password123)
-          </span>
-          <div>• Customer Account: <strong>customer@savore.com</strong></div>
-          <div>• Restaurant Owner: <strong>owner@savore.com</strong></div>
-          <div>• Admin Master: <strong>admin@savore.com</strong></div>
-        </div>
       </div>
     </div>
   );

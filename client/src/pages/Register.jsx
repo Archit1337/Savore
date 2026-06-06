@@ -45,7 +45,7 @@ export default function Register() {
   };
 
   return (
-    <div className="flex-center flex-1 py-[30px] px-6 relative -mt-10 md:-mt-14">
+    <div className="flex-center flex-1 py-[30px] px-6 relative -mt-16 md:-mt-20">
       <div className="ambient-glow top-[5%] right-[10%]" />
       <div className="ambient-glow-tertiary bottom-[5%] left-[10%]" />
 
