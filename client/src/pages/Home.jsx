@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue, animate } from 'framer-motion';
 import { Search, Flame, Sparkles, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import MascotChef from '../components/MascotChef';
 import api from '../utils/api';
@@ -659,6 +659,126 @@ export default function Home() {
 
   const { setBubbleText, setCurrentMood, setCommentType } = useChefMood();
 
+  // 🧑‍🍳 Scroll-Driven Hero Folding & Chef Smile Animation
+  const { scrollY } = useScroll();
+  const smoothScrollY = useMotionValue(scrollY.get());
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    
+    const handleScrollYChange = (latest) => {
+      const isScrollingUp = latest < lastScrollY;
+      lastScrollY = latest;
+
+      if (latest <= 5) {
+        smoothScrollY.set(0);
+      } else if (isScrollingUp) {
+        animate(smoothScrollY, latest, {
+          type: "spring",
+          stiffness: 350,
+          damping: 30,
+          mass: 0.1
+        });
+      } else {
+        animate(smoothScrollY, latest, {
+          type: "spring",
+          stiffness: 100,
+          damping: 24,
+          mass: 1.0
+        });
+      }
+    };
+
+    const unsubscribe = scrollY.on ? scrollY.on("change", handleScrollYChange) : scrollY.onChange(handleScrollYChange);
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      } else if (unsubscribe && typeof unsubscribe.stop === 'function') {
+        unsubscribe.stop();
+      }
+    };
+  }, [scrollY, smoothScrollY]);
+  const [isMobile, setIsMobile] = useState(false);
+  const [forceChefSmile, setForceChefSmile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 900);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const scrollTimeoutRef = { current: null };
+
+    const handleScroll = () => {
+      const currentScroll = window.scrollY;
+      if (currentScroll > 15 && currentScroll < 850) {
+        setForceChefSmile(true);
+      } else {
+        setForceChefSmile(false);
+      }
+
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      scrollTimeoutRef.current = setTimeout(() => {
+        setForceChefSmile(false);
+      }, 400); // Soft, natural reset 400ms after scroll events stop
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
+
+  // --- Element 1: Concierge / Weather Badge ---
+  const driftX1 = useTransform(smoothScrollY, [0, 320], [0, isMobile ? 0 : 150]);
+  const driftY1 = useTransform(smoothScrollY, [0, 320], [0, isMobile ? 100 : 25]);
+  const driftScale1 = useTransform(smoothScrollY, [0, 320], [1, 0.94]);
+  const driftOpacity1 = useTransform(smoothScrollY, [0, 320], [1, 0]);
+  const driftRot1 = useTransform(smoothScrollY, [0, 320], [0, isMobile ? 0 : 1.5]);
+  const driftRotY1 = useTransform(smoothScrollY, [0, 320], [0, isMobile ? 0 : -4]);
+
+  // --- Element 2: Hero Headline ---
+  const driftX2 = useTransform(smoothScrollY, [0, 480], [0, isMobile ? 0 : 120]);
+  const driftY2 = useTransform(smoothScrollY, [0, 480], [0, isMobile ? 140 : 40]);
+  const driftScale2 = useTransform(smoothScrollY, [0, 480], [1, 0.94]);
+  const driftOpacity2 = useTransform(smoothScrollY, [0, 480], [1, 0]);
+  const driftRot2 = useTransform(smoothScrollY, [0, 480], [0, isMobile ? 0 : -1.2]);
+  const driftRotY2 = useTransform(smoothScrollY, [0, 480], [0, isMobile ? 0 : -3]);
+
+  // --- Element 3: Description ---
+  const driftX3 = useTransform(smoothScrollY, [0, 600], [0, isMobile ? 0 : 90]);
+  const driftY3 = useTransform(smoothScrollY, [0, 600], [0, isMobile ? 180 : 55]);
+  const driftScale3 = useTransform(smoothScrollY, [0, 600], [1, 0.94]);
+  const driftOpacity3 = useTransform(smoothScrollY, [0, 600], [1, 0]);
+  const driftRot3 = useTransform(smoothScrollY, [0, 600], [0, isMobile ? 0 : 1.0]);
+  const driftRotY3 = useTransform(smoothScrollY, [0, 600], [0, isMobile ? 0 : -2.5]);
+
+  // --- Element 4: Search Bar ---
+  const driftX4 = useTransform(smoothScrollY, [0, 720], [0, isMobile ? 0 : 60]);
+  const driftY4 = useTransform(smoothScrollY, [0, 720], [0, isMobile ? 220 : 70]);
+  const driftScale4 = useTransform(smoothScrollY, [0, 720], [1, 0.94]);
+  const driftOpacity4 = useTransform(smoothScrollY, [0, 720], [1, 0]);
+  const driftRot4 = useTransform(smoothScrollY, [0, 720], [0, isMobile ? 0 : -0.8]);
+  const driftRotY4 = useTransform(smoothScrollY, [0, 720], [0, isMobile ? 0 : -2]);
+
+  // --- Element 5: CTA Buttons ---
+  const driftX5 = useTransform(smoothScrollY, [0, 800], [0, isMobile ? 0 : 40]);
+  const driftY5 = useTransform(smoothScrollY, [0, 800], [0, isMobile ? 250 : 85]);
+  const driftScale5 = useTransform(smoothScrollY, [0, 800], [1, 0.94]);
+  const driftOpacity5 = useTransform(smoothScrollY, [0, 800], [1, 0]);
+  const driftRot5 = useTransform(smoothScrollY, [0, 800], [0, isMobile ? 0 : 0.6]);
+  const driftRotY5 = useTransform(smoothScrollY, [0, 800], [0, isMobile ? 0 : -1.5]);
+
+  // --- Mascot Chef: Slide to Center ---
+  const chefX = useTransform(smoothScrollY, [0, 750], [0, isMobile ? 0 : -360]);
+
   // Weather detection effect
   useEffect(() => {
     let active = true;
@@ -958,144 +1078,153 @@ export default function Home() {
             
             <div className="relative z-10">
               {/* Weather & Location Concierge Live Capsule Section */}
-              <motion.div 
-                variants={conciergeRevealVariant}
-                initial="hidden"
-                animate={isPageReady ? "visible" : "hidden"}
-                className="flex flex-col items-start mb-6"
-              >
-                <div className="flex flex-wrap items-center gap-3 mb-2">
-                  {/* Weather Concierge Live Capsule */}
-                  <motion.div
-                    whileHover={{ y: -2, scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-                    className="weather-concierge-badge inline-flex items-center gap-2 select-none !mb-0"
-                  >
-                    {renderWeatherIcon(weatherData.climate)}
-                    <span className="flex items-center gap-1.5 font-bold tracking-[0.06em]">
-                      <span className="text-[var(--primary)]">{weatherData.temp}</span>
-                      <span className="text-[var(--text-muted)] opacity-50">•</span>
-                      <span className="text-[var(--text-primary)] font-semibold text-[12px] capitalize">
-                        {weatherData.climate} Vibe
+              <motion.div style={{ x: driftX1, y: driftY1, scale: driftScale1, opacity: driftOpacity1, rotate: driftRot1, rotateY: driftRotY1, perspective: 1000 }}>
+                <motion.div 
+                  variants={conciergeRevealVariant}
+                  initial="hidden"
+                  animate={isPageReady ? "visible" : "hidden"}
+                  className="flex flex-col items-start mb-6"
+                >
+                  <div className="flex flex-wrap items-center gap-3 mb-2">
+                    {/* Weather Concierge Live Capsule */}
+                    <motion.div
+                      whileHover={{ y: -2, scale: 1.02 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                      className="weather-concierge-badge inline-flex items-center gap-2 select-none !mb-0"
+                    >
+                      {renderWeatherIcon(weatherData.climate)}
+                      <span className="flex items-center gap-1.5 font-bold tracking-[0.06em]">
+                        <span className="text-[var(--primary)]">{weatherData.temp}</span>
+                        <span className="text-[var(--text-muted)] opacity-50">•</span>
+                        <span className="text-[var(--text-primary)] font-semibold text-[12px] capitalize">
+                          {weatherData.climate} Vibe
+                        </span>
                       </span>
-                    </span>
-                    <span className="weather-pulse-dot" />
-                  </motion.div>
+                      <span className="weather-pulse-dot" />
+                    </motion.div>
 
-                  {/* Glassmorphic Indian Location Indicator Picker */}
-                  <motion.div
-                    whileHover={{ y: -2, scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-                    onClick={() => setLocationModalOpen(true)}
-                    className="weather-concierge-badge cursor-pointer inline-flex items-center gap-2 select-none transition-all !mb-0"
-                    title="Switch your Indian delivery region"
-                  >
-                    <MapPin size={13} className="text-primary" />
-                    <span className="flex items-center gap-1 font-bold tracking-[0.06em] text-[12px] uppercase">
-                      <span className="text-[var(--text-muted)]">Delivering to:</span>
-                      <strong className="text-[var(--text-primary)] font-bold tracking-normal lowercase">{activeLocality}, {activeCity}</strong>
-                    </span>
-                    <ChevronDown size={11} className="text-text-muted transition-transform" />
-                  </motion.div>
-                </div>
+                    {/* Glassmorphic Indian Location Indicator Picker */}
+                    <motion.div
+                      whileHover={{ y: -2, scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                      onClick={() => setLocationModalOpen(true)}
+                      className="weather-concierge-badge cursor-pointer inline-flex items-center gap-2 select-none transition-all !mb-0"
+                      title="Switch your Indian delivery region"
+                    >
+                      <MapPin size={13} className="text-primary" />
+                      <span className="flex items-center gap-1 font-bold tracking-[0.06em] text-[12px] uppercase">
+                        <span className="text-[var(--text-muted)]">Delivering to:</span>
+                        <strong className="text-[var(--text-primary)] font-bold tracking-normal lowercase">{activeLocality}, {activeCity}</strong>
+                      </span>
+                      <ChevronDown size={11} className="text-text-muted transition-transform" />
+                    </motion.div>
+                  </div>
 
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={weatherData.line}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.25 }}
-                    className="weather-classic-line pl-1 select-none pointer-events-none"
-                  >
-                    {weatherData.line}
-                  </motion.div>
-                </AnimatePresence>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={weatherData.line}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.25 }}
+                      className="weather-classic-line pl-1 select-none pointer-events-none"
+                    >
+                      {weatherData.line}
+                    </motion.div>
+                  </AnimatePresence>
+                </motion.div>
               </motion.div>
 
               {/* Nunito Bold Hero Headline */}
-              <motion.h1 
-                variants={headlineRevealVariant}
-                initial="hidden"
-                animate={isPageReady ? "visible" : "hidden"}
-                className="hero-headline select-none"
-              >
-                <span className="hero-headline-hover-group">
-                  {"Experience Food".split("").map((char, idx) => (
-                    <span
-                      key={idx}
-                      className="hero-3d-letter"
-                    >
-                      {char === " " ? "\u00A0" : char}
-                    </span>
-                  ))}
-                </span>
-                <span className="hero-headline-accent">
-                  Like Never Before
-                </span>
-              </motion.h1>
+              <motion.div style={{ x: driftX2, y: driftY2, scale: driftScale2, opacity: driftOpacity2, rotate: driftRot2, rotateY: driftRotY2, perspective: 1000 }}>
+                <motion.h1 
+                  variants={headlineRevealVariant}
+                  initial="hidden"
+                  animate={isPageReady ? "visible" : "hidden"}
+                  className="hero-headline select-none"
+                >
+                  <span className="hero-headline-hover-group">
+                    {"Experience Food".split("").map((char, idx) => (
+                      <span
+                        key={idx}
+                        className="hero-3d-letter"
+                      >
+                        {char === " " ? "\u00A0" : char}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="hero-headline-accent">
+                    Like Never Before
+                  </span>
+                </motion.h1>
+              </motion.div>
 
-
-              <motion.p 
-                variants={descRevealVariant}
-                initial="hidden"
-                animate={isPageReady ? "visible" : "hidden"}
-                className="text-[19px] text-[var(--text-secondary)] mb-4 max-w-[560px] font-light leading-[1.65]"
-              >
-                Discover. Savor. Indulge. Immerse your senses in cinema-grade, chef-curated recipe Reels. Order breathtaking culinary masterpieces instantly, and track every dining detail from kitchen to table.
-              </motion.p>
+              <motion.div style={{ x: driftX3, y: driftY3, scale: driftScale3, opacity: driftOpacity3, rotate: driftRot3, rotateY: driftRotY3, perspective: 1000 }}>
+                <motion.p 
+                  variants={descRevealVariant}
+                  initial="hidden"
+                  animate={isPageReady ? "visible" : "hidden"}
+                  className="text-[19px] text-[var(--text-secondary)] mb-4 max-w-[560px] font-light leading-[1.65]"
+                >
+                  Discover. Savor. Indulge. Immerse your senses in cinema-grade, chef-curated recipe Reels. Order breathtaking culinary masterpieces instantly, and track every dining detail from kitchen to table.
+                </motion.p>
+              </motion.div>
 
               {/* Large Glass Search Panel */}
-              <motion.form 
-                variants={searchRevealVariant}
-                initial="hidden"
-                animate={isPageReady ? "visible" : "hidden"}
-                onSubmit={handleSearchSubmit} 
-                className="flex gap-3.5 max-w-[520px] relative z-10"
-              >
-                <div className="relative flex-1">
-                  <Search 
-                    size={20} 
-                    className="absolute left-[18px] top-1/2 -translate-y-1/2 text-[var(--text-muted)]" 
-                  />
-                  <input 
-                  type="text" 
-                  className="glass-input !pl-[50px] rounded-[20px] h-[56px] text-[15px]" 
-                  placeholder="Search premium truffles, sushi, steaks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                </div>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary rounded-[20px] px-8 h-[56px] font-bold"
+              <motion.div style={{ x: driftX4, y: driftY4, scale: driftScale4, opacity: driftOpacity4, rotate: driftRot4, rotateY: driftRotY4, perspective: 1000 }}>
+                <motion.form 
+                  variants={searchRevealVariant}
+                  initial="hidden"
+                  animate={isPageReady ? "visible" : "hidden"}
+                  onSubmit={handleSearchSubmit} 
+                  className="flex gap-3.5 max-w-[520px] relative z-10"
                 >
-                  Search
-                </button>
-              </motion.form>
+                  <div className="relative flex-1">
+                    <Search 
+                      size={20} 
+                      className="absolute left-[18px] top-1/2 -translate-y-1/2 text-[var(--text-muted)]" 
+                    />
+                    <input 
+                      type="text" 
+                      className="glass-input !pl-[50px] rounded-[20px] h-[56px] text-[15px]" 
+                      placeholder="Search premium truffles, sushi, steaks..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary rounded-[20px] px-8 h-[56px] font-bold"
+                  >
+                    Search
+                  </button>
+                </motion.form>
+              </motion.div>
 
               {/* CTA Option Buttons */}
-              <motion.div 
-                variants={ctaRevealVariant}
-                initial="hidden"
-                animate={isPageReady ? "visible" : "hidden"}
-                className="flex gap-3 mt-3 items-center"
-              >
-                <button 
-                  onClick={() => navigate('/discover')}
-                  className="btn btn-primary px-[26px] py-3 text-[14px] rounded-[16px] flex items-center gap-2"
+              <motion.div style={{ x: driftX5, y: driftY5, scale: driftScale5, opacity: driftOpacity5, rotate: driftRot5, rotateY: driftRotY5, perspective: 1000 }}>
+                <motion.div 
+                  variants={ctaRevealVariant}
+                  initial="hidden"
+                  animate={isPageReady ? "visible" : "hidden"}
+                  className="flex gap-3 mt-3 items-center"
                 >
-                  <Compass size={16} />
-                  Explore Food
-                </button>
-                <button 
-                  onClick={() => navigate('/reels')}
-                  className="btn btn-secondary px-[26px] py-3 text-[14px] rounded-[16px] flex items-center gap-2 border-[1.5px] border-[var(--border-light)]"
-                >
-                  <Play size={16} fill="currentColor" />
-                  Watch Reels
-                </button>
+                  <button 
+                    onClick={() => navigate('/discover')}
+                    className="btn btn-primary px-[26px] py-3 text-[14px] rounded-[16px] flex items-center gap-2"
+                  >
+                    <Compass size={16} />
+                    Explore Food
+                  </button>
+                  <button 
+                    onClick={() => navigate('/reels')}
+                    className="btn btn-secondary px-[26px] py-3 text-[14px] rounded-[16px] flex items-center gap-2 border-[1.5px] border-[var(--border-light)]"
+                  >
+                    <Play size={16} fill="currentColor" />
+                    Watch Reels
+                  </button>
+                </motion.div>
               </motion.div>
             </div>
           </motion.div>
@@ -1106,6 +1235,7 @@ export default function Home() {
             initial="hidden"
             animate={isPageReady ? "visible" : "hidden"}
             className="relative z-20"
+            style={{ x: chefX }}
           >
             <motion.div
               animate={{ 
@@ -1114,7 +1244,7 @@ export default function Home() {
               }}
               transition={{ type: "spring", stiffness: 50, damping: 14 }}
             >
-              <MascotChef />
+              <MascotChef forceSmile={forceChefSmile} />
             </motion.div>
           </motion.div>
         </section>

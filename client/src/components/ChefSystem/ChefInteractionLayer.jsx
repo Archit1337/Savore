@@ -5,7 +5,7 @@ import { useChefMood } from './ChefMoodEngine';
 import ChefAvatar from './ChefAvatar';
 import { soundController } from './SoundController';
 
-export default function ChefInteractionLayer() {
+export default function ChefInteractionLayer({ forceSmile = false }) {
   const { hoverStart, hoverEnd, triggerRecommendation } = useChefMood();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -57,7 +57,7 @@ export default function ChefInteractionLayer() {
         }}
       />
 
-      <ChefAvatar mousePos={mousePos} isHovered={isHovered} />
+      <ChefAvatar mousePos={mousePos} isHovered={isHovered} forceSmile={forceSmile} />
     </div>
   );
 }

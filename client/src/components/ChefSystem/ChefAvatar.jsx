@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useChefMood } from './ChefMoodEngine';
 
-export default function ChefAvatar({ mousePos = { x: 0, y: 0 }, isHovered = false }) {
+export default function ChefAvatar({ mousePos = { x: 0, y: 0 }, isHovered = false, forceSmile = false }) {
   const { currentMood, isChatExpanded } = useChefMood();
   const [sparkles, setSparkles] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
@@ -20,8 +20,8 @@ export default function ChefAvatar({ mousePos = { x: 0, y: 0 }, isHovered = fals
   }, []);
 
   // micro-pupil offsets for tracking
-  const eyeXOffset = isChatExpanded ? -2.2 : mousePos.x * 2.8;
-  const eyeYOffset = isChatExpanded ? 0.8 : mousePos.y * 1.8;
+  const eyeXOffset = isChatExpanded ? -2.2 : forceSmile ? -3.0 : mousePos.x * 2.8;
+  const eyeYOffset = isChatExpanded ? 0.8 : forceSmile ? 0.5 : mousePos.y * 1.8;
 
   // Sparkle burst handler on celebration state
   useEffect(() => {
@@ -163,9 +163,9 @@ export default function ChefAvatar({ mousePos = { x: 0, y: 0 }, isHovered = fals
         <motion.g
           id="chef-head"
           animate={{
-            rotate: isChatExpanded ? -7 : mousePos.x * 7,
-            x: isChatExpanded ? -10 : mousePos.x * 10,
-            y: isChatExpanded ? 3 : mousePos.y * 7
+            rotate: isChatExpanded ? -7 : forceSmile ? -6 : mousePos.x * 7,
+            x: isChatExpanded ? -10 : forceSmile ? -8 : mousePos.x * 10,
+            y: isChatExpanded ? 3 : forceSmile ? 2 : mousePos.y * 7
           }}
           transition={{ type: "spring", stiffness: 100, damping: 15 }}
         >
@@ -219,7 +219,7 @@ export default function ChefAvatar({ mousePos = { x: 0, y: 0 }, isHovered = fals
                 <path d="M152,192 Q164,187 170,195" fill="none" stroke="#232328" strokeWidth="3.5" strokeLinecap="round" />
                 <path d="M230,192 Q242,187 248,195" fill="none" stroke="#232328" strokeWidth="3.5" strokeLinecap="round" />
               </>
-            ) : currentMood === 'celebration' || isHovered ? (
+            ) : currentMood === 'celebration' || isHovered || forceSmile ? (
               <>
                 {/* Winking eye + happy crescent eye with cursor tracking */}
                 <path d="M150,196 Q162,203 172,196" fill="none" stroke="#232328" strokeWidth="4" strokeLinecap="round" />
@@ -264,7 +264,7 @@ export default function ChefAvatar({ mousePos = { x: 0, y: 0 }, isHovered = fals
             </g>
           ) : currentMood === 'thinking' ? (
             <path d="M192,230 Q200,225 208,230" fill="none" stroke="#6d0006" strokeWidth="3" strokeLinecap="round" />
-          ) : currentMood === 'celebration' ? (
+          ) : currentMood === 'celebration' || forceSmile ? (
             <g>
               <path d="M185,225 C185,243 215,243 215,225 Z" fill="#800005" />
               <path d="M191,234 C195,229 205,229 209,234 Z" fill="#ff9999" />
