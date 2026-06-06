@@ -708,7 +708,7 @@ export default function Home() {
         {/* Left-side readability fade so text column stays crisp */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,_var(--bg-primary)_15%,_transparent_55%)]" />
         {/* Right-side soft edge in light, deeper in dark */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_left,_rgba(246,243,238,0.55)_0%,_transparent_50%)] dark:bg-[linear-gradient(to_left,_rgba(4,4,8,0.65)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_left,_rgba(246,243,238,0.55)_0%,_transparent_50%)] dark:bg-[linear-gradient(to_left,_rgba(11,15,20,0.65)_0%,_transparent_50%)]" />
         {/* Bottom fade into page background */}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_transparent_35%,_var(--bg-primary)_88%)]" />
         {/* Dynamic Weather Ambient Vignette Overlay */}
@@ -717,10 +717,10 @@ export default function Home() {
           style={{
             background: `radial-gradient(circle at right 30% top 30%, ${
               weatherData.climate === 'sunny' ? 'rgba(255, 106, 77, 0.05)' :
-              weatherData.climate === 'rainy' ? 'rgba(74, 144, 226, 0.04)' :
-              weatherData.climate === 'starry' ? 'rgba(111, 66, 193, 0.05)' :
-              weatherData.climate === 'snowy' ? 'rgba(0, 180, 216, 0.03)' :
-              weatherData.climate === 'stormy' ? 'rgba(102, 16, 242, 0.04)' :
+              weatherData.climate === 'rainy' ? 'rgba(255, 159, 67, 0.04)' :
+              weatherData.climate === 'starry' ? 'rgba(255, 190, 118, 0.05)' :
+              weatherData.climate === 'snowy' ? 'rgba(255, 250, 240, 0.04)' :
+              weatherData.climate === 'stormy' ? 'rgba(255, 106, 77, 0.04)' :
               'rgba(255, 106, 77, 0.04)'
             } 0%, transparent 60%)`
           }}
