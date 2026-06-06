@@ -224,13 +224,16 @@ export default function ReelsFeed() {
     };
   }, [activeIndex, reels, isMuted]);
 
+  // Safety-net: proactively prefetch when the user is near the end of loaded reels
+  useEffect(() => {
+    if (reels.length > 0 && reels.length - activeIndex <= 5) {
+      fetchReelsFeed(false, activeCity);
+    }
+  }, [activeIndex, reels.length]);
+
   const handleNextReel = () => {
     if (activeIndex < reels.length - 1) {
       setActiveIndex((prev) => prev + 1);
-      // Preload next batch much earlier (when 4 or fewer items are left in the queue)
-      if (reels.length - activeIndex <= 4) {
-        fetchReelsFeed(false, activeCity);
-      }
     }
   };
 
@@ -423,7 +426,7 @@ export default function ReelsFeed() {
 
 
       <div
-        className="flex justify-center items-center fade-in reels-player-container fixed inset-0 h-screen w-screen overflow-hidden z-[1] pt-[96px] md:pt-[112px] pb-[max(20px,env(safe-area-inset-bottom,20px))] px-6 pointer-events-none"
+        className="flex justify-center items-center fade-in reels-player-container fixed inset-0 h-screen w-screen overflow-hidden z-[1] pt-[96px] md:pt-[112px] pb-[max(20px,env(safe-area-inset-bottom,20px))] px-10 pointer-events-none"
       >
         {/* 🎬 REAL-TIME EDGE BLUR AMBIENT VIDEO LAYER BACKGROUND */}
         <div 
@@ -459,10 +462,10 @@ export default function ReelsFeed() {
         </div>
 
         {/* 🎬 CINEMATIC THREE-COLUMN GRID CONTAINER (Desktop only sideboards, center on all viewports) */}
-        <div className="flex justify-center items-center gap-8 w-full max-w-[1320px] h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] max-h-[860px] min-h-[540px] relative z-[2] pointer-events-none">
+        <div className="flex justify-center items-center gap-11 w-full max-w-[1440px] h-[calc(100vh-120px)] md:h-[calc(100vh-132px)] max-h-[940px] min-h-[540px] relative z-[2] pointer-events-none">
 
           {/* 🍽️ LEFT COLUMN: ACTIVE KITCHEN PROFILE & CULINARY HIGHLIGHTS (Desktop Only) */}
-          <div className="hidden lg:flex flex-col gap-5 w-[310px] h-full justify-center shrink-0 pointer-events-auto">
+          <div className="hidden lg:flex flex-col gap-5 w-[280px] xl:w-[300px] h-full justify-center shrink-0 pointer-events-auto">
             {/* Restaurant profile glass card */}
             <motion.div 
               style={reelsGlassStyle}
@@ -950,7 +953,7 @@ export default function ReelsFeed() {
           </div>
 
           {/* 💬 RIGHT COLUMN: INLINE COMMENT BOARD (Desktop Only) */}
-          <div className="hidden lg:flex flex-col w-[310px] h-full justify-center shrink-0 pointer-events-auto">
+          <div className="hidden lg:flex flex-col w-[280px] xl:w-[300px] h-full justify-center shrink-0 pointer-events-auto">
             <div 
               style={reelsGlassStyle}
               className="p-5 rounded-[28px] text-left text-text-primary shadow-2xl h-full flex flex-col relative overflow-hidden"

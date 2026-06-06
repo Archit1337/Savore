@@ -98,6 +98,7 @@ const getReelsFeed = async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 5;
     const skip = (page - 1) * limit;
 
+
     // Aggregation pipeline to compute on-the-fly trending score
     // score = likes * 2 + comments * 1.5 + views * 0.5 + recencyBoost
     // Recency Boost: < 24 hrs = 100, < 72 hrs = 50, otherwise = 0
@@ -194,6 +195,7 @@ const getReelsFeed = async (req, res, next) => {
         path: 'featuredDish',
       }
     ]);
+
 
     // Shape results to conform to pagination standards
     res.json({

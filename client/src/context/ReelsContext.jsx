@@ -261,9 +261,10 @@ export const ReelsProvider = ({ children }) => {
 
       const queryParams = new URLSearchParams();
       queryParams.append('page', nextPage);
-      queryParams.append('limit', 5);
+      queryParams.append('limit', 10);
 
       const res = await api.get(`/reels?${queryParams.toString()}`);
+
       
       if (res.data) {
         const newReels = res.data.data;
@@ -300,13 +301,14 @@ export const ReelsProvider = ({ children }) => {
         setTotalPages(1);
       }
     } catch (err) {
+
       console.warn('API error fetching reels, falling back to client mock data:', err.message);
       if (reset || !reels || reels.length === 0) {
         setReelsState(MOCK_REELS);
         setPage(1);
         setTotalPages(1);
       } else {
-        setError(err.message);
+        setError(err.message || 'Error fetching reels');
       }
     } finally {
       if (!silent) {
