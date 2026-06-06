@@ -36,7 +36,7 @@ export default function SafeImage({
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(90deg,_var(--surface)_25%,_var(--surface-bright)_50%,_var(--surface)_75%)] bg-[length:200%_100%] animate-[shimmerPulse_1.8s_infinite_linear]"
+            className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(135deg,_var(--surface)_25%,_var(--surface-bright)_50%,_var(--surface)_75%)] bg-[length:200%_100%] animate-[shimmerPulse_1.8s_infinite_linear]"
           >
             <div className="absolute inset-0 bg-black/[0.18] backdrop-blur-[2px]" />
             <motion.div

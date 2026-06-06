@@ -160,7 +160,7 @@ export default function BecomePartner() {
   }
 
   return (
-    <div className="container max-w-4xl px-6 text-left fade-in" style={{ paddingTop: '2.5rem', paddingBottom: '6rem' }}>
+    <div className="container max-w-4xl px-6 text-left fade-in" style={{ marginTop: '-4rem', paddingTop: '0.5rem', paddingBottom: '6rem' }}>
       
       {/* 1. HERO PITCH HEADER */}
       <div className="mb-10 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-6">

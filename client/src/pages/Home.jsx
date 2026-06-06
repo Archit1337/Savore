@@ -24,7 +24,7 @@ const CATEGORIES = [
 
 const HERO_SLIDES = [
   {
-    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1600&q=80",
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=2400&q=95",
     title: "Artisanal Pizza",
     tagline: "Experience Food Like Never Before"
   },
@@ -685,6 +685,7 @@ export default function Home() {
           alt=""
           aria-hidden="true"
           className="absolute inset-0 w-full h-full object-cover object-center opacity-20 dark:opacity-40 brightness-[1.1] dark:brightness-[0.7] select-none"
+          style={{ imageRendering: '-webkit-optimize-contrast' }}
         />
         {/* Left-side readability fade so text column stays crisp */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,_var(--bg-primary)_15%,_transparent_55%)]" />
