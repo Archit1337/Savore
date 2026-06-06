@@ -819,7 +819,7 @@ html.light .home-hero-grid p {
 
   /* Infinite fluid floating motion */
   transform: translateY(var(--idle-y, 0px)) translateX(var(--idle-x, 0px)) rotate(var(--idle-rotate, 0deg));
-  animation: heroLetterDrift 6s ease-in-out infinite;
+  /* animation: heroLetterDrift 6s ease-in-out infinite; */
 }
 
 @keyframes heroLetterDrift {

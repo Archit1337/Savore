@@ -11,6 +11,113 @@ import InteractiveLogo from './InteractiveLogo';
 import SafeImage from './SafeImage';
 import SafeAvatar from './SafeAvatar';
 
+function AnimatedNavLink({ to, children, className, style, icon }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const text = typeof children === 'string' ? children : '';
+  const characters = text.split('');
+
+  const char1Variants = {
+    initial: { y: 0 },
+    hover: (i) => ({
+      y: '100%',
+      transition: {
+        duration: 0.28,
+        ease: [0.16, 1, 0.3, 1],
+        delay: i * 0.012,
+      },
+    }),
+    exit: (i) => ({
+      y: 0,
+      transition: {
+        duration: 0.32,
+        ease: [0.16, 1, 0.3, 1],
+        delay: (characters.length - 1 - i) * 0.008,
+      },
+    }),
+  };
+
+  const char2Variants = {
+    initial: { y: '-100%' },
+    hover: (i) => ({
+      y: 0,
+      transition: {
+        duration: 0.32,
+        ease: [0.16, 1, 0.3, 1],
+        delay: i * 0.012 + 0.01,
+      },
+    }),
+    exit: (i) => ({
+      y: '-100%',
+      transition: {
+        duration: 0.28,
+        ease: [0.16, 1, 0.3, 1],
+        delay: (characters.length - 1 - i) * 0.008,
+      },
+    }),
+  };
+
+  return (
+    <NavLink
+      to={to}
+      style={style}
+      className={className}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <span className="flex items-center gap-1.5 relative py-0.5">
+        {icon && <span className="flex items-center shrink-0">{icon}</span>}
+        <span className="relative block overflow-hidden">
+          {/* Row 1: Original text */}
+          <span className="flex whitespace-nowrap">
+            {characters.map((char, index) => (
+              <motion.span
+                key={index}
+                variants={char1Variants}
+                custom={index}
+                animate={isHovered ? 'hover' : 'exit'}
+                initial="initial"
+                className="inline-block"
+              >
+                {char === ' ' ? '\u00A0' : char}
+              </motion.span>
+            ))}
+          </span>
+
+          {/* Row 2: Hover duplicate text */}
+          <span className="absolute top-0 left-0 flex whitespace-nowrap" aria-hidden="true">
+            {characters.map((char, index) => (
+              <motion.span
+                key={index}
+                variants={char2Variants}
+                custom={index}
+                animate={isHovered ? 'hover' : 'exit'}
+                initial="initial"
+                className="inline-block"
+              >
+                {char === ' ' ? '\u00A0' : char}
+              </motion.span>
+            ))}
+          </span>
+        </span>
+        {/* Running underline */}
+        <motion.span
+          className="absolute -bottom-1 left-0 right-0 h-[1px] bg-primary pointer-events-none"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: isHovered ? 1 : 0 }}
+          transition={{
+            duration: isHovered ? 0.38 : 0.32,
+            ease: [0.16, 1, 0.3, 1],
+            delay: isHovered ? 0.06 : 0,
+          }}
+          style={{
+            originX: isHovered ? 0 : 1,
+          }}
+        />
+      </span>
+    </NavLink>
+  );
+}
+
 export default function Navbar() {
   const { theme, toggleTheme, isDark } = useContext(ThemeContext);
   const { user, logoutUser, isAuthenticated } = useContext(AuthContext);
@@ -66,7 +173,7 @@ export default function Navbar() {
       </div>
 
       <nav className="flex gap-6 items-center" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}>
-        <NavLink 
+        <AnimatedNavLink 
           to="/" 
           style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
           className={({ isActive }) => 
@@ -76,8 +183,8 @@ export default function Navbar() {
           }
         >
           Home
-        </NavLink>
-        <NavLink 
+        </AnimatedNavLink>
+        <AnimatedNavLink 
           to="/discover" 
           style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
           className={({ isActive }) => 
@@ -87,19 +194,19 @@ export default function Navbar() {
           }
         >
           Discover
-        </NavLink>
-        <NavLink 
+        </AnimatedNavLink>
+        <AnimatedNavLink 
           to="/reels" 
           style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
           className={({ isActive }) => 
-            `nav-link-premium no-underline text-[15px] flex items-center gap-1.5 ${
+            `nav-link-premium no-underline text-[15px] ${
               isActive ? 'active-highlight' : 'inactive'
             }`
           }
+          icon={<Film size={15} />}
         >
-          <Film size={15} />
           Social Reels
-        </NavLink>
+        </AnimatedNavLink>
       </nav>
 
       {/* Action Utilities */}
