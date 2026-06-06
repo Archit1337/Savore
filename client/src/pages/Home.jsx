@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Flame, Sparkles, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -583,6 +584,16 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
   const [activeBatchIndex, setActiveBatchIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Scroll lock — prevent main page scroll when the location modal is open
+  useEffect(() => {
+    if (locationModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [locationModalOpen]);
 
   const handleNextBatch = () => {
     if ((activeBatchIndex + 1) * 3 < restaurants.length) {
@@ -1252,130 +1263,133 @@ export default function Home() {
       </div>
 
       {/* PREMIUM SLIDING BOTTOM ADDRESS SELECTOR DRAWER (DESKTOP/MOBILE MODAL) */}
-      <AnimatePresence>
-        {locationModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-6 select-none">
-            {/* Backdrop blur fade */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setLocationModalOpen(false)}
-              className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer"
-            />
-            
-            {/* Selector Card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="location-modal-panel rounded-[24px] p-7 max-w-[540px] w-full relative z-10 text-left overflow-y-auto max-h-[85vh]"
-            >
-              <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
-                <h3 className="text-base font-bold flex items-center gap-2">
-                  <MapPin size={16} className="text-primary" />
-                  Select Delivery Location
-                </h3>
-                <button onClick={() => setLocationModalOpen(false)} className="btn-icon btn-circle w-7 h-7">
-                  <X size={13} />
-                </button>
-              </div>
-
-              {/* Geolocation auto detect button */}
-              <button
-                type="button"
-                onClick={() => {
-                  detectGpsLocation();
-                  setLocationModalOpen(false);
-                }}
-                className={`w-full h-11 bg-primary text-white border-none rounded-xl font-bold flex items-center justify-center gap-2 mb-6 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${
-                  gpsLoading ? 'opacity-75 pointer-events-none' : ''
-                }`}
+      {createPortal(
+        <AnimatePresence>
+          {locationModalOpen && (
+            <div className="fixed inset-0 flex items-center justify-center z-[1000] p-6 select-none">
+              {/* Backdrop blur fade */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setLocationModalOpen(false)}
+                className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer"
+              />
+              
+              {/* Selector Card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="location-modal-panel rounded-[24px] p-7 max-w-[540px] w-full relative z-10 text-left overflow-y-auto max-h-[85vh]"
               >
-                <Navigation size={14} className={gpsLoading ? 'animate-stir' : ''} />
-                {gpsLoading ? 'Locating Coordinate Handshake...' : 'Detect Current GPS Location'}
-              </button>
+                <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
+                  <h3 className="text-base font-bold flex items-center gap-2">
+                    <MapPin size={16} className="text-primary" />
+                    Select Delivery Location
+                  </h3>
+                  <button onClick={() => setLocationModalOpen(false)} className="btn-icon btn-circle w-7 h-7">
+                    <X size={13} />
+                  </button>
+                </div>
 
-              {/* Saved delivery addresses list */}
-              {savedAddresses.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-[11px] font-extrabold text-text-muted mb-3 uppercase tracking-wider">
-                    Saved Delivery Addresses
-                  </h4>
-                  <div className="flex flex-col gap-3.5">
-                    {savedAddresses.map((addr) => (
-                      <div
-                        key={addr._id}
-                        onClick={() => {
-                          selectManualCity(addr.city, addr.area || addr.street);
-                          setLocationModalOpen(false);
-                        }}
-                        className={`p-4 rounded-[16px] border text-left cursor-pointer transition-all flex items-start gap-3 hover:-translate-y-[1px] ${
-                          activeLocality === (addr.area || addr.street)
-                            ? 'bg-primary/5 border-primary/30 shadow-md shadow-primary/5'
-                            : 'bg-white/[0.01] border-border-light hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 shrink-0 mt-0.5">
-                          {getAddressIcon(addr.addressType)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center">
-                            <strong className="text-[13.5px] text-text-primary capitalize">{addr.addressType}</strong>
-                            {addr.isDefault && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-green-500/10 text-green-500 border border-green-500/20 rounded-md uppercase">Default</span>
-                            )}
+                {/* Geolocation auto detect button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    detectGpsLocation();
+                    setLocationModalOpen(false);
+                  }}
+                  className={`w-full h-11 bg-primary text-white border-none rounded-xl font-bold flex items-center justify-center gap-2 mb-6 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${
+                    gpsLoading ? 'opacity-75 pointer-events-none' : ''
+                  }`}
+                >
+                  <Navigation size={14} className={gpsLoading ? 'animate-stir' : ''} />
+                  {gpsLoading ? 'Locating Coordinate Handshake...' : 'Detect Current GPS Location'}
+                </button>
+
+                {/* Saved delivery addresses list */}
+                {savedAddresses.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-[11px] font-extrabold text-text-muted mb-3 uppercase tracking-wider">
+                      Saved Delivery Addresses
+                    </h4>
+                    <div className="flex flex-col gap-3.5">
+                      {savedAddresses.map((addr) => (
+                        <div
+                          key={addr._id}
+                          onClick={() => {
+                            selectManualCity(addr.city, addr.area || addr.street);
+                            setLocationModalOpen(false);
+                          }}
+                          className={`p-4 rounded-[16px] border text-left cursor-pointer transition-all flex items-start gap-3 hover:-translate-y-[1px] ${
+                            activeLocality === (addr.area || addr.street)
+                              ? 'bg-primary/5 border-primary/30 shadow-md shadow-primary/5'
+                              : 'bg-white/[0.01] border-border-light hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 shrink-0 mt-0.5">
+                            {getAddressIcon(addr.addressType)}
                           </div>
-                          <p className="text-xs text-text-secondary mt-1.5 truncate leading-relaxed">
-                            {addr.houseNumber}, {addr.street}, {addr.area}
-                          </p>
-                          <p className="text-[11px] text-text-muted mt-1 leading-normal font-semibold">
-                            {addr.city}, {addr.state} - {addr.pincode}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-center">
+                              <strong className="text-[13.5px] text-text-primary capitalize">{addr.addressType}</strong>
+                              {addr.isDefault && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 bg-green-500/10 text-green-500 border border-green-500/20 rounded-md uppercase">Default</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-text-secondary mt-1.5 truncate leading-relaxed">
+                              {addr.houseNumber}, {addr.street}, {addr.area}
+                            </p>
+                            <p className="text-[11px] text-text-muted mt-1 leading-normal font-semibold">
+                              {addr.city}, {addr.state} - {addr.pincode}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Indian City manual switcher */}
+                <div>
+                  <h4 className="text-[11px] font-extrabold text-text-muted mb-3.5 uppercase tracking-wider">
+                    Browse Major Indian Cities
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {CITIES.map((city) => {
+                      const isSelected = activeCity === city;
+                      return (
+                        <button
+                          type="button"
+                          key={city}
+                          onClick={() => {
+                            selectManualCity(city);
+                            setLocationModalOpen(false);
+                          }}
+                          className={`h-[52px] rounded-xl text-[11px] font-bold border cursor-pointer transition-all flex flex-col items-center justify-center gap-0.5 ${
+                            isSelected
+                              ? 'bg-primary border-primary text-white shadow-sm'
+                              : 'bg-white/[0.02] border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          <span>{city}</span>
+                          <span className={`text-[8px] font-normal tracking-wide ${isSelected ? 'text-white/60' : 'text-text-muted/65'}`}>
+                            {getCityCoordsLabel(city)}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
-
-              {/* Indian City manual switcher */}
-              <div>
-                <h4 className="text-[11px] font-extrabold text-text-muted mb-3.5 uppercase tracking-wider">
-                  Browse Major Indian Cities
-                </h4>
-                <div className="grid grid-cols-4 gap-2">
-                  {CITIES.map((city) => {
-                    const isSelected = activeCity === city;
-                    return (
-                      <button
-                        type="button"
-                        key={city}
-                        onClick={() => {
-                          selectManualCity(city);
-                          setLocationModalOpen(false);
-                        }}
-                        className={`h-[52px] rounded-xl text-[11px] font-bold border cursor-pointer transition-all flex flex-col items-center justify-center gap-0.5 ${
-                          isSelected
-                            ? 'bg-primary border-primary text-white shadow-sm'
-                            : 'bg-white/[0.02] border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/[0.06]'
-                        }`}
-                      >
-                        <span>{city}</span>
-                        <span className={`text-[8px] font-normal tracking-wide ${isSelected ? 'text-white/60' : 'text-text-muted/65'}`}>
-                          {getCityCoordsLabel(city)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="h-8" />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <div className="h-8" />
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

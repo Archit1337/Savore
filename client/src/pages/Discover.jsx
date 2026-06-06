@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -161,6 +162,17 @@ export default function Discover() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null); // 'price' | 'locality' | 'cuisine' | null
   const [exploreNationwide, setExploreNationwide] = useState(false);
+
+  // Scroll lock — prevent main page scroll whenever any modal/sheet is open
+  useEffect(() => {
+    const isOpen = locationModalOpen || mobileFiltersOpen;
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [locationModalOpen, mobileFiltersOpen]);
 
   // Close custom dropdowns when clicking outside
   useEffect(() => {
@@ -797,9 +809,10 @@ export default function Discover() {
       </div>
 
       {/* 3. PREMIUM SLIDING BOTTOM ADDRESS SELECTOR DRAWER (DESKTOP/MOBILE MODAL) */}
-      <AnimatePresence>
-        {locationModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-6 select-none">
+      {createPortal(
+        <AnimatePresence>
+          {locationModalOpen && (
+            <div className="fixed inset-0 flex items-center justify-center z-[9999990] p-6 select-none">
             {/* Backdrop blur fade */}
             <motion.div 
               initial={{ opacity: 0 }}
@@ -915,14 +928,17 @@ export default function Discover() {
               </div>
 
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* 4. MOBILE FILTERS BOTTOM SHEET DRAWER */}
-      <AnimatePresence>
-        {mobileFiltersOpen && (
-          <div className="fixed inset-0 flex items-end justify-center z-50 md:hidden">
+      {createPortal(
+        <AnimatePresence>
+          {mobileFiltersOpen && (
+            <div className="fixed inset-0 flex items-end justify-center z-[9999990] md:hidden">
             {/* Backdrop blur */}
             <motion.div 
               initial={{ opacity: 0 }}
@@ -1161,9 +1177,11 @@ export default function Discover() {
                 Apply Filters
               </button>
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );
