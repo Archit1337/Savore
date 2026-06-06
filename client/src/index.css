@@ -2078,6 +2078,12 @@ html.light .glass-navbar-premium nav a:hover {
   z-index: 9999;
 }
 
+.cinematic-loader-overlay svg path,
+.cinematic-loader-overlay svg rect,
+.cinematic-loader-overlay svg ellipse {
+  vector-effect: non-scaling-stroke !important;
+}
+
 html.light .cinematic-loader-overlay,
 :root.light .cinematic-loader-overlay {
   background-color: #f9f6f0; /* Soft luxury matte cream */
