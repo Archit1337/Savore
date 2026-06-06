@@ -693,6 +693,20 @@ export default function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(to_left,_rgba(246,243,238,0.55)_0%,_transparent_50%)] dark:bg-[linear-gradient(to_left,_rgba(4,4,8,0.65)_0%,_transparent_50%)]" />
         {/* Bottom fade into page background */}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_transparent_35%,_var(--bg-primary)_88%)]" />
+        {/* Dynamic Weather Ambient Vignette Overlay */}
+        <div 
+          className="absolute inset-0 transition-all duration-1000"
+          style={{
+            background: `radial-gradient(circle at right 30% top 30%, ${
+              weatherData.climate === 'sunny' ? 'rgba(255, 106, 77, 0.05)' :
+              weatherData.climate === 'rainy' ? 'rgba(74, 144, 226, 0.04)' :
+              weatherData.climate === 'starry' ? 'rgba(111, 66, 193, 0.05)' :
+              weatherData.climate === 'snowy' ? 'rgba(0, 180, 216, 0.03)' :
+              weatherData.climate === 'stormy' ? 'rgba(102, 16, 242, 0.04)' :
+              'rgba(255, 106, 77, 0.04)'
+            } 0%, transparent 60%)`
+          }}
+        />
       </div>
 
       <div className="container relative z-[1]">
@@ -716,7 +730,8 @@ export default function Home() {
                 <div className="flex flex-wrap items-center gap-3 mb-2">
                   {/* Weather Concierge Live Capsule */}
                   <motion.div
-                    whileHover={{ y: -1 }}
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 18 }}
                     className="weather-concierge-badge inline-flex items-center gap-2 select-none !mb-0"
                   >
                     {renderWeatherIcon(weatherData.climate)}
@@ -732,9 +747,11 @@ export default function Home() {
 
                   {/* Glassmorphic Indian Location Indicator Picker */}
                   <motion.div
-                    whileHover={{ y: -1 }}
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 18 }}
                     onClick={() => setLocationModalOpen(true)}
-                    className="weather-concierge-badge cursor-pointer inline-flex items-center gap-2 select-none active:scale-[0.98] transition-all !mb-0"
+                    className="weather-concierge-badge cursor-pointer inline-flex items-center gap-2 select-none transition-all !mb-0"
                     title="Switch your Indian delivery region"
                   >
                     <MapPin size={13} className="text-primary" />
@@ -846,13 +863,16 @@ export default function Home() {
           className="mt-[30px] flex flex-wrap justify-center gap-2.5 relative z-10"
         >
           {CATEGORIES.slice(1).map((cat) => (
-            <button 
+            <motion.button 
               key={cat.name} 
               onClick={() => handleCategoryClick(cat.tag)} 
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 400, damping: 18 }}
               className="chip text-[13px] px-[22px] py-2.5"
             >
               {cat.name}
-            </button>
+            </motion.button>
           ))}
         </motion.div>
 

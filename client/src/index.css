@@ -533,34 +533,45 @@ html.light .btn-glass:hover {
   align-items: center;
   justify-content: center;
   padding: 10px 20px;
-  border-radius: 22px;
-  background: var(--neu-bg);
-  border: 1px solid var(--neu-border);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 13.5px;
+  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
-  box-shadow: var(--neu-inset-highlight), var(--neu-shadow-out);
-  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
 
+html.light .chip {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
 .chip:hover {
-  box-shadow: var(--neu-inset-highlight-hover), var(--neu-shadow-hover);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 106, 77, 0.25);
   color: var(--text-primary);
-  transform: translateY(-1px);
+}
+
+html.light .chip:hover {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .chip:active {
-  box-shadow: var(--neu-shadow-in);
-  transform: scale(0.985);
+  transform: scale(0.96);
 }
 
 .chip.active {
-  background: var(--primary);
+  background: var(--primary-gradient);
   border-color: transparent;
   color: #ffffff;
-  box-shadow: var(--neu-primary-inset), var(--neu-primary-shadow);
+  box-shadow: 0 4px 15px rgba(255, 106, 77, 0.2);
 }
 
 /* --- TYPOGRAPHY & LAYOUTS --- */
@@ -774,7 +785,7 @@ html.light .home-hero-grid p {
   font-weight: 800;
   font-size: clamp(34px, 4.2vw, 48px); /* Professional compact size, down from 68px */
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   margin: 0 0 10px;
 }
 
@@ -2379,6 +2390,10 @@ html.light .weather-classic-line {
 /* 3. Category Tag Lift on Hover */
 .glass-card span.text-\[11px\] {
   transition: transform var(--transition-smooth), background-color var(--transition-smooth), color var(--transition-smooth);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 10px !important;
 }
 .glass-card:hover span.text-\[11px\] {
   transform: translateY(-2px);
