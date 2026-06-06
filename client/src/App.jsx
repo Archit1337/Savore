@@ -62,7 +62,7 @@ export default function App() {
       <ChefMoodProvider>
         <AnimatePresence mode="wait">
           {appLoading && (
-            <CinematicLoader onComplete={() => setAppLoading(false)} />
+            <CinematicLoader onComplete={() => { setAppLoading(false); window.savoreLoaderComplete = true; }} />
           )}
         </AnimatePresence>
 

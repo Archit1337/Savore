@@ -11,6 +11,132 @@ import { useChefMood } from '../components/ChefSystem/ChefMoodEngine';
 import { soundController } from '../components/ChefSystem/SoundController';
 import { LocationContext, CITIES, CITY_LOCALITIES, CITY_COORDINATES } from '../context/LocationContext';
 
+const bgRevealVariant = {
+  hidden: { opacity: 0, scale: 1.08 },
+  visible: {
+    opacity: 1,
+    scale: 1.0,
+    transition: {
+      duration: 1.8,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const topBannerVariant = {
+  hidden: { opacity: 0, y: -35 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: 0.1,
+      duration: 1.1,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const conciergeRevealVariant = {
+  hidden: { opacity: 0, y: -30, x: 0 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    x: 0,
+    transition: {
+      delay: 0.12,
+      duration: 0.9,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const headlineRevealVariant = {
+  hidden: { opacity: 0, x: -50, y: 0 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    transition: {
+      delay: 0.25,
+      duration: 1.1,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const descRevealVariant = {
+  hidden: { opacity: 0, x: -30, y: 20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    transition: {
+      delay: 0.38,
+      duration: 1.1,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const searchRevealVariant = {
+  hidden: { opacity: 0, x: 0, y: 40, scale: 0.97 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    scale: 1.0,
+    transition: {
+      delay: 0.5,
+      duration: 1.2,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const ctaRevealVariant = {
+  hidden: { opacity: 0, y: 15, x: 35 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    x: 0,
+    transition: {
+      delay: 0.62,
+      duration: 1.1,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const mascotRevealVariant = {
+  hidden: { opacity: 0, x: 65, y: 10, scale: 0.93, rotate: 4 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    scale: 1.0,
+    rotate: 0,
+    transition: {
+      delay: 0.45,
+      duration: 1.4,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
+const categoriesRevealVariant = {
+  hidden: { opacity: 0, y: 40, scale: 0.97 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1.0,
+    transition: {
+      delay: 0.75,
+      duration: 1.1,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
 
 
 const getCityCoordsLabel = (cityName) => {
@@ -421,6 +547,25 @@ export default function Home() {
     gpsLoading
   } = useContext(LocationContext);
 
+  const [isPageReady, setIsPageReady] = useState(false);
+
+  useEffect(() => {
+    if (!window.savoreLoaderComplete) {
+      const interval = setInterval(() => {
+        if (window.savoreLoaderComplete) {
+          setIsPageReady(true);
+          clearInterval(interval);
+        }
+      }, 50);
+      return () => clearInterval(interval);
+    } else {
+      const timer = setTimeout(() => {
+        setIsPageReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const isRestaurantOutOfRange = (rest) => {
     let dist = rest.distance;
     if (dist === undefined && rest.coordinates?.coordinates) {
@@ -696,7 +841,12 @@ export default function Home() {
       onMouseMove={handleMouseMove}
     >
       {/* 🎬 HERO BACKGROUND — crisp object-cover img, no blur/scale distortion */}
-      <div className="absolute top-0 left-0 right-0 h-[680px] overflow-hidden z-0 pointer-events-none">
+      <motion.div 
+        variants={bgRevealVariant}
+        initial="hidden"
+        animate={isPageReady ? "visible" : "hidden"}
+        className="absolute top-0 left-0 right-0 h-[680px] overflow-hidden z-0 pointer-events-none"
+      >
         {/* Sharp food image — no blur, no scale, pure object-cover */}
         <img
           src={HERO_SLIDES[0].image}
@@ -725,7 +875,7 @@ export default function Home() {
             } 0%, transparent 60%)`
           }}
         />
-      </div>
+      </motion.div>
 
       <div className="container relative z-[1]">
         {/* HERO CONTENT SECTION */}
@@ -744,7 +894,12 @@ export default function Home() {
             
             <div className="relative z-10">
               {/* Weather & Location Concierge Live Capsule Section */}
-              <div className="flex flex-col items-start mb-6">
+              <motion.div 
+                variants={conciergeRevealVariant}
+                initial="hidden"
+                animate={isPageReady ? "visible" : "hidden"}
+                className="flex flex-col items-start mb-6"
+              >
                 <div className="flex flex-wrap items-center gap-3 mb-2">
                   {/* Weather Concierge Live Capsule */}
                   <motion.div
@@ -793,10 +948,15 @@ export default function Home() {
                     {weatherData.line}
                   </motion.div>
                 </AnimatePresence>
-              </div>
+              </motion.div>
 
               {/* Nunito Bold Hero Headline */}
-              <h1 className="hero-headline select-none">
+              <motion.h1 
+                variants={headlineRevealVariant}
+                initial="hidden"
+                animate={isPageReady ? "visible" : "hidden"}
+                className="hero-headline select-none"
+              >
                 <span className="hero-headline-hover-group">
                   {"Experience Food".split("").map((char, idx) => (
                     <span
@@ -810,15 +970,26 @@ export default function Home() {
                 <span className="hero-headline-accent">
                   Like Never Before
                 </span>
-              </h1>
+              </motion.h1>
 
 
-              <p className="text-[19px] text-[var(--text-secondary)] mb-4 max-w-[560px] font-light leading-[1.65]">
+              <motion.p 
+                variants={descRevealVariant}
+                initial="hidden"
+                animate={isPageReady ? "visible" : "hidden"}
+                className="text-[19px] text-[var(--text-secondary)] mb-4 max-w-[560px] font-light leading-[1.65]"
+              >
                 Discover. Savor. Indulge. Immerse your senses in cinema-grade, chef-curated recipe Reels. Order breathtaking culinary masterpieces instantly, and track every dining detail from kitchen to table.
-              </p>
+              </motion.p>
 
               {/* Large Glass Search Panel */}
-              <form onSubmit={handleSearchSubmit} className="flex gap-3.5 max-w-[520px] relative z-10">
+              <motion.form 
+                variants={searchRevealVariant}
+                initial="hidden"
+                animate={isPageReady ? "visible" : "hidden"}
+                onSubmit={handleSearchSubmit} 
+                className="flex gap-3.5 max-w-[520px] relative z-10"
+              >
                 <div className="relative flex-1">
                   <Search 
                     size={20} 
@@ -838,10 +1009,15 @@ export default function Home() {
                 >
                   Search
                 </button>
-              </form>
+              </motion.form>
 
               {/* CTA Option Buttons */}
-              <div className="flex gap-3 mt-3 items-center">
+              <motion.div 
+                variants={ctaRevealVariant}
+                initial="hidden"
+                animate={isPageReady ? "visible" : "hidden"}
+                className="flex gap-3 mt-3 items-center"
+              >
                 <button 
                   onClick={() => navigate('/discover')}
                   className="btn btn-primary px-[26px] py-3 text-[14px] rounded-[16px] flex items-center gap-2"
@@ -856,28 +1032,34 @@ export default function Home() {
                   <Play size={16} fill="currentColor" />
                   Watch Reels
                 </button>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
 
           {/* Right Mascot Column */}
           <motion.div
-            animate={{ 
-              x: mouseOffset.x * 14,
-              y: mouseOffset.y * 10
-            }}
-            transition={{ type: "spring", stiffness: 50, damping: 14 }}
+            variants={mascotRevealVariant}
+            initial="hidden"
+            animate={isPageReady ? "visible" : "hidden"}
             className="relative z-20"
           >
-            <MascotChef />
+            <motion.div
+              animate={{ 
+                x: mouseOffset.x * 14,
+                y: mouseOffset.y * 10
+              }}
+              transition={{ type: "spring", stiffness: 50, damping: 14 }}
+            >
+              <MascotChef />
+            </motion.div>
           </motion.div>
         </section>
 
         {/* 🍱 HORIZONTAL QUICK CATEGORIES ROW */}
         <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
+          variants={categoriesRevealVariant}
+          initial="hidden"
+          animate={isPageReady ? "visible" : "hidden"}
           className="mt-[30px] flex flex-wrap justify-center gap-2.5 relative z-10"
         >
           {CATEGORIES.slice(1).map((cat) => (
