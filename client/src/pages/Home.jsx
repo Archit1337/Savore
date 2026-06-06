@@ -11,6 +11,7 @@ import SafeImage from '../components/SafeImage';
 import { useChefMood } from '../components/ChefSystem/ChefMoodEngine';
 import { soundController } from '../components/ChefSystem/SoundController';
 import { LocationContext, CITIES, CITY_LOCALITIES, CITY_COORDINATES } from '../context/LocationContext';
+import { ThemeContext } from '../context/ThemeContext';
 
 const bgRevealVariant = {
   hidden: { opacity: 0, scale: 1.08 },
@@ -188,6 +189,18 @@ const HERO_SLIDES = [
     title: "Valrhona Soufflé",
     tagline: "Discover. Order. Enjoy."
   }
+];
+
+// Dark mode hero pool — rotates randomly between these two
+const DARK_HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=2800&q=100", // moody artisanal pizza
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=2800&q=100", // vibrant editorial food spread
+];
+
+// Light mode hero pool — rotates randomly between these two
+const LIGHT_HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=2800&q=100", // al-fresco brunch spread
+  "https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=2800&q=100", // French toast with berries, golden morning light
 ];
 
 const MOCK_RESTAURANTS = [
@@ -548,6 +561,8 @@ export default function Home() {
     gpsLoading
   } = useContext(LocationContext);
 
+  const { isDark } = useContext(ThemeContext);
+
   const [isPageReady, setIsPageReady] = useState(false);
 
   useEffect(() => {
@@ -764,11 +779,22 @@ export default function Home() {
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
 
+  // Hero background random image index (0 or 1) — switches every 9s
+  const [heroImgIdx, setHeroImgIdx] = useState(() => Math.round(Math.random()));
+
   // Slide loop every 25 seconds for slow, premium drift
   useEffect(() => {
     const timer = setInterval(() => {
       setSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 25000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Hero background image rotator — randomly picks next index every 9s
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroImgIdx((prev) => (prev === 0 ? 1 : 0));
+    }, 9000);
     return () => clearInterval(timer);
   }, []);
 
@@ -858,20 +884,47 @@ export default function Home() {
         animate={isPageReady ? "visible" : "hidden"}
         className="absolute top-0 left-0 right-0 h-[680px] overflow-hidden z-0 pointer-events-none"
       >
-        {/* Sharp food image — no blur, no scale, pure object-cover */}
-        <img
-          src={HERO_SLIDES[0].image}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover object-center opacity-20 dark:opacity-40 brightness-[1.1] dark:brightness-[0.7] select-none"
+        {/* ── DARK pool: 2 images always mounted, opacity 0 when not active ── */}
+        <motion.img
+          src={DARK_HERO_IMAGES[0]}
+          alt="" aria-hidden="true"
+          animate={{ opacity: isDark && heroImgIdx === 0 ? 0.40 : 0 }}
+          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none"
+          style={{ imageRendering: '-webkit-optimize-contrast' }}
+        />
+        <motion.img
+          src={DARK_HERO_IMAGES[1]}
+          alt="" aria-hidden="true"
+          animate={{ opacity: isDark && heroImgIdx === 1 ? 0.40 : 0 }}
+          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none"
+          style={{ imageRendering: '-webkit-optimize-contrast' }}
+        />
+
+        {/* ── LIGHT pool: 2 images always mounted, opacity 0 when not active ── */}
+        <motion.img
+          src={LIGHT_HERO_IMAGES[0]}
+          alt="" aria-hidden="true"
+          animate={{ opacity: !isDark && heroImgIdx === 0 ? 0.42 : 0 }}
+          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none"
+          style={{ imageRendering: '-webkit-optimize-contrast' }}
+        />
+        <motion.img
+          src={LIGHT_HERO_IMAGES[1]}
+          alt="" aria-hidden="true"
+          animate={{ opacity: !isDark && heroImgIdx === 1 ? 0.42 : 0 }}
+          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none"
           style={{ imageRendering: '-webkit-optimize-contrast' }}
         />
         {/* Left-side readability fade so text column stays crisp */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,_var(--bg-primary)_15%,_transparent_55%)]" />
-        {/* Right-side soft edge in light, deeper in dark */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_left,_rgba(246,243,238,0.55)_0%,_transparent_50%)] dark:bg-[linear-gradient(to_left,_rgba(11,15,20,0.65)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,_var(--bg-primary)_18%,_transparent_58%)]" />
+        {/* Right-side soft edge — lighter in light mode so image shows through more */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_left,_rgba(246,243,238,0.28)_0%,_transparent_50%)] dark:bg-[linear-gradient(to_left,_rgba(11,15,20,0.65)_0%,_transparent_50%)]" />
         {/* Bottom fade into page background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_transparent_35%,_var(--bg-primary)_88%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_transparent_40%,_var(--bg-primary)_90%)]" />
         {/* Dynamic Weather Ambient Vignette Overlay */}
         <div 
           className="absolute inset-0 transition-all duration-1000"
