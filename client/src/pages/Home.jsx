@@ -248,14 +248,47 @@ const ChillyIcon = () => (
   </span>
 );
 
+const StarryIcon = () => (
+  <span className="weather-icon-spin flex items-center justify-center">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6A4D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      <path d="M19 4v3M17.5 5.5h3" opacity="0.8" strokeWidth="2" />
+    </svg>
+  </span>
+);
+
+const StormyIcon = () => (
+  <span className="weather-icon-spin flex items-center justify-center">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6A4D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" className="weather-svg-cloud" />
+      <path d="m13 12-3 5h4l-3 5" style={{ stroke: '#FF6A4D', strokeWidth: 2 }} />
+    </svg>
+  </span>
+);
+
+const SnowyIcon = () => (
+  <span className="weather-icon-spin flex items-center justify-center">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6A4D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" className="weather-svg-cloud" />
+      <path d="M8 16h.01M12 16h.01M16 16h.01M10 20h.01M14 20h.01" strokeWidth="3.5" strokeLinecap="round" />
+    </svg>
+  </span>
+);
+
 const renderWeatherIcon = (climateType) => {
   switch (climateType) {
     case 'sunny':
       return <SunnyIcon />;
+    case 'starry':
+      return <StarryIcon />;
     case 'rainy':
       return <RainyIcon />;
     case 'cloudy':
       return <CloudyIcon />;
+    case 'stormy':
+      return <StormyIcon />;
+    case 'snowy':
+      return <SnowyIcon />;
     case 'chilly':
     default:
       return <ChillyIcon />;
@@ -275,6 +308,20 @@ const WEATHER_POOLS = {
       "Ah, what a beautiful sun-kissed afternoon! Mon ami, the weather calls for the crisp, clean flavor of our fresh Edo-style Salmon Sashimi! 🍣",
       "Bright skies demand bright flavors! Might I suggest our signature chilled Truffle Caprese or a glass of crisp champagne? 🥂",
       "The sun is shining beautifully today! Let's celebrate with light, vibrant dishes crafted just for you! ☀️🥗"
+    ]
+  },
+  starry: {
+    temp: "62°F",
+    lines: [
+      "Clear starry night. Perfect for a cozy glass of Cabernet and truffles.",
+      "A calm, clear evening. Let us craft a midnight feast for you.",
+      "Under the starlit sky. Savor slow-cooked delicacies and fine wine.",
+      "Cool night air. Cozy up with our chef's signature warm creations."
+    ],
+    chefLines: [
+      "Ah, what a beautiful, clear starlit night! Mon ami, cozy up with the rich warmth of our slow-cooked Wagyu Beef Bourguignon! 🥩✨",
+      "Under the starry night sky, let us elevate your evening with a glass of robust Cabernet Sauvignon and fresh truffles! 🍷🌌",
+      "A cool, calm evening is upon us. Celebrate the night with our molten-core chocolate creations! 🍫💫"
     ]
   },
   rainy: {
@@ -316,6 +363,30 @@ const WEATHER_POOLS = {
       "Ooh, there is a crisp chill in the air today! Warm up instantly with a steaming bowl of our 24-hour slow-cooked Spicy Fusion Ramen! 🍜🔥",
       "Cold winds are blowing, mon ami! Seek shelter in the warm luxury of our hot Truffle Gnocchi or sizzling dry-aged steaks! 🥩🍄",
       "Chilly evenings call for cozy culinary magic. Warm your senses with our molten core chocolate creations and robust stews! 🍲🍫"
+    ]
+  },
+  stormy: {
+    temp: "52°F",
+    lines: [
+      "Thunderstorms rolling in. Savor a rich, fiery stew by the fireplace.",
+      "Flash of lightning, roll of thunder: perfect excuse for comfort food.",
+      "Stormy skies outside. Warm up with our chef's spicy, bold delicacies."
+    ],
+    chefLines: [
+      "Mon dieu, quite a storm raging outside! ⚡ Let me warm you up with our fiery Spicy Szechuan Fusion Noodles! 🍜🔥",
+      "Thunder & lightning call for bold flavors! Cozy up with our sizzling hotpots and robust, spiced red wine! 🍷⛈️"
+    ]
+  },
+  snowy: {
+    temp: "32°F",
+    lines: [
+      "Snowflakes falling softly. Indulge in our warm, rich oven masterpieces.",
+      "A white winter wonderland. Warm your soul with hot truffle dishes.",
+      "Crisp, snowy day. The perfect backdrop for steaming hot culinary magic."
+    ],
+    chefLines: [
+      "Ah, a beautiful blanket of snow outside! ❄️ Cozy up with a piping hot bowl of our Signature Wild Mushroom Truffle Risotto! 🍄🍚",
+      "It is a winter wonderland! Let us bring you warmth with a hot, freshly baked chocolate soufflé! 🍫❄️"
     ]
   }
 };
@@ -367,11 +438,34 @@ export default function Home() {
   }, [restaurants]);
   
   // Live Weather Concierge State
-  const [weatherData, setWeatherData] = useState({
-    climate: 'sunny',
-    temp: '74°F',
-    line: "Sun-kissed afternoon: perfect for refreshing Edo-style sashimi.",
-    loading: true
+  const [weatherData, setWeatherData] = useState(() => {
+    const hour = new Date().getHours();
+    let initialClimate = 'sunny';
+    let temp = '74°F';
+    let line = "Sun-kissed afternoon: perfect for refreshing Edo-style sashimi.";
+    if (hour >= 5 && hour < 11) {
+      initialClimate = 'cloudy';
+      temp = '65°F';
+      line = "Silver skies. The perfect backdrop for an exquisite glass of red wine.";
+    } else if (hour >= 11 && hour < 17) {
+      initialClimate = 'sunny';
+      temp = '74°F';
+      line = "Sun-kissed afternoon: perfect for refreshing Edo-style sashimi.";
+    } else if (hour >= 17 && hour < 21) {
+      initialClimate = 'chilly';
+      temp = '48°F';
+      line = "A crisp chill in the air. Warm up with our steaming fusion ramen.";
+    } else {
+      initialClimate = 'starry';
+      temp = '62°F';
+      line = "Clear starry night. Perfect for a cozy glass of Cabernet and truffles.";
+    }
+    return {
+      climate: initialClimate,
+      temp,
+      line,
+      loading: true
+    };
   });
 
   const { setBubbleText, setCurrentMood, setCommentType } = useChefMood();
@@ -391,7 +485,7 @@ export default function Home() {
       } else if (hour >= 17 && hour < 21) {
         initialClimate = 'chilly';
       } else {
-        initialClimate = 'rainy';
+        initialClimate = 'starry';
       }
 
       const defaultPool = WEATHER_POOLS[initialClimate];
@@ -406,61 +500,60 @@ export default function Home() {
         });
       }
 
-      // 2. Request Geolocation
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            try {
-              const { latitude, longitude } = position.coords;
-              const response = await fetch(
-                `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
-              );
-              const data = await response.json();
-              if (data?.current_weather) {
-                const tempC = data.current_weather.temperature;
-                const tempF = Math.round((tempC * 9) / 5 + 32) + '°F';
-                const weathercode = data.current_weather.weathercode;
+      // 2. Fetch real-time weather using selected place coordinates (activeCoords)
+      if (activeCoords?.lat && activeCoords?.lng) {
+        try {
+          const response = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${activeCoords.lat}&longitude=${activeCoords.lng}&current_weather=true`
+          );
+          const data = await response.json();
+          if (data?.current_weather) {
+            const tempC = data.current_weather.temperature;
+            const tempF = Math.round((tempC * 9) / 5 + 32) + '°F';
+            const weathercode = data.current_weather.weathercode;
+            const isNight = data.current_weather.is_day !== undefined
+              ? data.current_weather.is_day === 0
+              : (new Date().getHours() >= 21 || new Date().getHours() < 5);
 
-                // Map weather code
-                let parsedClimate = 'sunny';
-                if (weathercode === 0 || weathercode === 1) {
-                  parsedClimate = 'sunny';
-                } else if (weathercode === 2 || weathercode === 3 || weathercode === 45 || weathercode === 48) {
-                  parsedClimate = 'cloudy';
-                } else if ((weathercode >= 51 && weathercode <= 67) || (weathercode >= 80 && weathercode <= 82)) {
-                  parsedClimate = 'rainy';
-                } else {
-                  parsedClimate = 'chilly'; // snow, storm, cold
-                }
-
-                const pool = WEATHER_POOLS[parsedClimate];
-                const poolLines = pool.lines;
-                const newRandomLine = poolLines[Math.floor(Math.random() * poolLines.length)];
-
-                if (active) {
-                  setWeatherData({
-                    climate: parsedClimate,
-                    temp: tempF,
-                    line: newRandomLine,
-                    loading: false
-                  });
-                }
-              }
-            } catch (err) {
-              console.error("Open-Meteo Weather Fetch Error:", err);
-              if (active) {
-                setWeatherData(prev => ({ ...prev, loading: false }));
-              }
+            // Map weather code
+            let parsedClimate = 'sunny';
+            if (weathercode === 0 || weathercode === 1) {
+              parsedClimate = isNight ? 'starry' : 'sunny';
+            } else if (weathercode === 2 || weathercode === 3 || weathercode === 45 || weathercode === 48) {
+              parsedClimate = 'cloudy';
+            } else if (weathercode >= 95) {
+              parsedClimate = 'stormy';
+            } else if ((weathercode >= 71 && weathercode <= 77) || weathercode === 85 || weathercode === 86) {
+              parsedClimate = 'snowy';
+            } else if ((weathercode >= 51 && weathercode <= 67) || (weathercode >= 80 && weathercode <= 82)) {
+              parsedClimate = 'rainy';
+            } else {
+              parsedClimate = 'chilly'; // other/cold
             }
-          },
-          (geoErr) => {
-            console.warn("Geolocation denied or unavailable, using system time fallback.", geoErr);
+
+            const pool = WEATHER_POOLS[parsedClimate] || WEATHER_POOLS.sunny;
+            const poolLines = pool.lines;
+            const newRandomLine = poolLines[Math.floor(Math.random() * poolLines.length)];
+
+            if (active) {
+              setWeatherData({
+                climate: parsedClimate,
+                temp: tempF,
+                line: newRandomLine,
+                loading: false
+              });
+            }
+          } else {
             if (active) {
               setWeatherData(prev => ({ ...prev, loading: false }));
             }
-          },
-          { timeout: 7000 }
-        );
+          }
+        } catch (err) {
+          console.error("Open-Meteo Weather Fetch Error:", err);
+          if (active) {
+            setWeatherData(prev => ({ ...prev, loading: false }));
+          }
+        }
       } else {
         if (active) {
           setWeatherData(prev => ({ ...prev, loading: false }));
@@ -473,7 +566,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeCoords.lat, activeCoords.lng]);
 
   // Sync chef bubble with parsed weather state on load
   useEffect(() => {
