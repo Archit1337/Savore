@@ -21,17 +21,17 @@ function AnimatedNavLink({ to, children, className, style, icon }) {
     hover: (i) => ({
       y: '100%',
       transition: {
-        duration: 0.28,
-        ease: [0.16, 1, 0.3, 1],
-        delay: i * 0.012,
+        duration: 0.42,
+        ease: [0.22, 1, 0.36, 1],
+        delay: i * 0.022,
       },
     }),
     exit: (i) => ({
       y: 0,
       transition: {
-        duration: 0.32,
-        ease: [0.16, 1, 0.3, 1],
-        delay: (characters.length - 1 - i) * 0.008,
+        duration: 0.46,
+        ease: [0.22, 1, 0.36, 1],
+        delay: (characters.length - 1 - i) * 0.015,
       },
     }),
   };
@@ -41,17 +41,17 @@ function AnimatedNavLink({ to, children, className, style, icon }) {
     hover: (i) => ({
       y: 0,
       transition: {
-        duration: 0.32,
-        ease: [0.16, 1, 0.3, 1],
-        delay: i * 0.012 + 0.01,
+        duration: 0.46,
+        ease: [0.22, 1, 0.36, 1],
+        delay: i * 0.022 + 0.018,
       },
     }),
     exit: (i) => ({
       y: '-100%',
       transition: {
-        duration: 0.28,
-        ease: [0.16, 1, 0.3, 1],
-        delay: (characters.length - 1 - i) * 0.008,
+        duration: 0.42,
+        ease: [0.22, 1, 0.36, 1],
+        delay: (characters.length - 1 - i) * 0.015,
       },
     }),
   };
@@ -105,9 +105,9 @@ function AnimatedNavLink({ to, children, className, style, icon }) {
           initial={{ scaleX: 0 }}
           animate={{ scaleX: isHovered ? 1 : 0 }}
           transition={{
-            duration: isHovered ? 0.38 : 0.32,
-            ease: [0.16, 1, 0.3, 1],
-            delay: isHovered ? 0.06 : 0,
+            duration: isHovered ? 0.52 : 0.45,
+            ease: [0.22, 1, 0.36, 1],
+            delay: isHovered ? 0.09 : 0,
           }}
           style={{
             originX: isHovered ? 0 : 1,
