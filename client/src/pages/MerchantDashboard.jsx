@@ -404,6 +404,9 @@ export default function MerchantDashboard() {
   
   // Global message feedback
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [toastOrder, setToastOrder] = useState(null);
+  const [previewReel, setPreviewReel] = useState(null);
   
   // Registration state
   const [hasRestaurant, setHasRestaurant] = useState(true);
@@ -640,6 +643,7 @@ export default function MerchantDashboard() {
     socket.on('connect', () => {
       console.log('🔌 Connected to Savoré WebSocket server');
       socket.emit('join_merchant_room', user._id);
+      setIsSocketConnected(true);
     });
 
     socket.on('new_order_alert', (data) => {
@@ -647,12 +651,18 @@ export default function MerchantDashboard() {
       
       // Ensure sound controller plays chime sound (enable it temporarily if not initialized/muted)
       if (soundController) {
-        // soundController is usually muted/disabled by default until clicked.
-        // We can play the chime by force-enabling or just calling playChime.
         const originalState = soundController.isEnabled;
         soundController.isEnabled = true;
         soundController.playChime();
         soundController.isEnabled = originalState;
+      }
+
+      // Show floating toast alert if the order is newly placed/pending
+      if (data.status === 'pending') {
+        setToastOrder({
+          id: data.orderId,
+          total: data.total
+        });
       }
 
       // Reload dashboard analytics and orders data instantly
@@ -662,6 +672,11 @@ export default function MerchantDashboard() {
 
     socket.on('disconnect', () => {
       console.log('🔌 Disconnected from WebSocket server');
+      setIsSocketConnected(false);
+    });
+
+    socket.on('connect_error', () => {
+      setIsSocketConnected(false);
     });
 
     return () => {
@@ -1131,6 +1146,107 @@ export default function MerchantDashboard() {
   return (
     <div className="container fade-in px-6 pb-32 text-left -mt-16 md:-mt-20">
       
+      {/* Reel Preview Modal overlay */}
+      <AnimatePresence>
+        {previewReel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ zIndex: 99999999 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+            onClick={() => setPreviewReel(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              className="relative w-full max-w-[340px] aspect-[9/16] bg-slate-950 rounded-[24px] overflow-hidden border border-white/10 shadow-2xl flex flex-col justify-end"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setPreviewReel(null)}
+                className="absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-black/60 border border-white/10 text-white flex items-center justify-center hover:bg-black/80 transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+              
+              {/* Video element */}
+              <video
+                src={resolveMediaUrl(previewReel.videoUrl)}
+                autoPlay
+                controls
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Alert overlay */}
+      <AnimatePresence>
+        {toastOrder && (
+          <motion.div
+            initial={{ opacity: 0, x: 80, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 80, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+            className="fixed top-6 right-6 z-[9999] w-[340px] glass-floating border-primary/40 rounded-2xl p-5 shadow-[0_12px_40px_rgba(255,106,77,0.25)] text-left flex flex-col gap-3.5 select-none"
+          >
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[11px] font-bold text-primary uppercase tracking-wider">New Order Placed!</span>
+              </div>
+              <button 
+                onClick={() => setToastOrder(null)} 
+                className="text-text-muted hover:text-text-primary bg-transparent border-none cursor-pointer p-0.5 rounded-lg flex items-center justify-center transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div>
+              <h4 className="text-[14px] font-bold text-text-primary">Order ID: #{toastOrder.id.substring(toastOrder.id.length - 8).toUpperCase()}</h4>
+              <p className="text-[13px] text-text-secondary mt-1">
+                Total: <strong className="text-primary font-extrabold">{formatPrice(toastOrder.total)}</strong>
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 mt-1">
+              <button
+                onClick={() => {
+                  setToastOrder(null);
+                  setActiveTab('orders');
+                  fetchOrdersData(1);
+                }}
+                className="btn btn-secondary px-3 py-1.5 rounded-xl text-[11px] font-bold flex-1 text-center"
+              >
+                View
+              </button>
+              <button
+                onClick={async () => {
+                  const targetId = toastOrder.id;
+                  setToastOrder(null);
+                  try {
+                    await handleUpdateStatus(targetId, 'preparing');
+                  } catch (err) {
+                    console.error('Failed to accept order from toast:', err.message);
+                  }
+                }}
+                className="btn btn-primary px-3 py-1.5 rounded-xl text-[11px] font-bold flex-1 text-center"
+              >
+                Accept Now
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* 1. BRAND COVER HEADER BACKDROP */}
       <div className="relative glass-panel rounded-[24px] overflow-hidden mb-8 border-[1.5px] border-[var(--border-glow)] shadow-[var(--shadow-glow)]">
         <div className="h-44 bg-[linear-gradient(135deg,_rgba(255,106,77,0.12)_0%,_rgba(7,10,14,0.45)_100%)] w-full relative overflow-hidden">
@@ -1161,8 +1277,23 @@ export default function MerchantDashboard() {
                 <AlertCircle size={10} /> Live Pending Orders
               </span>
             )}
-            <button onClick={fetchDashboardData} className="bg-transparent border-none text-[12px] text-text-secondary hover:text-text-primary flex items-center p-2 rounded-lg cursor-pointer transition-colors">
-              <RefreshCw size={12} className="mr-1.5 hover:rotate-180 transition-transform duration-500" /> Sync SaaS metrics
+            {isSocketConnected ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] font-extrabold select-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Live Connected
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-extrabold select-none animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                Offline (Syncing...)
+              </div>
+            )}
+            <button 
+              onClick={() => { fetchDashboardData(); if (hasRestaurant && activeTab === 'orders') fetchOrdersData(page); }} 
+              className="bg-transparent border-none text-text-secondary hover:text-text-primary flex items-center p-2 rounded-lg cursor-pointer transition-colors"
+              title="Manual Sync Feed"
+            >
+              <RefreshCw size={12} className="hover:rotate-180 transition-transform duration-500" />
             </button>
           </div>
         </div>
@@ -1271,8 +1402,44 @@ export default function MerchantDashboard() {
                     </div>
                     <h4 className="text-[12px] text-text-muted font-bold mt-4 uppercase tracking-wider">Reels Placements CTR</h4>
                     <h2 className="text-2xl font-extrabold mt-1 text-text-primary">
-                      {analytics?.conversionRate || 100}%
+                      {analytics?.conversionRate !== undefined ? analytics.conversionRate.toFixed(1) : '0.0'}%
                     </h2>
+                    
+                    {/* Glowing Circular Progress Ring (Apple Watch Activity Ring Style) */}
+                    <div className="absolute right-6 bottom-5 w-12 h-12 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90">
+                        {/* Background Track Circle */}
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="18"
+                          className="stroke-background-secondary/20 dark:stroke-white/5"
+                          strokeWidth="3.5"
+                          fill="transparent"
+                        />
+                        {/* Glowing progress circle */}
+                        <motion.circle
+                          cx="24"
+                          cy="24"
+                          r="18"
+                          stroke="var(--primary)"
+                          strokeWidth="3.5"
+                          fill="transparent"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 18}
+                          initial={{ strokeDashoffset: 2 * Math.PI * 18 }}
+                          animate={{ 
+                            strokeDashoffset: 2 * Math.PI * 18 - (2 * Math.PI * 18 * Math.min(Math.max(analytics?.conversionRate || 0, 0), 100)) / 100 
+                          }}
+                          transition={{ duration: 1.2, ease: "easeOut" }}
+                          style={{ filter: 'drop-shadow(0 0 4px rgba(255, 90, 60, 0.5))' }}
+                        />
+                      </svg>
+                      {/* Subtly centered mini pulse dot if CTR is high */}
+                      {(analytics?.conversionRate || 0) > 0 && (
+                        <div className="absolute w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      )}
+                    </div>
                   </div>
 
                 </div>
@@ -1565,16 +1732,16 @@ export default function MerchantDashboard() {
                       <p className="text-[12.5px] text-text-secondary mt-1">Check social conversions, click-through rates, and upload video recipes.</p>
                     </div>
 
-                    <div className="flex gap-1.5 p-1 bg-white/[0.02] border border-border-light rounded-xl select-none">
+                    <div className="flex gap-1.5 select-none">
                       <button 
                         onClick={() => setReelsSubTab('catalog')}
-                        className={`chip text-[12px] font-bold border-none px-4 py-2 ${reelsSubTab === 'catalog' ? 'bg-primary text-white' : 'bg-transparent text-text-secondary'}`}
+                        className={`chip text-[12px] font-bold border-none px-4 py-2 transition-all cursor-pointer ${reelsSubTab === 'catalog' ? 'bg-primary text-white' : 'bg-transparent text-text-secondary'}`}
                       >
                         My Catalog
                       </button>
                       <button 
                         onClick={() => setReelsSubTab('publish')}
-                        className={`chip text-[12px] font-bold border-none px-4 py-2 ${reelsSubTab === 'publish' ? 'bg-primary text-white' : 'bg-transparent text-text-secondary'}`}
+                        className={`chip text-[12px] font-bold border-none px-4 py-2 transition-all cursor-pointer ${reelsSubTab === 'publish' ? 'bg-primary text-white' : 'bg-transparent text-text-secondary'}`}
                       >
                         Publish Reel
                       </button>
@@ -1591,12 +1758,27 @@ export default function MerchantDashboard() {
                         {restaurantReels.map(reel => (
                           <div 
                             key={reel._id}
-                            className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-[20px] overflow-hidden flex flex-col justify-between hover:border-primary/20 transition-all duration-300"
+                            className="group bg-[var(--surface-container)] border border-[var(--border-light)] rounded-[20px] overflow-hidden flex flex-col justify-between hover:border-primary/20 transition-all duration-300"
                           >
-                            <div className="h-60 bg-slate-950 flex items-center justify-center relative">
-                              <Film size={32} className="text-text-muted/40" />
-                              <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm">
+                            <div 
+                              onClick={() => setPreviewReel(reel)}
+                              className="h-60 bg-slate-950 flex items-center justify-center relative cursor-pointer overflow-hidden"
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-10" />
+                              <Film size={32} className="text-text-muted/40 group-hover:scale-110 transition-transform duration-300 z-10" />
+                              
+                              {/* Hover preview play overlay */}
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                                <div className="p-3.5 rounded-full bg-primary/95 text-white shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                                  <Play size={18} fill="currentColor" />
+                                </div>
+                              </div>
+
+                              <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm z-20">
                                 Views: {reel.views || 0}
+                              </span>
+                              <span className="absolute bottom-3 right-3 bg-primary text-white rounded-lg text-[9px] px-2 py-0.5 font-extrabold uppercase tracking-[0.05em] opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
+                                Preview Reel
                               </span>
                             </div>
 
