@@ -9,6 +9,7 @@ export default function SafeAvatar({
   size = 28,
   className = '',
   style = {},
+  roundedClass = 'rounded-full',
 }) {
   const [status, setStatus] = useState('loading'); // loading, loaded, error
 
@@ -39,11 +40,14 @@ export default function SafeAvatar({
 
   const imageRef = useRef(null);
 
-  useEffect(() => {
-    if (status === 'loading' && imageRef.current && imageRef.current.complete) {
-      setStatus('loaded');
+  const imageRefCallback = (node) => {
+    if (node) {
+      imageRef.current = node;
+      if (node.complete && node.naturalWidth > 0 && status === 'loading') {
+        setStatus('loaded');
+      }
     }
-  }, [src, status]);
+  };
 
   // Derive initials from alt string
   const getInitials = (name) => {
@@ -58,7 +62,7 @@ export default function SafeAvatar({
   // Container circular layout - styled via Tailwind classes
   return (
     <div 
-      className={`rounded-full overflow-hidden flex items-center justify-center relative shrink-0 select-none bg-surface shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.15)] ${className}`}
+      className={`${roundedClass} overflow-hidden flex items-center justify-center relative shrink-0 select-none bg-surface shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.15)] ${className}`}
       style={{
         width: `${size}px`,
         height: `${size}px`,
@@ -76,7 +80,7 @@ export default function SafeAvatar({
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="absolute inset-0 rounded-full bg-[linear-gradient(90deg,_var(--surface)_25%,_var(--surface-bright)_50%,_var(--surface)_75%)] bg-[length:200%_100%] animate-[shimmerPulse_1.8s_infinite_linear]"
+            className={`absolute inset-0 ${roundedClass} bg-[linear-gradient(90deg,_var(--surface)_25%,_var(--surface-bright)_50%,_var(--surface)_75%)] bg-[length:200%_100%] animate-[shimmerPulse_1.8s_infinite_linear]`}
           />
         )}
       </AnimatePresence>
@@ -84,13 +88,13 @@ export default function SafeAvatar({
       {/* 2. Actual image — fully styled via Tailwind classes */}
       {src && status !== 'error' && (
         <img
-          ref={imageRef}
+          ref={imageRefCallback}
           src={src}
           alt={alt}
           loading="eager"
           onLoad={handleLoad}
           onError={handleError}
-          className={`absolute inset-0 w-full h-full object-cover object-center rounded-full block transition-opacity duration-350 ease-in-out ${
+          className={`absolute inset-0 w-full h-full object-cover object-center ${roundedClass} block transition-opacity duration-350 ease-in-out ${
             status === 'loaded' ? 'opacity-100' : 'opacity-0'
           }`}
         />
@@ -104,14 +108,14 @@ export default function SafeAvatar({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="absolute inset-0 rounded-full flex items-center justify-center text-white font-bold tracking-tight font-sans bg-gradient-to-br from-primary-hover to-primary"
+            className={`absolute inset-0 ${roundedClass} flex items-center justify-center text-white font-bold tracking-tight font-sans bg-gradient-to-br from-primary-hover to-primary`}
             style={{
               fontSize: `${Math.max(10, size * 0.38)}px`,
             }}
           >
             {alt && alt !== 'Savoré User' && alt !== 'user profile' && alt !== 'comment user' ? (
               // Show derived initials
-              <span className="leading-none select-none">
+              <span className="leading-none select-none font-extrabold">
                 {getInitials(alt)}
               </span>
             ) : (

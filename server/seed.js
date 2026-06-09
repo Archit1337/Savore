@@ -5,6 +5,7 @@ const Restaurant = require('./models/Restaurant');
 const FoodItem = require('./models/FoodItem');
 const Reel = require('./models/Reel');
 const Comment = require('./models/Comment');
+const Order = require('./models/Order');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
@@ -506,6 +507,7 @@ const seedDatabase = async () => {
     await FoodItem.deleteMany({});
     await Reel.deleteMany({});
     await Comment.deleteMany({});
+    await Order.deleteMany({});
     console.log('✅ Collections scrubbed successfully.');
 
     // 2. Generate Seed Users
@@ -600,7 +602,7 @@ const seedDatabase = async () => {
         deliveryFee: restMeta.deliveryFee,
         tags: restMeta.tags,
         cuisines: restMeta.cuisines,
-        revenue: Math.floor(Math.random() * 5000) + 150.0,
+        revenue: 0.0,
         owner: assignedOwner._id,
         city: locMeta.city,
         locality: locMeta.locality,
@@ -863,6 +865,86 @@ const seedDatabase = async () => {
     }
 
     console.log(`✅ Successfully seeded ${totalReelsSeeded} premium vertical reels (8-12 per restaurant).`);
+
+    // 6. Seeding Mock Orders for Restaurant Dashboard
+    console.log('🛍️ Seeding mock orders for restaurant owner dashboards...');
+    let totalOrdersSeeded = 0;
+    
+    // Use the seeded customer user as the buyer
+    const buyer = customer;
+    
+    const statuses = [
+      { status: 'delivered', paymentStatus: 'paid', paymentMethod: 'CARD' },
+      { status: 'delivered', paymentStatus: 'paid', paymentMethod: 'COD' },
+      { status: 'delivered', paymentStatus: 'paid', paymentMethod: 'ONLINE' },
+      { status: 'pending', paymentStatus: 'pending', paymentMethod: 'COD' },
+      { status: 'preparing', paymentStatus: 'paid', paymentMethod: 'ONLINE' },
+      { status: 'ready', paymentStatus: 'paid', paymentMethod: 'CARD' },
+      { status: 'out_for_delivery', paymentStatus: 'paid', paymentMethod: 'CARD' },
+      { status: 'cancelled', paymentStatus: 'pending', paymentMethod: 'COD' }
+    ];
+    
+    for (let r = 0; r < seededRestaurants.length; r++) {
+      const restaurant = seededRestaurants[r];
+      const dishes = seededFoodItems.filter(f => f.restaurant.toString() === restaurant._id.toString());
+      if (dishes.length === 0) continue;
+      
+      let additionalRevenue = 0;
+      
+      // Let's create these orders for each restaurant
+      for (let sIdx = 0; sIdx < statuses.length; sIdx++) {
+        const orderInfo = statuses[sIdx];
+        
+        // Select 1 or 2 random dishes
+        const selectedDishes = [];
+        const numDishes = Math.random() < 0.5 ? 1 : 2;
+        for (let d = 0; d < numDishes; d++) {
+          selectedDishes.push(dishes[Math.floor(Math.random() * dishes.length)]);
+        }
+        
+        const items = selectedDishes.map(dish => ({
+          foodItem: dish._id,
+          quantity: Math.floor(Math.random() * 2) + 1,
+          price: dish.price
+        }));
+        
+        const subtotal = parseFloat(items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2));
+        const deliveryFee = restaurant.deliveryFee || 0.0;
+        const tax = parseFloat((subtotal * 0.1).toFixed(2));
+        const total = parseFloat((subtotal + deliveryFee + tax).toFixed(2));
+        
+        const transactionId = `txn_${restaurant._id.toString().substring(18)}_${sIdx}_${Math.floor(Math.random() * 1000)}`;
+        
+        await Order.create({
+          user: buyer._id,
+          restaurant: restaurant._id,
+          items,
+          subtotal,
+          deliveryFee,
+          tax,
+          total,
+          paymentMethod: orderInfo.paymentMethod,
+          paymentStatus: orderInfo.paymentStatus,
+          transactionId: orderInfo.paymentMethod !== 'COD' ? transactionId : undefined,
+          status: orderInfo.status,
+          deliveryAddress: sIdx % 2 === 0 
+            ? 'Apartment 4B, Hill Road, Bandra West, Mumbai, Maharashtra - 400050'
+            : 'Level 5, Connaught Place, Block E, Delhi - 110001'
+        });
+        
+        if (orderInfo.status === 'delivered') {
+          additionalRevenue += subtotal;
+        }
+        totalOrdersSeeded++;
+      }
+      
+      // Credit restaurant revenue dynamically to match completed orders
+      restaurant.revenue = parseFloat((restaurant.revenue + additionalRevenue).toFixed(2));
+      await restaurant.save();
+    }
+    
+    console.log(`✅ Successfully seeded ${totalOrdersSeeded} mock client orders.`);
+
     console.log('\n🌟 DATABASE SEEDING COMPLETED SUCCESSFULLY! 🌟');
     console.log('\n--- Credentials for testing ---');
     console.log('Customer: customer@savore.com  (pass: password123)');

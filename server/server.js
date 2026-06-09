@@ -103,6 +103,31 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Savoré backend server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
+// Setup Socket.io WebSockets
+const socketio = require('socket.io');
+const io = socketio(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log(`🔌 New client socket connection established: ${socket.id}`);
+
+  // Room binding: join specific merchant room to receive target alerts
+  socket.on('join_merchant_room', (merchantId) => {
+    socket.join(`merchant_${merchantId}`);
+    console.log(`🚪 Socket ${socket.id} joined merchant room: merchant_${merchantId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Client socket disconnected: ${socket.id}`);
+  });
+});
+
 // Unhandled Promise Rejections handler
 process.on('unhandledRejection', (err, promise) => {
   console.error(`Unhandled Promise Rejection Error: ${err.message}`);

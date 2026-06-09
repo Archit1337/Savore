@@ -16,6 +16,7 @@ import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
 import { resolveMediaUrl } from '../utils/mediaResolver';
 import SafeAvatar from '../components/SafeAvatar';
+import SafeImage from '../components/SafeImage';
 import { soundController } from '../components/ChefSystem/SoundController';
 
 const getAddressIcon = (type) => {
@@ -822,7 +823,7 @@ export default function UserProfile() {
                       {socialHistory.favoriteDishes.map(dish => (
                         <div key={dish._id} className="bg-[var(--surface-bright)] border border-border-light rounded-2xl p-4 flex gap-3.5 items-center hover:scale-[1.01] transition-all">
                           <div className="w-16 h-16 rounded-xl bg-slate-900 overflow-hidden shrink-0">
-                            <SafeAvatar src={resolveMediaUrl(dish.image)} alt={dish.name} size={64} className="w-full h-full object-cover" />
+                            <SafeAvatar src={resolveMediaUrl(dish.image)} alt={dish.name} size={64} roundedClass="rounded-xl" className="w-full h-full object-cover" />
                           </div>
                           <div>
                             <h4 className="text-sm font-bold text-text-primary leading-tight">{dish.name}</h4>
@@ -849,7 +850,7 @@ export default function UserProfile() {
                       >
                         <div className="flex gap-4">
                           <div className="w-20 h-20 rounded-2xl bg-slate-900 overflow-hidden shrink-0 border border-border-light">
-                            <SafeAvatar src={resolveMediaUrl(rest.coverImage)} alt={rest.name} size={80} className="w-full h-full object-cover" />
+                            <SafeAvatar src={resolveMediaUrl(rest.coverImage)} alt={rest.name} size={80} roundedClass="rounded-2xl" className="w-full h-full object-cover" />
                           </div>
                           <div className="text-left">
                             <h4 className="text-base font-bold text-text-primary leading-snug">{rest.name}</h4>

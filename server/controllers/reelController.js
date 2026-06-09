@@ -451,6 +451,66 @@ const deleteReel = async (req, res, next) => {
   }
 };
 
+// @desc    Track impressions on a vertical video reel
+// @route   POST /api/reels/:id/impression
+// @access  Public
+const trackReelImpression = async (req, res, next) => {
+  try {
+    if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(404);
+      return next(new Error('Reel not found'));
+    }
+    const reel = await Reel.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { impressions: 1, views: 1 } },
+      { new: true }
+    );
+
+    if (!reel) {
+      res.status(404);
+      return next(new Error('Reel not found'));
+    }
+
+    res.json({
+      success: true,
+      impressions: reel.impressions,
+      views: reel.views,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Track clicks on a vertical video reel
+// @route   POST /api/reels/:id/click
+// @access  Public
+const trackReelClick = async (req, res, next) => {
+  try {
+    if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(404);
+      return next(new Error('Reel not found'));
+    }
+    const reel = await Reel.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { clicks: 1, orderNowClicks: 1 } },
+      { new: true }
+    );
+
+    if (!reel) {
+      res.status(404);
+      return next(new Error('Reel not found'));
+    }
+
+    res.json({
+      success: true,
+      clicks: reel.clicks,
+      orderNowClicks: reel.orderNowClicks,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   uploadReel,
   getReelsFeed,
@@ -458,6 +518,8 @@ module.exports = {
   addCommentToReel,
   trackReelView,
   trackReelOrderClick,
+  trackReelImpression,
+  trackReelClick,
   getOwnerReels,
   updateReel,
   deleteReel,

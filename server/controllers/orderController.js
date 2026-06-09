@@ -28,6 +28,12 @@ const placeOrder = async (req, res, next) => {
       return next(new Error('Restaurant not found'));
     }
 
+    // Prevent self-ordering (restaurant owners cannot place orders at their own kitchen)
+    if (restaurant.owner.toString() === req.user.id) {
+      res.status(400);
+      return next(new Error('You cannot place an order at your own restaurant.'));
+    }
+
     // Server-side Region Locked Ordering validation
     const userRegion = req.headers['x-user-region'] || req.body.userRegion;
     if (userRegion && restaurant.city) {
@@ -83,6 +89,16 @@ const placeOrder = async (req, res, next) => {
       deliveryAddress,
       status: 'pending',
     });
+
+    // Emit live socket event to the restaurant owner's room
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`merchant_${restaurant.owner.toString()}`).emit('new_order_alert', {
+        orderId: order._id,
+        total: order.total,
+        status: order.status
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -242,13 +258,35 @@ const updateOrderStatus = async (req, res, next) => {
     }
 
     const restaurant = await Restaurant.findById(order.restaurant);
-    if (!restaurant || (restaurant.owner.toString() !== req.user.id && req.user.role !== 'admin')) {
+    const isOwnerOrAdmin = restaurant && (restaurant.owner.toString() === req.user.id || req.user.role === 'admin');
+    const isCustomerOwnerOfOrder = order.user.toString() === req.user.id;
+
+    if (!isOwnerOrAdmin && !(isCustomerOwnerOfOrder && order.status === 'out_for_delivery' && status === 'delivered')) {
       res.status(403);
       return next(new Error('Unauthorized to modify this order status'));
     }
 
+    // If transitioning to delivered, resolve COD payment and credit restaurant revenue
+    if (status === 'delivered' && order.status !== 'delivered') {
+      if (order.paymentMethod === 'COD' && order.paymentStatus !== 'paid') {
+        order.paymentStatus = 'paid';
+        restaurant.revenue = parseFloat((restaurant.revenue + order.subtotal).toFixed(2));
+        await restaurant.save();
+      }
+    }
+
     order.status = status;
     await order.save();
+
+    // Emit live socket event to the restaurant owner's room to update dashboard metrics
+    const io = req.app.get('io');
+    if (io && restaurant) {
+      io.to(`merchant_${restaurant.owner.toString()}`).emit('new_order_alert', {
+        orderId: order._id,
+        total: order.total,
+        status: order.status
+      });
+    }
 
     res.json({
       success: true,

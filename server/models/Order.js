@@ -83,4 +83,6 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
+orderSchema.index({ restaurant: 1, status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Order', orderSchema);

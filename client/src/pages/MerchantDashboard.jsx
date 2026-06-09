@@ -17,33 +17,37 @@ import { formatPrice } from '../utils/priceFormatter';
 import { resolveMediaUrl } from '../utils/mediaResolver';
 import SafeAvatar from '../components/SafeAvatar';
 import SafeImage from '../components/SafeImage';
-
-const soundController = typeof window !== 'undefined' ? window.soundController : null;
+import { io } from 'socket.io-client';
+import { soundController } from '../components/ChefSystem/SoundController';
 
 // Premium Apple/Stripe-Inspired Custom SVG Analytics Charts Component
 function AnalyticsCharts({ analytics, menuLength, reelsCount }) {
   const R = analytics?.totalRevenue || 0;
   const completedOrders = analytics?.completedOrders || 0;
 
-  // Mock historical growth curves anchored securely to real totals
-  const monthlyRevenue = [
-    { month: 'Dec', val: R * 0.12 },
-    { month: 'Jan', val: R * 0.28 },
-    { month: 'Feb', val: R * 0.45 },
-    { month: 'Mar', val: R * 0.62 },
-    { month: 'Apr', val: R * 0.84 },
-    { month: 'May', val: R }
-  ];
+  // Read real time-series aggregated data from analytics (with fallbacks if empty/loading)
+  const monthlyRevenue = analytics?.monthlyRevenue && analytics.monthlyRevenue.length > 0
+    ? analytics.monthlyRevenue
+    : [
+        { month: 'Dec', val: R * 0.12 },
+        { month: 'Jan', val: R * 0.28 },
+        { month: 'Feb', val: R * 0.45 },
+        { month: 'Mar', val: R * 0.62 },
+        { month: 'Apr', val: R * 0.84 },
+        { month: 'May', val: R }
+      ];
 
-  const dailyOrders = [
-    { day: 'Mon', count: Math.round(completedOrders * 0.1) },
-    { day: 'Tue', count: Math.round(completedOrders * 0.12) },
-    { day: 'Wed', count: Math.round(completedOrders * 0.18) },
-    { day: 'Thu', count: Math.round(completedOrders * 0.15) },
-    { day: 'Fri', count: Math.round(completedOrders * 0.22) },
-    { day: 'Sat', count: Math.round(completedOrders * 0.25) },
-    { day: 'Sun', count: Math.round(completedOrders * 0.08) }
-  ];
+  const dailyOrders = analytics?.weeklySpikes && analytics.weeklySpikes.length > 0
+    ? analytics.weeklySpikes
+    : [
+        { day: 'Mon', count: Math.round(completedOrders * 0.1) },
+        { day: 'Tue', count: Math.round(completedOrders * 0.12) },
+        { day: 'Wed', count: Math.round(completedOrders * 0.18) },
+        { day: 'Thu', count: Math.round(completedOrders * 0.15) },
+        { day: 'Fri', count: Math.round(completedOrders * 0.22) },
+        { day: 'Sat', count: Math.round(completedOrders * 0.25) },
+        { day: 'Sun', count: Math.round(completedOrders * 0.08) }
+      ];
 
   const lineX = (index) => 45 + index * 80;
   const lineY = (value) => {
@@ -226,6 +230,153 @@ function AnalyticsCharts({ analytics, menuLength, reelsCount }) {
   );
 }
 
+// Premium simulated interactive delivery tracking map (Merchant View)
+function DeliveryMapSimulator({ orderId, onCompleteClick }) {
+  const progressKey = `delivery_progress_${orderId}`;
+  const [progress, setProgress] = useState(() => {
+    const saved = localStorage.getItem(progressKey);
+    return saved ? parseFloat(saved) : 0;
+  });
+
+  useEffect(() => {
+    if (progress >= 100) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        const next = Math.min(prev + 1, 100);
+        localStorage.setItem(progressKey, next.toString());
+        return next;
+      });
+    }, 400);
+
+    return () => clearInterval(timer);
+  }, [progress, orderId]);
+
+  const getCoordinatesAtProgress = (p) => {
+    const total = 460;
+    const d = (p / 100) * total;
+    
+    if (d <= 70) {
+      const ratio = d / 70;
+      return { x: 50 + ratio * 70, y: 150, angle: 0 };
+    } else if (d <= 160) {
+      const ratio = (d - 70) / 90;
+      return { x: 120, y: 150 - ratio * 90, angle: -90 };
+    } else if (d <= 300) {
+      const ratio = (d - 160) / 140;
+      return { x: 120 + ratio * 140, y: 60, angle: 0 };
+    } else if (d <= 370) {
+      const ratio = (d - 300) / 70;
+      return { x: 260, y: 60 + ratio * 70, angle: 90 };
+    } else {
+      const ratio = (d - 370) / 90;
+      return { x: 260 + ratio * 90, y: 130, angle: 0 };
+    }
+  };
+
+  const { x, y, angle } = getCoordinatesAtProgress(progress);
+  const remainingSeconds = Math.max(0, Math.ceil((100 - progress) * 0.4));
+  const remainingMeters = Math.max(0, Math.ceil((100 - progress) * 8.5));
+
+  return (
+    <div className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4 mt-4 text-left select-none relative overflow-hidden w-full max-w-[460px]">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">
+          Active Rider Simulation Map
+        </span>
+        <span className="text-[11.5px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+          {progress}% Completed
+        </span>
+      </div>
+
+      <div className="w-full h-36 bg-background-primary border border-white/[0.04] rounded-xl relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:15px_15px]" />
+        
+        <svg className="w-full h-full" viewBox="0 0 400 200">
+          <defs>
+            <radialGradient id="rest-glow-m" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="home-glow-m" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          <path 
+            d="M 50 150 L 120 150 L 120 60 L 260 60 L 260 130 L 350 130" 
+            fill="none" 
+            stroke="var(--border-light)" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+            strokeDasharray="4,5"
+          />
+
+          <path 
+            d="M 50 150 L 120 150 L 120 60 L 260 60 L 260 130 L 350 130" 
+            fill="none" 
+            stroke="var(--primary)" 
+            strokeWidth="3.5" 
+            strokeLinecap="round" 
+            strokeDasharray="460"
+            strokeDashoffset={460 - (progress / 100) * 460}
+            style={{ transition: 'stroke-dashoffset 400ms linear' }}
+          />
+
+          <circle cx="50" cy="150" r="16" fill="url(#rest-glow-m)" />
+          <circle cx="50" cy="150" r="5" fill="var(--primary)" />
+          <text x="50" y="174" textAnchor="middle" className="text-[9px] fill-text-secondary font-bold">Kitchen</text>
+
+          <circle cx="350" cy="130" r="16" fill="url(#home-glow-m)" />
+          <circle cx="350" cy="130" r="5" fill="var(--accent)" />
+          <text x="350" y="154" textAnchor="middle" className="text-[9px] fill-text-secondary font-bold">Customer</text>
+
+          <g transform={`translate(${x}, ${y}) rotate(${angle})`} style={{ transition: 'transform 400ms linear' }}>
+            <circle cx="0" cy="0" r="10" fill="var(--primary)" className="animate-ping" style={{ opacity: 0.15 }} />
+            <circle cx="0" cy="0" r="8" fill="var(--primary)" />
+            <g transform="translate(-5, -5) scale(0.45)">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                <circle cx="5.5" cy="17.5" r="2.5"/>
+                <circle cx="18.5" cy="17.5" r="2.5"/>
+                <path d="M3 6h5l3 7h6l3-7"/>
+                <path d="M12 6.5L9.5 10"/>
+              </svg>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div className="flex gap-4 mt-3 items-center w-full max-w-[460px]">
+        <div className="grid grid-cols-2 gap-4 bg-white/[0.005] rounded-lg p-2 text-center text-[12px] border border-white/[0.02] flex-grow">
+          <div>
+            <span className="text-[9.5px] text-text-muted block font-semibold uppercase tracking-wider">Est. Completion</span>
+            <span className="font-bold text-text-primary">{remainingSeconds}s ({remainingMeters}m)</span>
+          </div>
+          <div>
+            <span className="text-[9.5px] text-text-muted block font-semibold uppercase tracking-wider">Simulation Mode</span>
+            <span className="font-bold text-[var(--accent)]">3PL Webhook</span>
+          </div>
+        </div>
+
+        <button
+          onClick={onCompleteClick}
+          className={`btn btn-pill text-[12px] font-bold px-4 py-3 h-10 flex items-center justify-center transition-all ${
+            progress < 100
+              ? 'bg-white/5 border border-white/10 text-text-muted cursor-not-allowed opacity-50'
+              : 'btn-primary text-white cursor-pointer shadow-[var(--shadow-glow)]'
+          }`}
+          disabled={progress < 100}
+        >
+          {progress < 100 ? 'In Transit' : 'Complete ✓'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function MerchantDashboard() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isOwner } = useContext(AuthContext);
@@ -337,6 +488,7 @@ export default function MerchantDashboard() {
         try {
           const detailsRes = await api.get('/restaurants/owner/details');
           if (detailsRes.data && detailsRes.data.success) {
+            setRestaurantDetails(detailsRes.data.data);
             const restId = detailsRes.data.data._id;
             const menuRes = await api.get(`/restaurants/${restId}`);
             if (menuRes.data && menuRes.data.success) {
@@ -472,6 +624,50 @@ export default function MerchantDashboard() {
     }
     fetchDashboardData();
   }, [isAuthenticated, isOwner, navigate]);
+
+  // Socket.io integration for live incoming order alerts
+  useEffect(() => {
+    if (!isAuthenticated || !isOwner || !user?._id) return;
+
+    const socketUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace('/api', '')
+      : 'http://localhost:5000';
+
+    const socket = io(socketUrl, {
+      transports: ['websocket'],
+    });
+
+    socket.on('connect', () => {
+      console.log('🔌 Connected to Savoré WebSocket server');
+      socket.emit('join_merchant_room', user._id);
+    });
+
+    socket.on('new_order_alert', (data) => {
+      console.log('🔔 New incoming order alert received:', data);
+      
+      // Ensure sound controller plays chime sound (enable it temporarily if not initialized/muted)
+      if (soundController) {
+        // soundController is usually muted/disabled by default until clicked.
+        // We can play the chime by force-enabling or just calling playChime.
+        const originalState = soundController.isEnabled;
+        soundController.isEnabled = true;
+        soundController.playChime();
+        soundController.isEnabled = originalState;
+      }
+
+      // Reload dashboard analytics and orders data instantly
+      fetchDashboardData();
+      fetchOrdersData(1);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Disconnected from WebSocket server');
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, isOwner, user?._id]);
 
   // Dynamic router to load specific sub-telemetries instantly on tab clicks
   useEffect(() => {
@@ -933,33 +1129,39 @@ export default function MerchantDashboard() {
   };
 
   return (
-    <div className="container fade-in py-8 px-6 pb-24 text-left">
+    <div className="container fade-in px-6 pb-32 text-left -mt-16 md:-mt-20">
       
       {/* 1. BRAND COVER HEADER BACKDROP */}
-      <div className="relative glass-panel rounded-[24px] overflow-hidden mb-10 border-[1.5px] border-[var(--border-glow)] shadow-[var(--shadow-glow)]">
-        <div className="h-32 bg-[linear-gradient(135deg,_rgba(255,106,77,0.12)_0%,_rgba(7,10,14,0.45)_100%)] w-full relative">
-          <div className="absolute inset-0 backdrop-filter blur-xl opacity-60" />
+      <div className="relative glass-panel rounded-[24px] overflow-hidden mb-8 border-[1.5px] border-[var(--border-glow)] shadow-[var(--shadow-glow)]">
+        <div className="h-44 bg-[linear-gradient(135deg,_rgba(255,106,77,0.12)_0%,_rgba(7,10,14,0.45)_100%)] w-full relative overflow-hidden">
+          <div className="absolute inset-0 backdrop-filter blur-xl opacity-60 pointer-events-none" />
+          {restaurantDetails?.coverImage && (
+            <img 
+              src={resolveMediaUrl(restaurantDetails.coverImage)} 
+              alt="Restaurant Cover Banner" 
+              className="absolute inset-0 w-full h-full object-cover filter blur-[8px] opacity-40 dark:opacity-20 scale-110 transition-all duration-500"
+            />
+          )}
         </div>
         
-        <div className="p-6 md:p-8 -mt-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
-          <div className="flex gap-4 items-end">
-            <div className="w-18 h-18 rounded-2xl bg-slate-900 border-2 border-primary overflow-hidden shadow-lg select-none">
-              <SafeAvatar src={resolveMediaUrl(restaurantDetails?.coverImage)} alt={analytics?.restaurantName} className="w-full h-full object-cover" />
+        <div className="p-6 md:p-8 -mt-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+          <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-end text-center sm:text-left">
+            <div className="relative rounded-full overflow-hidden w-24 h-24 border-[3px] border-primary shadow-xl bg-[var(--surface-bright)] select-none shrink-0 flex items-center justify-center">
+              <SafeAvatar src={resolveMediaUrl(restaurantDetails?.coverImage)} alt={analytics?.restaurantName || 'Restaurant'} size={96} className="w-full h-full object-cover" />
             </div>
-            <div>
-              <span className="text-[11px] text-primary font-extrabold uppercase tracking-[0.06em]">Merchant Partner SaaS Suite</span>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mt-0.5">{analytics?.restaurantName || 'Restaurant Kitchen'}</h1>
+            <div className="mb-1">
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mt-0.5">{analytics?.restaurantName || 'Restaurant Kitchen'}</h1>
               <p className="text-sm text-text-secondary mt-1">Manage kitchen orders, dishes catalog, short reels CTR analytics and timings.</p>
             </div>
           </div>
 
-          <div className="flex gap-2 p-1.5 bg-white/[0.02] border border-border-light rounded-xl select-none max-w-full overflow-x-auto shrink-0">
+          <div className="flex gap-2 p-1.5 bg-white/[0.02] rounded-xl select-none max-w-full overflow-x-auto shrink-0">
             {orders.some(o => o.status === 'pending') && (
               <span className="animate-pulse bg-primary text-white rounded-lg text-[10px] font-extrabold px-2.5 py-1.5 flex items-center gap-1">
                 <AlertCircle size={10} /> Live Pending Orders
               </span>
             )}
-            <button onClick={fetchDashboardData} className="chip bg-transparent border-none text-[12px] flex items-center p-2">
+            <button onClick={fetchDashboardData} className="bg-transparent border-none text-[12px] text-text-secondary hover:text-text-primary flex items-center p-2 rounded-lg cursor-pointer transition-colors">
               <RefreshCw size={12} className="mr-1.5 hover:rotate-180 transition-transform duration-500" /> Sync SaaS metrics
             </button>
           </div>
@@ -967,7 +1169,7 @@ export default function MerchantDashboard() {
       </div>
 
       {/* 2. PERSISTENT TABS NAVIGATION STRIP */}
-      <div className="flex gap-2 overflow-x-auto pb-4 mb-8 border-b border-border-light select-none scrollbar-none">
+      <div className="flex gap-2.5 overflow-x-auto pb-4 mb-6 border-b border-border-light select-none scrollbar-none">
         {[
           { id: 'analytics', label: 'Overview', icon: BarChart3 },
           { id: 'orders', label: 'Incoming Orders', icon: ShoppingBag },
@@ -985,7 +1187,7 @@ export default function MerchantDashboard() {
                 setActiveTab(tab.id);
                 setErrorMsg('');
               }}
-              className={`flex items-center gap-2 px-4.5 py-2.5 rounded-xl text-[13px] font-bold shrink-0 transition-all ${
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-[13.5px] font-bold shrink-0 transition-all ${
                 activeTab === tab.id 
                   ? 'bg-primary text-white shadow-md' 
                   : 'bg-white/[0.03] text-text-secondary hover:text-text-primary hover:bg-white/[0.06] border border-border-light'
@@ -1116,9 +1318,19 @@ export default function MerchantDashboard() {
                         </div>
 
                         <div>
-                          <div className="flex flex-col gap-1 text-[13.5px] text-text-secondary">
+                          <div className="flex flex-col gap-1 text-[13px] text-text-secondary">
                             <div>Total Charge: <strong className="text-primary text-[15px] font-extrabold">{formatPrice(ord.total)}</strong></div>
-                            <div>Gateway: <strong className="uppercase">{ord.paymentMethod}</strong></div>
+                            <div className="pl-2 border-l border-border-light text-[11px] text-text-muted flex flex-col gap-0.5 mt-0.5 select-none">
+                              <div className="flex justify-between w-[150px]"><span>Subtotal:</span> <span>{formatPrice(ord.subtotal)}</span></div>
+                              <div className="flex justify-between w-[150px]"><span>Delivery Fee:</span> <span>{formatPrice(ord.deliveryFee)}</span></div>
+                              <div className="flex justify-between w-[150px]"><span>Taxes (10%):</span> <span>{formatPrice(ord.tax)}</span></div>
+                              {ord.transactionId && (
+                                <div className="truncate max-w-[170px] mt-0.5 text-[9.5px]">
+                                  Txn ID: <span className="font-mono select-all text-text-secondary">{ord.transactionId}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-1">Gateway: <strong className="uppercase text-[12.5px] text-text-primary">{ord.paymentMethod}</strong></div>
                             <div className="flex items-center">Payment Status: 
                               <span 
                                 className={`ml-2 px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold uppercase ${
@@ -1172,12 +1384,9 @@ export default function MerchantDashboard() {
                           )}
 
                           {ord.status === 'out_for_delivery' && (
-                            <button 
-                              onClick={() => handleUpdateStatus(ord._id, 'delivered')} 
-                              className="btn btn-primary btn-pill text-[12.5px] font-bold"
-                            >
-                              Complete Order ✓
-                            </button>
+                            <span className="text-[12px] font-bold text-[var(--accent)] animate-pulse">
+                              Rider In Transit...
+                            </span>
                           )}
 
                           {ord.status === 'delivered' && (
@@ -1192,6 +1401,15 @@ export default function MerchantDashboard() {
                             </div>
                           )}
                         </div>
+
+                        {ord.status === 'out_for_delivery' && (
+                          <div className="col-span-full border-t border-white/[0.04] pt-4 mt-2">
+                            <DeliveryMapSimulator 
+                              orderId={ord._id} 
+                              onCompleteClick={() => handleUpdateStatus(ord._id, 'delivered')}
+                            />
+                          </div>
+                        )}
 
                       </div>
                     ))}

@@ -1,6 +1,6 @@
 // Savoré — Premium SafeImage Component with Matte Shimmer & Luxury Vector Fallback
 // All styling via explicit inline CSS — NO Tailwind dependency
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SafeImage({
@@ -12,6 +12,16 @@ export default function SafeImage({
 }) {
   const [status, setStatus] = useState('loading'); // loading, loaded, error
   const [imgSrc, setImgSrc] = useState(src);
+  const imageRef = useRef(null);
+
+  const imageRefCallback = (node) => {
+    if (node) {
+      imageRef.current = node;
+      if (node.complete && node.naturalWidth > 0 && status === 'loading') {
+        setStatus('loaded');
+      }
+    }
+  };
 
   useEffect(() => {
     setStatus('loading');
@@ -57,6 +67,7 @@ export default function SafeImage({
       {/* 2. Actual image — fully styled via Tailwind classes */}
       {status !== 'error' && (
         <img
+          ref={imageRefCallback}
           src={imgSrc}
           alt={alt}
           loading="lazy"

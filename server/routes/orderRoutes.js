@@ -16,6 +16,6 @@ router.get('/customer', protect, getCustomerOrders);
 router.get('/restaurant', protect, requireRole(['restaurant', 'admin']), getRestaurantOrders);
 router.get('/admin', protect, requireRole(['admin']), getAdminOrders);
 router.get('/:id', protect, getOrderById);
-router.put('/:id/status', protect, requireRole(['restaurant', 'admin']), updateOrderStatus);
+router.put('/:id/status', protect, updateOrderStatus);
 
 module.exports = router;

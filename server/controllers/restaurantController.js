@@ -168,11 +168,76 @@ const getOwnerAnalytics = async (req, res, next) => {
       status: 'delivered',
     });
 
-    // 4. Calculate conversions
-    const totalOrdersCount = await Order.countDocuments({ restaurant: restaurant._id });
-    
-    // In our simplified analytics: Order Conversion Rate is represented as completed orders vs total placements
-    const conversionRate = totalOrdersCount > 0 ? ((completedOrdersCount / totalOrdersCount) * 100).toFixed(1) : 100;
+    // 4. Calculate conversions (true Reels CTR based on impressions vs clicks)
+    const reels = await Reel.find({ restaurant: restaurant._id });
+    let totalImpressions = 0;
+    let totalClicks = 0;
+    reels.forEach(r => {
+      totalImpressions += r.impressions || 0;
+      totalClicks += r.clicks || 0;
+    });
+
+    const conversionRate = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(1) : 0.0;
+
+    // 5. Time-series data aggregations
+    // Aggregation for monthly revenue (subtotal sum of delivered orders)
+    const monthlyRevenue = await Order.aggregate([
+      {
+        $match: {
+          restaurant: restaurant._id,
+          status: 'delivered'
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$createdAt' },
+          revenue: { $sum: '$subtotal' }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // Aggregation for weekly day spikes (count of delivered orders per day of week)
+    const weeklySpikes = await Order.aggregate([
+      {
+        $match: {
+          restaurant: restaurant._id,
+          status: 'delivered'
+        }
+      },
+      {
+        $group: {
+          _id: { $dayOfWeek: '$createdAt' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    // Format last 6 months dynamically for the chart coordinates
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentDate = new Date();
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const mIdx = d.getMonth();
+      const match = monthlyRevenue.find(item => item._id === mIdx + 1);
+      last6Months.push({
+        month: monthNames[mIdx],
+        val: match ? parseFloat(match.revenue.toFixed(2)) : 0.0
+      });
+    }
+
+    // Format 7 days of the week starting from Monday
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dayMapping = { 'Mon': 2, 'Tue': 3, 'Wed': 4, 'Thu': 5, 'Fri': 6, 'Sat': 7, 'Sun': 1 };
+    const formattedWeeklySpikes = dayNames.map(name => {
+      const match = weeklySpikes.find(item => item._id === dayMapping[name]);
+      return {
+        day: name,
+        count: match ? match.count : 0
+      };
+    });
 
     res.json({
       success: true,
@@ -182,6 +247,8 @@ const getOwnerAnalytics = async (req, res, next) => {
         activeOrders: activeOrdersCount,
         completedOrders: completedOrdersCount,
         conversionRate: parseFloat(conversionRate),
+        monthlyRevenue: last6Months,
+        weeklySpikes: formattedWeeklySpikes,
       },
     });
   } catch (error) {

@@ -101,6 +101,16 @@ const handleWebhook = async (req, res, next) => {
           if (restaurant) {
             restaurant.revenue = parseFloat((restaurant.revenue + order.subtotal).toFixed(2));
             await restaurant.save();
+
+            // Emit live socket event to the restaurant owner's room
+            const io = req.app.get('io');
+            if (io) {
+              io.to(`merchant_${restaurant.owner.toString()}`).emit('new_order_alert', {
+                orderId: order._id,
+                total: order.total,
+                status: order.status
+              });
+            }
           }
 
           console.log(`✅ Order ${order._id} successfully marked as PAID from webhook.`);

@@ -376,7 +376,7 @@ export const ReelsProvider = ({ children }) => {
   const logReelView = async (reelId) => {
     const cleanId = getBaseReelId(reelId);
     try {
-      await api.post(`/reels/${cleanId}/view`);
+      await api.post(`/reels/${cleanId}/impression`);
     } catch (err) {
       console.warn('Silent analytics tracking failed for reel view:', err.message);
     }
@@ -385,7 +385,7 @@ export const ReelsProvider = ({ children }) => {
   const logReelOrderClick = async (reelId) => {
     const cleanId = getBaseReelId(reelId);
     try {
-      await api.post(`/reels/${cleanId}/click-order`);
+      await api.post(`/reels/${cleanId}/click`);
     } catch (err) {
       console.warn('Silent analytics tracking failed for reel order click:', err.message);
     }

@@ -64,6 +64,14 @@ const reelSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    impressions: {
+      type: Number,
+      default: 0,
+    },
+    clicks: {
+      type: Number,
+      default: 0,
+    },
     comments: [
       {
         type: mongoose.Schema.Types.ObjectId,

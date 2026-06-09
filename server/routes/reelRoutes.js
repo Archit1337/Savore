@@ -7,6 +7,8 @@ const {
   addCommentToReel,
   trackReelView,
   trackReelOrderClick,
+  trackReelImpression,
+  trackReelClick,
   getOwnerReels,
   updateReel,
   deleteReel,
@@ -38,6 +40,8 @@ router.post('/:id/comments', protect, addCommentToReel);
 // Track analytic clicks and views (Public)
 router.post('/:id/view', trackReelView);
 router.post('/:id/click-order', trackReelOrderClick);
+router.post('/:id/impression', trackReelImpression);
+router.post('/:id/click', trackReelClick);
 
 // Edit/Delete Reels (Private)
 router.put('/:id', protect, requireRole(['restaurant', 'admin']), updateReel);
