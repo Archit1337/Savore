@@ -2433,19 +2433,19 @@ html.light .weather-classic-line {
 /* ── Global Click Burst Particle Animations ── */
 @keyframes clickParticleFloat {
   0% {
-    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.1);
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(var(--scale0));
     opacity: 0;
   }
   15% {
     opacity: 1;
-    transform: translate(-50%, -50%) translate(var(--tx15), var(--ty15)) rotate(var(--rot15)) scale(var(--scale15));
+    transform: translate(-50%, -50%) translate(0, var(--ty15)) rotate(var(--rot15)) scale(var(--scale-rest));
   }
-  80% {
-    opacity: 1;
-    transform: translate(-50%, -50%) translate(var(--tx80), var(--ty80)) rotate(var(--rot80)) scale(var(--scale80));
+  65% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) translate(0, var(--ty65)) rotate(var(--rot65)) scale(var(--scale-rest));
   }
   100% {
-    transform: translate(-50%, -50%) translate(var(--tx100), var(--ty100)) rotate(var(--rot100)) scale(0.05);
+    transform: translate(-50%, -50%) translate(0, var(--ty100)) rotate(var(--rot100)) scale(var(--scale-rest));
     opacity: 0;
   }
 }
@@ -2459,7 +2459,7 @@ html.light .weather-classic-line {
   object-fit: contain;
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
-  animation: clickParticleFloat var(--duration) cubic-bezier(0.25, 1, 0.5, 1) var(--delay) forwards;
+  animation: clickParticleFloat 1300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   z-index: 999999;
 }
 
