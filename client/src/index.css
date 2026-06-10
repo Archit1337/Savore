@@ -2433,22 +2433,19 @@ html.light .weather-classic-line {
 /* ── Global Click Burst Particle Animations ── */
 @keyframes clickParticleFloat {
   0% {
-    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.2);
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.1);
     opacity: 0;
   }
   15% {
     opacity: 1;
-    /* Increase early translation multiplier to clear the click center quickly */
-    transform: translate(-50%, -50%) translate(calc(var(--vx) * 0.4px), calc(var(--vy) * 0.4px)) rotate(calc(var(--rot) * 0.3deg)) scale(var(--scale));
+    transform: translate(-50%, -50%) translate(var(--tx15), var(--ty15)) rotate(var(--rot15)) scale(var(--scale15));
   }
   80% {
     opacity: 1;
-    /* Increase main translation multiplier for wider distance separation */
-    transform: translate(-50%, -50%) translate(calc(var(--vx) * 1.8px), calc(var(--vy) * 1.8px)) rotate(calc(var(--rot) * 0.8deg)) scale(var(--scale));
+    transform: translate(-50%, -50%) translate(var(--tx80), var(--ty80)) rotate(var(--rot80)) scale(var(--scale80));
   }
   100% {
-    /* Final sweep multiplier to dissolve particles far from click origin */
-    transform: translate(-50%, -50%) translate(calc(var(--vx) * 2.2px), calc(var(--vy) * 2.2px)) rotate(var(--rot)) scale(0.1);
+    transform: translate(-50%, -50%) translate(var(--tx100), var(--ty100)) rotate(var(--rot100)) scale(0.05);
     opacity: 0;
   }
 }
@@ -2462,7 +2459,7 @@ html.light .weather-classic-line {
   object-fit: contain;
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
-  animation: clickParticleFloat 1600ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation: clickParticleFloat var(--duration) cubic-bezier(0.25, 1, 0.5, 1) var(--delay) forwards;
   z-index: 999999;
 }
 
