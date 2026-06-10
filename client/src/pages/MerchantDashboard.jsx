@@ -1144,48 +1144,8 @@ export default function MerchantDashboard() {
   };
 
   return (
-    <div className="container fade-in px-6 pb-32 text-left -mt-16 md:-mt-20">
-      
-      {/* Reel Preview Modal overlay */}
-      <AnimatePresence>
-        {previewReel && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{ zIndex: 99999999 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
-            onClick={() => setPreviewReel(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-              className="relative w-full max-w-[340px] aspect-[9/16] bg-slate-950 rounded-[24px] overflow-hidden border border-white/10 shadow-2xl flex flex-col justify-end"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close button */}
-              <button
-                onClick={() => setPreviewReel(null)}
-                className="absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-black/60 border border-white/10 text-white flex items-center justify-center hover:bg-black/80 transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-              
-              {/* Video element */}
-              <video
-                src={resolveMediaUrl(previewReel.videoUrl)}
-                autoPlay
-                controls
-                loop
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <>
+      <div className="container fade-in px-6 pb-32 text-left -mt-16 md:-mt-20">
 
       {/* Toast Alert overlay */}
       <AnimatePresence>
@@ -1266,7 +1226,7 @@ export default function MerchantDashboard() {
               <SafeAvatar src={resolveMediaUrl(restaurantDetails?.coverImage)} alt={analytics?.restaurantName || 'Restaurant'} size={96} className="w-full h-full object-cover" />
             </div>
             <div className="mb-1">
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mt-0.5">{analytics?.restaurantName || 'Restaurant Kitchen'}</h1>
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-text-primary mt-0.5">{analytics?.restaurantName || 'Restaurant Kitchen'}</h1>
               <p className="text-sm text-text-secondary mt-1">Manage kitchen orders, dishes catalog, short reels CTR analytics and timings.</p>
             </div>
           </div>
@@ -2465,6 +2425,48 @@ export default function MerchantDashboard() {
         )}
       </AnimatePresence>
 
-    </div>
+      </div>
+
+      {/* Reel Preview Modal overlay placed OUTSIDE the container to prevent transform stacking bugs */}
+      <AnimatePresence>
+        {previewReel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ zIndex: 99999999 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+            onClick={() => setPreviewReel(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              className="relative w-full max-w-[340px] aspect-[9/16] bg-slate-950 rounded-[24px] overflow-hidden border border-white/10 shadow-2xl flex flex-col justify-end"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setPreviewReel(null)}
+                className="absolute top-4 right-4 z-50 w-8 h-8 rounded-full bg-black/60 border border-white/10 text-white flex items-center justify-center hover:bg-black/80 transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+              
+              {/* Video element */}
+              <video
+                src={resolveMediaUrl(previewReel.videoUrl)}
+                autoPlay
+                controls
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
