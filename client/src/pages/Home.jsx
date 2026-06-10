@@ -901,6 +901,7 @@ export default function Home() {
 
   // Hero background random image index (0 or 1) — switches every 9s
   const [heroImgIdx, setHeroImgIdx] = useState(() => Math.round(Math.random()));
+  const [isBoxHovered, setIsBoxHovered] = useState(false);
 
   // Slide loop every 25 seconds for slow, premium drift
   useEffect(() => {
@@ -1154,8 +1155,126 @@ export default function Home() {
                       </span>
                     ))}
                   </span>
+                  
                   <span className="hero-headline-accent">
-                    Like Never Before
+                    <span 
+                      className="relative inline-flex items-center justify-center cursor-pointer"
+                      onMouseEnter={() => setIsBoxHovered(true)}
+                      onMouseLeave={() => setIsBoxHovered(false)}
+                      style={{ display: 'inline-flex' }}
+                    >
+                      {/* Invisible spacer to maintain layout size and shape */}
+                      <span className="opacity-0 pointer-events-none select-none">
+                        Like Never Before
+                      </span>
+
+                      {/* 1. Box Back/Interior Layer */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
+                        <motion.div
+                          style={{ width: 110, height: 95 }}
+                          initial={{ opacity: 0, scale: 0.5, y: 15 }}
+                          animate={isBoxHovered ? { opacity: 1, scale: 1.25, y: 0 } : { opacity: 0, scale: 0.5, y: 15 }}
+                          transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 100 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* Shadow underlay */}
+                            <rect x="20" y="44" width="60" height="36" rx="6" fill="rgba(0,0,0,0.18)" filter="blur(1.5px)" />
+                            {/* Dark interior of the box */}
+                            <rect x="21" y="40" width="58" height="34" rx="4" fill="#3D1E1E" />
+                          </svg>
+                        </motion.div>
+                      </div>
+
+                      {/* 2. The Animating Text */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 2 }}>
+                        <motion.span
+                          className="select-none pointer-events-none"
+                          animate={isBoxHovered ? {
+                            y: 20,
+                            scale: 0.15,
+                            opacity: 0,
+                          } : {
+                            y: 0,
+                            scale: 1,
+                            opacity: 1,
+                          }}
+                          transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+                        >
+                          Like Never Before
+                        </motion.span>
+                      </div>
+
+                      {/* 3. Box Front Face & Lids Layer */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 3 }}>
+                        <motion.div
+                          style={{ width: 110, height: 95 }}
+                          initial={{ opacity: 0, scale: 0.5, y: 15 }}
+                          animate={isBoxHovered ? { opacity: 1, scale: 1.25, y: 0 } : { opacity: 0, scale: 0.5, y: 15 }}
+                          transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 100 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* Main Front Face */}
+                            <rect x="20" y="40" width="60" height="36" rx="6" fill="var(--primary)" stroke="var(--primary-pressed)" strokeWidth="1.5" />
+                            
+                            {/* Printed savoré label */}
+                            <text 
+                              x="50" 
+                              y="62" 
+                              textAnchor="middle" 
+                              fill="#ffffff" 
+                              fontSize="9" 
+                              fontWeight="800" 
+                              letterSpacing="0.05em"
+                              fontFamily="sans-serif"
+                            >
+                              savoré
+                            </text>
+
+                            {/* Left Lid Flap */}
+                            <motion.polygon 
+                              points="20,40 50,40 48,34 22,34" 
+                              fill="var(--primary-hover)" 
+                              stroke="var(--primary-pressed)" 
+                              strokeWidth="1"
+                              style={{ transformOrigin: "20px 40px" }}
+                              animate={isBoxHovered ? {
+                                rotate: [0, -120, -120, 0],
+                              } : {
+                                rotate: 0
+                              }}
+                              transition={isBoxHovered ? {
+                                times: [0, 0.25, 0.75, 1],
+                                duration: 1.2,
+                                ease: "easeInOut"
+                              } : {
+                                duration: 0.3
+                              }}
+                            />
+
+                            {/* Right Lid Flap */}
+                            <motion.polygon 
+                              points="80,40 50,40 52,34 78,34" 
+                              fill="var(--primary-hover)" 
+                              stroke="var(--primary-pressed)" 
+                              strokeWidth="1"
+                              style={{ transformOrigin: "80px 40px" }}
+                              animate={isBoxHovered ? {
+                                rotate: [0, 120, 120, 0],
+                              } : {
+                                rotate: 0
+                              }}
+                              transition={isBoxHovered ? {
+                                times: [0, 0.25, 0.75, 1],
+                                duration: 1.2,
+                                ease: "easeInOut"
+                              } : {
+                                duration: 0.3
+                              }}
+                            />
+                          </svg>
+                        </motion.div>
+                      </div>
+                    </span>
                   </span>
                 </motion.h1>
               </motion.div>

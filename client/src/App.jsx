@@ -18,6 +18,7 @@ import BecomePartner from './pages/BecomePartner';
 import { AuthContext } from './context/AuthContext';
 import { ChefMoodProvider } from './components/ChefSystem/ChefMoodEngine';
 import CinematicLoader from './components/CinematicLoader';
+import ClickBurstEffect from './components/ClickBurstEffect';
 
 // Protected Route Component for Role-Based Access Controls
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -59,6 +60,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <ClickBurstEffect />
       <ChefMoodProvider>
         <AnimatePresence mode="wait">
           {appLoading && (
