@@ -902,6 +902,56 @@ export default function Home() {
   // Hero background random image index (0 or 1) — switches every 9s
   const [heroImgIdx, setHeroImgIdx] = useState(() => Math.round(Math.random()));
   const [isBoxHovered, setIsBoxHovered] = useState(false);
+  const [steamParticles, setSteamParticles] = useState([]);
+  const lastBoxHoveredRef = useRef(false);
+
+  useEffect(() => {
+    let interval;
+    if (isBoxHovered) {
+      // 1. Release initial steam immediately upon opening
+      const initialSteam = Array.from({ length: 3 }).map((_, i) => ({
+        id: `${Date.now()}-open-initial-${i}-${Math.random()}`,
+        x: -20 + i * 16 + (Math.random() - 0.5) * 8,
+        y: -15,
+        delay: i * 0.08,
+      }));
+      setSteamParticles((prev) => [...prev, ...initialSteam]);
+      setTimeout(() => {
+        setSteamParticles((prev) => prev.filter((p) => !initialSteam.some((n) => n.id === p.id)));
+      }, 1500);
+
+      // 2. Continual steam release every 900ms while it remains open
+      interval = setInterval(() => {
+        const newSteam = Array.from({ length: 2 }).map((_, i) => ({
+          id: `${Date.now()}-open-loop-${i}-${Math.random()}`,
+          x: -15 + i * 15 + (Math.random() - 0.5) * 8,
+          y: -15,
+          delay: i * 0.1,
+        }));
+        setSteamParticles((prev) => [...prev, ...newSteam]);
+        setTimeout(() => {
+          setSteamParticles((prev) => prev.filter((p) => !newSteam.some((n) => n.id === p.id)));
+        }, 1500);
+      }, 900);
+    } else {
+      // 3. One final burst of steam when it closes (6 wisps)
+      if (lastBoxHoveredRef.current === true) {
+        const closeSteam = Array.from({ length: 3 }).map((_, i) => ({
+          id: `${Date.now()}-close-${i}-${Math.random()}`,
+          x: -15 + i * 15 + (Math.random() - 0.5) * 6,
+          y: -15,
+          delay: i * 0.08,
+        }));
+        setSteamParticles((prev) => [...prev, ...closeSteam]);
+        setTimeout(() => {
+          setSteamParticles((prev) => prev.filter((p) => !closeSteam.some((n) => n.id === p.id)));
+        }, 1500);
+      }
+    }
+    lastBoxHoveredRef.current = isBoxHovered;
+
+    return () => clearInterval(interval);
+  }, [isBoxHovered]);
 
   // Slide loop every 25 seconds for slow, premium drift
   useEffect(() => {
@@ -1155,12 +1205,10 @@ export default function Home() {
                       </span>
                     ))}
                   </span>
-                  
                   <span className="hero-headline-accent">
                     <span 
                       className="relative inline-flex items-center justify-center cursor-pointer"
-                      onMouseEnter={() => setIsBoxHovered(true)}
-                      onMouseLeave={() => setIsBoxHovered(false)}
+                      onMouseEnter={() => setIsBoxHovered((prev) => !prev)}
                       style={{ display: 'inline-flex' }}
                     >
                       {/* Invisible spacer to maintain layout size and shape */}
@@ -1168,13 +1216,56 @@ export default function Home() {
                         Like Never Before
                       </span>
 
+                      {/* Steam Release Particles */}
+                      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 4 }}>
+                        {steamParticles.map((sp) => (
+                          <motion.div
+                            key={sp.id}
+                            className="absolute"
+                            style={{
+                              left: `calc(50% + ${sp.x}px)`,
+                              top: `calc(50% + ${sp.y}px)`,
+                            }}
+                            initial={{ opacity: 0, y: 0, scale: 0.6, filter: 'blur(0.5px)' }}
+                            animate={{
+                              opacity: [0, 0.45, 0],
+                              y: -45 - Math.random() * 35,
+                              x: (Math.random() - 0.5) * 20,
+                              scale: [0.6, 1.4, 2.2],
+                            }}
+                            transition={{
+                              duration: 1.1,
+                              delay: sp.delay,
+                              ease: "easeOut",
+                            }}
+                          >
+                            <svg width="15" height="30" viewBox="0 0 15 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path 
+                                d="M 7,30 Q 12,20 2,15 T 7,0" 
+                                stroke="currentColor" 
+                                strokeWidth="3.5" 
+                                fill="none" 
+                                strokeLinecap="round"
+                                className="text-[var(--text-secondary)] opacity-50 dark:text-white dark:opacity-30"
+                              />
+                            </svg>
+                          </motion.div>
+                        ))}
+                      </div>
+
                       {/* 1. Box Back/Interior Layer */}
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
                         <motion.div
                           style={{ width: 110, height: 95 }}
-                          initial={{ opacity: 0, scale: 0.5, y: 15 }}
-                          animate={isBoxHovered ? { opacity: 1, scale: 1.25, y: 0 } : { opacity: 0, scale: 0.5, y: 15 }}
-                          transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+                          animate={isBoxHovered ? { opacity: 1, scale: 1.25, y: [0, -3, 0] } : { opacity: 0, scale: 0.5, y: 15 }}
+                          transition={isBoxHovered ? {
+                            y: { repeat: Infinity, duration: 4, ease: "easeInOut" },
+                            opacity: { duration: 0.45 },
+                            scale: { duration: 0.45 }
+                          } : {
+                            duration: 0.45,
+                            ease: [0.34, 1.56, 0.64, 1]
+                          }}
                         >
                           <svg className="w-full h-full" viewBox="0 0 100 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                             {/* Shadow underlay */}
@@ -1208,9 +1299,15 @@ export default function Home() {
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 3 }}>
                         <motion.div
                           style={{ width: 110, height: 95 }}
-                          initial={{ opacity: 0, scale: 0.5, y: 15 }}
-                          animate={isBoxHovered ? { opacity: 1, scale: 1.25, y: 0 } : { opacity: 0, scale: 0.5, y: 15 }}
-                          transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+                          animate={isBoxHovered ? { opacity: 1, scale: 1.25, y: [0, -3, 0] } : { opacity: 0, scale: 0.5, y: 15 }}
+                          transition={isBoxHovered ? {
+                            y: { repeat: Infinity, duration: 4, ease: "easeInOut" },
+                            opacity: { duration: 0.45 },
+                            scale: { duration: 0.45 }
+                          } : {
+                            duration: 0.45,
+                            ease: [0.34, 1.56, 0.64, 1]
+                          }}
                         >
                           <svg className="w-full h-full" viewBox="0 0 100 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                             {/* Main Front Face */}
