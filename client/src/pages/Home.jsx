@@ -893,7 +893,6 @@ export default function Home() {
 
 
 
-  
   // Slide Carousel State
   const [slideIndex, setSlideIndex] = useState(0);
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
@@ -904,6 +903,58 @@ export default function Home() {
   const [isBoxHovered, setIsBoxHovered] = useState(false);
   const [steamParticles, setSteamParticles] = useState([]);
   const lastBoxHoveredRef = useRef(false);
+
+  const playSizzleSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const bufferSize = ctx.sampleRate * 0.8; // 0.8s duration
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Generate high-frequency white noise for sizzle
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      
+      const noiseNode = ctx.createBufferSource();
+      noiseNode.buffer = buffer;
+      
+      // Filter out low rumble frequencies, keep crisp sizzle/steam hiss
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 6000;
+      filter.Q.value = 1;
+      
+      // Soften the high hiss edge
+      const lpFilter = ctx.createBiquadFilter();
+      lpFilter.type = 'lowpass';
+      lpFilter.frequency.value = 11000;
+      
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0, ctx.currentTime);
+      // Quick, soft fade-in to avoid speaker clicking
+      gainNode.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.04);
+      // Exponential volume decay over 0.75 seconds
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.75);
+      
+      noiseNode.connect(filter);
+      filter.connect(lpFilter);
+      lpFilter.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      noiseNode.start();
+    } catch (e) {
+      console.warn("Sizzle sound synthesis error:", e);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    setIsBoxHovered((prev) => !prev);
+    playSizzleSound();
+  };
 
   useEffect(() => {
     let interval;
@@ -918,7 +969,7 @@ export default function Home() {
       setSteamParticles((prev) => [...prev, ...initialSteam]);
       setTimeout(() => {
         setSteamParticles((prev) => prev.filter((p) => !initialSteam.some((n) => n.id === p.id)));
-      }, 1500);
+      }, 3000); // 3000ms matches 2.2s float duration plus delay
 
       // 2. Continual steam release every 900ms while it remains open
       interval = setInterval(() => {
@@ -931,21 +982,21 @@ export default function Home() {
         setSteamParticles((prev) => [...prev, ...newSteam]);
         setTimeout(() => {
           setSteamParticles((prev) => prev.filter((p) => !newSteam.some((n) => n.id === p.id)));
-        }, 1500);
+        }, 3000);
       }, 900);
     } else {
       // 3. One final burst of steam when it closes (6 wisps)
       if (lastBoxHoveredRef.current === true) {
-        const closeSteam = Array.from({ length: 3 }).map((_, i) => ({
+        const closeSteam = Array.from({ length: 6 }).map((_, i) => ({
           id: `${Date.now()}-close-${i}-${Math.random()}`,
-          x: -15 + i * 15 + (Math.random() - 0.5) * 6,
+          x: -25 + i * 10 + (Math.random() - 0.5) * 6,
           y: -15,
-          delay: i * 0.08,
+          delay: i * 0.06,
         }));
         setSteamParticles((prev) => [...prev, ...closeSteam]);
         setTimeout(() => {
           setSteamParticles((prev) => prev.filter((p) => !closeSteam.some((n) => n.id === p.id)));
-        }, 1500);
+        }, 3000);
       }
     }
     lastBoxHoveredRef.current = isBoxHovered;
@@ -1208,7 +1259,7 @@ export default function Home() {
                   <span className="hero-headline-accent">
                     <span 
                       className="relative inline-flex items-center justify-center cursor-pointer"
-                      onMouseEnter={() => setIsBoxHovered((prev) => !prev)}
+                      onMouseEnter={handleMouseEnter}
                       style={{ display: 'inline-flex' }}
                     >
                       {/* Invisible spacer to maintain layout size and shape */}
@@ -1234,7 +1285,7 @@ export default function Home() {
                               scale: [0.6, 1.4, 2.2],
                             }}
                             transition={{
-                              duration: 1.1,
+                              duration: 2.2,
                               delay: sp.delay,
                               ease: "easeOut",
                             }}
