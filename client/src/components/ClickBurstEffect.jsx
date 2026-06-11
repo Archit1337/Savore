@@ -12,7 +12,11 @@ const CLICK_IMAGES = [
   '/click-img7.svg?v=3',
   '/click-img8.svg?v=3',
   '/click-img9.svg?v=3',
-  '/click-img10.svg?v=3'
+  '/click-img10.svg?v=3',
+  '/click-img11.svg?v=3',
+  '/click-img12.svg?v=3',
+  '/click-img13.svg?v=3',
+  '/click-img14.svg?v=3'
 ];
 export default function ClickBurstEffect() {
   const [particles, setParticles] = useState([]);
