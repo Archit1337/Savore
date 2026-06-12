@@ -170,7 +170,11 @@ export default function Navbar() {
       {/* Looping video background */}
       <video
         src="/ratatouille.mp4"
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-[0.25] mix-blend-luminosity"
+        className={`absolute inset-0 w-full h-full object-cover pointer-events-none z-0 transition-all duration-300 [transform:translate3d(0,0,0)] [will-change:transform] ${
+          isDark 
+            ? 'opacity-[0.32] mix-blend-overlay' 
+            : 'opacity-[0.26] mix-blend-multiply'
+        }`}
         muted
         loop
         playsInline
