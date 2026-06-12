@@ -165,14 +165,24 @@ export default function Navbar() {
 
   return (
     <header 
-      className={`glass-panel glass-navbar-premium ${isScrolled ? 'shrunk' : ''} ${isReelsPage ? 'reels-navbar-fixed' : ''} flex items-center justify-between`}
+      className={`glass-panel glass-navbar-premium ${isScrolled ? 'shrunk' : ''} ${isReelsPage ? 'reels-navbar-fixed' : ''} flex items-center justify-between relative overflow-hidden`}
     >
+      {/* Looping video background */}
+      <video
+        src="/ratatouille.mp4"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-[0.25] mix-blend-luminosity"
+        muted
+        loop
+        playsInline
+        autoPlay
+      />
+
       {/* Brand Logo */}
-      <div style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}>
+      <div style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : { position: 'relative', zIndex: 10 }}>
         <InteractiveLogo />
       </div>
 
-      <nav className="flex gap-6 items-center" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}>
+      <nav className="flex gap-6 items-center" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : { position: 'relative', zIndex: 10 }}>
         <AnimatedNavLink 
           to="/" 
           style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
@@ -210,7 +220,7 @@ export default function Navbar() {
       </nav>
 
       {/* Action Utilities */}
-      <div className="flex items-center gap-4" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}>
+      <div className="flex items-center gap-4" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : { position: 'relative', zIndex: 10 }}>
         {/* Theme Toggle */}
         <button 
           onClick={toggleTheme}
