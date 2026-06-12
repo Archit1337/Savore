@@ -80,7 +80,6 @@ export default function ReelsFeed() {
   
   const failedVideoIds = useRef(new Set());
   const videoRefs = useRef([]);
-  const bgVideoRefs = useRef([]);
   const containerRef = useRef(null);
   const orderBtnRef = useRef(null);
   const lastActiveIndexChangeTime = useRef(Date.now());
@@ -169,7 +168,7 @@ export default function ReelsFeed() {
     }
   }, [activeIndex, activeDishObj?.dish?._id, chefMood.updateLastViewedReel]);
 
-  // Autoplay control for both foreground and background blurred video
+  // Autoplay control for the foreground video
   useEffect(() => {
     // Pause and clean up all other video players to ensure resource release
     videoRefs.current.forEach((vid, idx) => {
@@ -183,26 +182,10 @@ export default function ReelsFeed() {
       }
     });
 
-    bgVideoRefs.current.forEach((vid, idx) => {
-      if (idx !== activeIndex && vid) {
-        try {
-          vid.pause();
-          vid.currentTime = 0;
-        } catch (e) {
-          console.warn('Error pausing inactive bg video:', e.message);
-        }
-      }
-    });
-
     const playCurrentVideo = () => {
       const vid = videoRefs.current[activeIndex];
       if (vid) {
         vid.play().catch((err) => console.log('Video play interrupted:', err.message));
-      }
-      
-      const bgVid = bgVideoRefs.current[activeIndex];
-      if (bgVid) {
-        bgVid.play().catch((err) => console.log('BG Video play interrupted:', err.message));
       }
     };
 
@@ -212,11 +195,6 @@ export default function ReelsFeed() {
     // Cleanup hook on unmount
     return () => {
       videoRefs.current.forEach((vid) => {
-        if (vid) {
-          try { vid.pause(); } catch(e) {}
-        }
-      });
-      bgVideoRefs.current.forEach((vid) => {
         if (vid) {
           try { vid.pause(); } catch(e) {}
         }
@@ -268,17 +246,14 @@ export default function ReelsFeed() {
     }
 
     const mainVid = videoRefs.current[activeIndex];
-    const bgVid = bgVideoRefs.current[activeIndex];
 
     if (mainVid) {
       if (isPlaying) {
         mainVid.pause();
-        if (bgVid) bgVid.pause();
         setIsPlaying(false);
         showToast("Paused ⏸️");
       } else {
         mainVid.play().catch(() => {});
-        if (bgVid) bgVid.play().catch(() => {});
         setIsPlaying(true);
         showToast("Playing ▶️");
       }
@@ -428,36 +403,41 @@ export default function ReelsFeed() {
       <div
         className="flex justify-center items-center fade-in reels-player-container fixed inset-0 h-screen w-screen overflow-hidden z-[1] pt-[96px] md:pt-[112px] pb-[max(20px,env(safe-area-inset-bottom,20px))] px-10 pointer-events-none"
       >
-        {/* 🎬 REAL-TIME EDGE BLUR AMBIENT VIDEO LAYER BACKGROUND */}
+        {/* 🎬 DYNAMIC FROSTED AMBIENT GLASS BACKDROP */}
         <div 
           className="absolute -top-[10%] -left-[10%] w-[120%] h-[120%] z-0 pointer-events-none transition-all duration-500 overflow-hidden"
           style={{
-            filter: 'blur(55px) brightness(0.68)',
-            opacity: isReelsDark ? 0.42 : 0.32,
+            opacity: isReelsDark ? 0.38 : 0.28,
           }}
         >
           <AnimatePresence mode="wait">
-            <motion.video 
-              key={activeIndex}
-              ref={(el) => {
-                bgVideoRefs.current[activeIndex] = el;
-                if (el) {
-                   el.play().catch((err) => {
-                    console.warn('BG Video playback on mount failed:', err.message);
-                  });
-                }
-              }}
-              src={resolveMediaUrl(activeReel.videoUrl)}
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8 }}
-              className="reel-video-element w-full h-full object-cover pointer-events-none"
-            />
+            {activeReel.restaurantDetails?.coverImage ? (
+              <motion.div
+                key={`bg-image-${activeIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="w-full h-full bg-cover bg-center"
+                style={{
+                  backgroundImage: `url(${resolveMediaUrl(activeReel.restaurantDetails.coverImage)})`,
+                  filter: 'blur(50px) brightness(0.6)',
+                  transform: 'scale(1.08)',
+                }}
+              />
+            ) : (
+              <motion.div
+                key="bg-gradient"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="w-full h-full bg-gradient-to-tr from-[#0F0C20] via-[#15102A] to-[#06040A]"
+                style={{
+                  filter: 'blur(50px)',
+                }}
+              />
+            )}
           </AnimatePresence>
         </div>
 
@@ -629,20 +609,8 @@ export default function ReelsFeed() {
                 />
               </AnimatePresence>
 
-
-
-              {/* ⏳ Next/Prev Multi-Video Preload Queue (Concurrent Caching for Lag-free Swiping) */}
+              {/* ⏳ Next Multi-Video Preload Queue (Concurrent Caching for Lag-free Swiping) */}
               <div className="absolute w-[1px] h-[1px] opacity-[0.001] pointer-events-none hidden">
-                {/* Immediate previous video */}
-                {activeIndex > 0 && reels[activeIndex - 1] && (
-                  <video
-                    key={`preload-prev-${reels[activeIndex - 1]._id}`}
-                    src={resolveMediaUrl(reels[activeIndex - 1].videoUrl)}
-                    preload="auto"
-                    muted
-                    playsInline
-                  />
-                )}
                 {/* Next video (N+1) */}
                 {activeIndex < reels.length - 1 && reels[activeIndex + 1] && (
                   <video
@@ -749,13 +717,7 @@ export default function ReelsFeed() {
                               setHasVideoError(true);
                             }
                           }
-                          const bgVid = bgVideoRefs.current[activeIndex];
-                          if (bgVid) {
-                            try {
-                              bgVid.load();
-                              bgVid.play().catch(() => {});
-                            } catch(e) {}
-                          }
+                          // Background video removed, only main video reloaded
                         }}
                         className="btn btn-primary py-2.5 px-[18px] rounded-xl text-[12.5px] flex items-center gap-2 cursor-pointer border-none font-semibold"
                       >

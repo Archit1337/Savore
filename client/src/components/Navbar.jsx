@@ -168,18 +168,20 @@ export default function Navbar() {
       className={`glass-panel glass-navbar-premium ${isScrolled ? 'shrunk' : ''} ${isReelsPage ? 'reels-navbar-fixed' : ''} flex items-center justify-between relative overflow-hidden`}
     >
       {/* Looping video background */}
-      <video
-        src="/ratatouille.mp4"
-        className={`absolute inset-0 w-full h-full object-cover pointer-events-none z-0 transition-all duration-300 [transform:translate3d(0,0,0)] [will-change:transform] ${
-          isDark 
-            ? 'opacity-[0.32] mix-blend-overlay' 
-            : 'opacity-[0.48] mix-blend-multiply'
-        }`}
-        muted
-        loop
-        playsInline
-        autoPlay
-      />
+      {!isReelsPage && (
+        <video
+          src="/ratatouille.mp4"
+          className={`absolute inset-0 w-full h-full object-cover pointer-events-none z-0 transition-all duration-300 [transform:translate3d(0,0,0)] [will-change:transform] ${
+            isDark 
+              ? 'opacity-[0.32] mix-blend-overlay' 
+              : 'opacity-[0.48] mix-blend-multiply'
+          }`}
+          muted
+          loop
+          playsInline
+          autoPlay
+        />
+      )}
 
       {/* Brand Logo */}
       <div style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : { position: 'relative', zIndex: 10 }}>
