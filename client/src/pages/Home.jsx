@@ -171,9 +171,9 @@ const CATEGORIES = [
 const PILLARS_DATA = [
   {
     num: "01",
-    title: "Elite Selection",
-    desc: "We bypass mass listings to partner exclusively with vetted culinary pioneers and Michelin-level establishments, bringing haute cuisine directly to your table.",
-    image: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=1200&q=85"
+    title: "Open Stage",
+    desc: "Any restaurant, from neighborhood gems to five-star kitchens, can claim their spot on Savoré. List your menu, tell your story, and let the city discover what you cook.",
+    image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=85"
   },
   {
     num: "02",
@@ -185,7 +185,7 @@ const PILLARS_DATA = [
     num: "03",
     title: "Cinema Feed",
     desc: "Watch real-time desaturated cinematic reels from the hot pans of active kitchens before placing your order. Dine with visual confirmation.",
-    image: "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=1200&q=85"
+    image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=85"
   }
 ];
 
@@ -1744,8 +1744,8 @@ export default function Home() {
                     </span>
                   </div>
                   
-                  <div className="mt-auto">
-                    <h3 className="text-[18px] md:text-[20px] font-medium tracking-[0.05em] uppercase text-white shrink-0">
+                  <div className="mt-auto max-w-[280px]">
+                    <h3 className="text-[18px] md:text-[20px] font-medium tracking-[0.05em] uppercase text-white shrink-0 whitespace-nowrap">
                       {pillar.title}
                     </h3>
                     <div 
