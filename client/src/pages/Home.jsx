@@ -1198,7 +1198,7 @@ export default function Home() {
         variants={bgRevealVariant}
         initial="hidden"
         animate={isPageReady ? "visible" : "hidden"}
-        className="absolute top-0 left-0 right-0 h-[680px] overflow-hidden z-0 pointer-events-none"
+        className="absolute top-0 left-0 right-0 h-[840px] overflow-hidden z-0 pointer-events-none"
       >
         {/* ── DARK pool: images always mounted, opacity 0 when not active ── */}
         {DARK_HERO_IMAGES.map((imgSrc, idx) => (
