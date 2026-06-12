@@ -61,14 +61,22 @@ const handleWebhook = async (req, res, next) => {
   let event;
 
   try {
-    if (endpointSecret && sig) {
-      // In production, cryptographically reconstruct Stripe signature
-      // requires express raw buffer parsing
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+      if (!sig || !endpointSecret) {
+        res.status(400);
+        return res.send('Webhook Error: Stripe signature headers or webhook secret are missing in production.');
+      }
       event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } else {
-      // Dev mode fallback: accept mock events or body directly if secret not configured
-      console.warn('⚠️ STRIPE_WEBHOOK_SECRET is unconfigured. Running in development bypass mode.');
-      event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      // Dev mode fallback: accept mock events or body directly, handles Buffer decode
+      if (endpointSecret && sig) {
+        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      } else {
+        console.warn('⚠️ STRIPE_WEBHOOK_SECRET is unconfigured. Running in development bypass mode.');
+        const rawString = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : req.body;
+        event = typeof rawString === 'string' ? JSON.parse(rawString) : rawString;
+      }
     }
   } catch (err) {
     console.error(`Webhook signature verification failed: ${err.message}`);

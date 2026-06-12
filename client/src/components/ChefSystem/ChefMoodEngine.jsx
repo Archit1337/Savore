@@ -130,9 +130,14 @@ export const ChefMoodProvider = ({ children }) => {
     };
   };
 
-  // Dynamic AI-powered recommendation click trigger
   const triggerRecommendation = async () => {
     if (currentMood === 'thinking' || currentMood === 'celebration' || isAIThinking) return;
+
+    if (!user) {
+      setBubbleText("Bonjour! Please log in to unlock my personal recommendations and secret pairings! 👨‍🍳");
+      soundController.playPop();
+      return;
+    }
 
     soundController.playClick();
     setCurrentMood('thinking');
@@ -237,6 +242,12 @@ export const ChefMoodProvider = ({ children }) => {
   // Conversational AI chat handler
   const sendMessageToChef = async (messageText) => {
     if (!messageText || messageText.trim() === '' || isAIThinking) return;
+
+    if (!user) {
+      setBubbleText("Bonjour! Please log in to chat with me and ask for my secret recipes! 👨‍🍳");
+      soundController.playPop();
+      return;
+    }
 
     const userMessage = messageText.trim();
     // 1. Add user message to history
