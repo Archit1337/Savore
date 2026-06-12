@@ -2239,6 +2239,12 @@ html.light .cinematic-loader-shimmer,
   opacity: 0.8;
 }
 
+html.light .nav-link-premium.inactive {
+  color: var(--text-primary) !important;
+  opacity: 0.88;
+  font-weight: 500;
+}
+
 .nav-link-premium.inactive:hover {
   color: var(--text-primary) !important;
   opacity: 1;
@@ -2247,6 +2253,7 @@ html.light .cinematic-loader-shimmer,
 
 html.light .nav-link-premium.inactive:hover {
   background-color: rgba(0, 0, 0, 0.02);
+  opacity: 1;
 }
 
 /* Active Highlight Spotlights */
@@ -2254,6 +2261,12 @@ html.light .nav-link-premium.inactive:hover {
   color: #FF6A4D !important;
   font-weight: 600 !important;
   text-shadow: 0 0 10px rgba(255, 106, 77, 0.35);
+}
+
+html.light .nav-link-premium.active-highlight {
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+  text-shadow: none;
 }
 
 /* 1. Glowing top coral indicator line */

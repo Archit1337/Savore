@@ -253,17 +253,17 @@ const HERO_SLIDES = [
 // Dark mode hero pool — rotates randomly between these four
 const DARK_HERO_IMAGES = [
   "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1600&q=80", // moody artisanal pizza
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80", // vibrant editorial food spread
-  "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80", // grilled steak & asparagus, dark background
-  "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1600&q=80", // moody rustic Italian pasta
+  "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=1600&q=80", // moody luxury chocolate lava cake
+  "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=1600&q=80", // gourmet plate on dark slate
+  "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1600&q=80", // steaming gourmet ramen bowl, dark background
 ];
 
 // Light mode hero pool — rotates randomly between these four
 const LIGHT_HERO_IMAGES = [
   "https://images.unsplash.com/photo-1546549032-9571cd6b27df?auto=format&fit=crop&w=1600&q=80", // minimalist gourmet pasta, clean white plate
-  "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=1600&q=80", // al-fresco brunch spread
+  "https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=1600&q=80", // luxury gourmet strawberry cake, white marble table
   "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=1600&q=80", // vibrant gourmet salad platter
-  "https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=1600&q=80", // French toast with berries, golden morning light
+  "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=1600&q=80", // fluffy banana pancake stack with syrup
 ];
 
 const MOCK_RESTAURANTS = [
