@@ -296,15 +296,83 @@ html.light .glass-input::placeholder,
 }
 .glass-input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: inset 3px 3px 8px rgba(0,0,0,0.28), inset -2px -2px 7px rgba(255,255,255,0.02), 0 0 0 3px rgba(255,106,77,0.14);
   background: rgba(5, 5, 8, 0.55);
+  animation: siriFocusGlow 6s infinite linear;
 }
 html.light .glass-input:focus,
 :root.light .glass-input:focus {
   background: var(--bg-primary);
-  border-color: var(--primary);
-  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.04), 0 0 0 3px rgba(255, 106, 77, 0.12);
+  animation: siriFocusGlowLight 6s infinite linear;
+}
+
+@keyframes siriFocusGlow {
+  0% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 90, 60, 0.5), /* Coral */
+      0 0 8px rgba(255, 190, 118, 0.35), /* Gold */
+      0 0 15px rgba(255, 255, 255, 0.15), /* White */
+      inset 3px 3px 8px rgba(0,0,0,0.2);
+    border-color: rgba(255, 90, 60, 0.7);
+  }
+  33% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 190, 118, 0.5), /* Gold */
+      0 0 8px rgba(255, 255, 255, 0.35), /* White */
+      0 0 15px rgba(255, 90, 60, 0.15), /* Coral */
+      inset 3px 3px 8px rgba(0,0,0,0.2);
+    border-color: rgba(255, 190, 118, 0.7);
+  }
+  66% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 255, 255, 0.5), /* White */
+      0 0 8px rgba(255, 90, 60, 0.35), /* Coral */
+      0 0 15px rgba(255, 190, 118, 0.15), /* Gold */
+      inset 3px 3px 8px rgba(0,0,0,0.2);
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+  100% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 90, 60, 0.5), /* Coral */
+      0 0 8px rgba(255, 190, 118, 0.35), /* Gold */
+      0 0 15px rgba(255, 255, 255, 0.15), /* White */
+      inset 3px 3px 8px rgba(0,0,0,0.2);
+    border-color: rgba(255, 90, 60, 0.7);
+  }
+}
+
+@keyframes siriFocusGlowLight {
+  0% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 90, 60, 0.45), /* Coral */
+      0 0 8px rgba(255, 190, 118, 0.3), /* Gold */
+      0 0 12px rgba(255, 255, 255, 0.4), /* White */
+      inset 2px 2px 5px rgba(0,0,0,0.04);
+    border-color: rgba(255, 90, 60, 0.65);
+  }
+  33% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 190, 118, 0.45), /* Gold */
+      0 0 8px rgba(255, 255, 255, 0.3), /* White */
+      0 0 12px rgba(255, 90, 60, 0.25), /* Coral */
+      inset 2px 2px 5px rgba(0,0,0,0.04);
+    border-color: rgba(255, 190, 118, 0.65);
+  }
+  66% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 255, 255, 0.45), /* White */
+      0 0 8px rgba(255, 90, 60, 0.3), /* Coral */
+      0 0 12px rgba(255, 190, 118, 0.25), /* Gold */
+      inset 2px 2px 5px rgba(0,0,0,0.04);
+    border-color: rgba(255, 255, 255, 0.65);
+  }
+  100% {
+    box-shadow: 
+      0 0 0 1.5px rgba(255, 90, 60, 0.45), /* Coral */
+      0 0 8px rgba(255, 190, 118, 0.3), /* Gold */
+      0 0 12px rgba(255, 255, 255, 0.4), /* White */
+      inset 2px 2px 5px rgba(0,0,0,0.04);
+    border-color: rgba(255, 90, 60, 0.65);
+  }
 }
 
 /* --- BUTTONS --- */

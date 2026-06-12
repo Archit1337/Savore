@@ -1161,6 +1161,7 @@ export default function Home() {
             } 0%, transparent 60%)`
           }}
         />
+
       </motion.div>
 
       <div className="container relative z-[1]">
@@ -1533,11 +1534,28 @@ export default function Home() {
                     />
                     <input 
                       type="text" 
-                      className="glass-input !pl-[50px] rounded-[20px] h-[56px] text-[15px]" 
+                      className="glass-input !pl-[50px] !pr-[44px] rounded-[20px] h-[56px] text-[15px]" 
                       placeholder="Search premium truffles, sushi, steaks..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                      <AnimatePresence>
+                        {searchQuery && (
+                          <motion.button
+                            type="button"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 350, damping: 20 }}
+                            onClick={() => setSearchQuery("")}
+                            className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                          >
+                            <X size={16} />
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                   <button 
                     type="submit" 
