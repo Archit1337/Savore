@@ -1671,9 +1671,27 @@ export default function Home() {
           initial="hidden"
           animate={isPageReady ? "visible" : "hidden"}
           ref={pillarsRef}
-          className="mt-20 mb-24 w-full max-w-[1200px] mx-auto px-6 relative z-10 h-[600px] md:h-[500px]"
+          className="mt-4 mb-24 w-full max-w-[1200px] mx-auto px-6 relative z-10"
         >
-          <div className="relative w-full h-full border-y border-[var(--border-light)]/25">
+          {/* ── "Why Savoré" Section Header ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-10 text-left"
+          >
+            <span className="text-[11px] md:text-[12px] uppercase tracking-[0.3em] text-[var(--text-muted)] font-medium">
+              The Standard
+            </span>
+            <h2 className="text-[36px] md:text-[48px] font-light tracking-[-0.02em] mt-2 leading-[1.1]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              Why <span className="italic text-[var(--primary)]">Savoré</span>
+            </h2>
+            <div className="mt-5 h-px w-[80px] bg-gradient-to-r from-[var(--primary)]/60 to-transparent" />
+          </motion.div>
+
+          {/* ── Film Strip Accordion ── */}
+          <div className="relative w-full h-[600px] md:h-[500px] border-y border-[var(--border-light)]/25">
             {/* 🎬 Sliding Focus Indicator */}
             <div 
               className="focus-indicator pointer-events-none z-20"
@@ -1721,7 +1739,7 @@ export default function Home() {
                     ? `${100 / 3}%` 
                     : `${(hoveredPillar === index ? 60 : 20)}%`,
                 }}
-                className={`pillar-panel flex flex-col justify-end p-8 text-left border-b md:border-b-0 md:border-r border-white/10 last:border-r-0 last:border-b-0 cursor-pointer overflow-hidden group relative z-10 ${
+                className={`pillar-panel flex flex-col justify-end p-8 text-left cursor-pointer overflow-hidden group relative z-10 ${
                   hoveredPillar !== null && hoveredPillar !== index ? 'opacity-40' : 'opacity-100'
                 }`}
               >
@@ -1762,6 +1780,9 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* Film grain separator (not on last panel) */}
+                {index < PILLARS_DATA.length - 1 && <div className="film-grain-separator" />}
               </motion.div>
             ))}
           </div>
