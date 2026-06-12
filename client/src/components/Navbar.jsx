@@ -303,7 +303,7 @@ export default function Navbar() {
             <button 
               onClick={handleLogout}
               style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-              className="bg-none border-none text-text-muted cursor-pointer flex items-center justify-center p-1.5 rounded-full"
+              className="bg-none border-none text-[var(--text-primary)] hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 cursor-pointer flex items-center justify-center p-2 rounded-full transition-all duration-300 active:scale-95"
               title="Logout"
             >
               <LogOut size={16} />

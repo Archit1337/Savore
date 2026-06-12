@@ -1208,9 +1208,10 @@ export default function Home() {
             alt="" aria-hidden="true"
             loading="eager"
             fetchPriority="high"
+            initial={{ opacity: 0 }}
             animate={{ opacity: isDark && heroImgIdx === idx ? 0.40 : 0 }}
             transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none opacity-0"
             style={{ imageRendering: '-webkit-optimize-contrast' }}
           />
         ))}
@@ -1223,9 +1224,10 @@ export default function Home() {
             alt="" aria-hidden="true"
             loading="eager"
             fetchPriority="high"
+            initial={{ opacity: 0 }}
             animate={{ opacity: !isDark && heroImgIdx === idx ? 0.58 : 0 }}
             transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none opacity-0"
             style={{ imageRendering: '-webkit-optimize-contrast' }}
           />
         ))}

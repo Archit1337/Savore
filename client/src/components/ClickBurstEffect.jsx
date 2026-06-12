@@ -72,7 +72,10 @@ export default function ClickBurstEffect() {
   }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[999999] overflow-hidden">
+    <div 
+      className="fixed inset-0 pointer-events-none overflow-hidden"
+      style={{ zIndex: 10000005 }}
+    >
       {particles.map((p) => (
         <img
           key={p.id}
