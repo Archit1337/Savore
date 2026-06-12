@@ -139,6 +139,44 @@ const categoriesRevealVariant = {
   }
 };
 
+const batchContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.05,
+    }
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      staggerChildren: 0.04,
+      staggerDirection: -1,
+    }
+  }
+};
+
+const batchCardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { 
+      duration: 0.5, 
+      ease: [0.16, 1, 0.3, 1] 
+    } 
+  },
+  exit: { 
+    opacity: 0, 
+    y: -12, 
+    transition: { 
+      duration: 0.3, 
+      ease: [0.16, 1, 0.3, 1] 
+    } 
+  }
+};
+
 
 
 const getCityCoordsLabel = (cityName) => {
@@ -212,16 +250,20 @@ const HERO_SLIDES = [
   }
 ];
 
-// Dark mode hero pool — rotates randomly between these two
+// Dark mode hero pool — rotates randomly between these four
 const DARK_HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=2800&q=100", // moody artisanal pizza
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=2800&q=100", // vibrant editorial food spread
+  "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1600&q=80", // moody artisanal pizza
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80", // vibrant editorial food spread
+  "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80", // grilled steak & asparagus, dark background
+  "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1600&q=80", // moody rustic Italian pasta
 ];
 
-// Light mode hero pool — rotates randomly between these two
+// Light mode hero pool — rotates randomly between these four
 const LIGHT_HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=2800&q=100", // al-fresco brunch spread
-  "https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=2800&q=100", // French toast with berries, golden morning light
+  "https://images.unsplash.com/photo-1546549032-9571cd6b27df?auto=format&fit=crop&w=1600&q=80", // minimalist gourmet pasta, clean white plate
+  "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=1600&q=80", // al-fresco brunch spread
+  "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=1600&q=80", // vibrant gourmet salad platter
+  "https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=1600&q=80", // French toast with berries, golden morning light
 ];
 
 const MOCK_RESTAURANTS = [
@@ -950,8 +992,8 @@ export default function Home() {
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
 
-  // Hero background random image index (0 or 1) — switches every 9s
-  const [heroImgIdx, setHeroImgIdx] = useState(() => Math.round(Math.random()));
+  // Hero background random image index (0-3) — switches every 9s
+  const [heroImgIdx, setHeroImgIdx] = useState(() => Math.floor(Math.random() * DARK_HERO_IMAGES.length));
   const [isBoxHovered, setIsBoxHovered] = useState(false);
   const [steamParticles, setSteamParticles] = useState([]);
   const lastBoxHoveredRef = useRef(false);
@@ -1064,10 +1106,10 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Hero background image rotator — randomly picks next index every 9s
+  // Hero background image rotator — cycles through available images every 9s
   useEffect(() => {
     const timer = setInterval(() => {
-      setHeroImgIdx((prev) => (prev === 0 ? 1 : 0));
+      setHeroImgIdx((prev) => (prev + 1) % DARK_HERO_IMAGES.length);
     }, 9000);
     return () => clearInterval(timer);
   }, []);
@@ -1158,41 +1200,31 @@ export default function Home() {
         animate={isPageReady ? "visible" : "hidden"}
         className="absolute top-0 left-0 right-0 h-[680px] overflow-hidden z-0 pointer-events-none"
       >
-        {/* ── DARK pool: 2 images always mounted, opacity 0 when not active ── */}
-        <motion.img
-          src={DARK_HERO_IMAGES[0]}
-          alt="" aria-hidden="true"
-          animate={{ opacity: isDark && heroImgIdx === 0 ? 0.40 : 0 }}
-          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none"
-          style={{ imageRendering: '-webkit-optimize-contrast' }}
-        />
-        <motion.img
-          src={DARK_HERO_IMAGES[1]}
-          alt="" aria-hidden="true"
-          animate={{ opacity: isDark && heroImgIdx === 1 ? 0.40 : 0 }}
-          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none"
-          style={{ imageRendering: '-webkit-optimize-contrast' }}
-        />
+        {/* ── DARK pool: images always mounted, opacity 0 when not active ── */}
+        {DARK_HERO_IMAGES.map((imgSrc, idx) => (
+          <motion.img
+            key={`dark-hero-${idx}`}
+            src={imgSrc}
+            alt="" aria-hidden="true"
+            animate={{ opacity: isDark && heroImgIdx === idx ? 0.40 : 0 }}
+            transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none"
+            style={{ imageRendering: '-webkit-optimize-contrast' }}
+          />
+        ))}
 
-        {/* ── LIGHT pool: 2 images always mounted, opacity 0 when not active ── */}
-        <motion.img
-          src={LIGHT_HERO_IMAGES[0]}
-          alt="" aria-hidden="true"
-          animate={{ opacity: !isDark && heroImgIdx === 0 ? 0.42 : 0 }}
-          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none"
-          style={{ imageRendering: '-webkit-optimize-contrast' }}
-        />
-        <motion.img
-          src={LIGHT_HERO_IMAGES[1]}
-          alt="" aria-hidden="true"
-          animate={{ opacity: !isDark && heroImgIdx === 1 ? 0.42 : 0 }}
-          transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none"
-          style={{ imageRendering: '-webkit-optimize-contrast' }}
-        />
+        {/* ── LIGHT pool: images always mounted, opacity 0 when not active ── */}
+        {LIGHT_HERO_IMAGES.map((imgSrc, idx) => (
+          <motion.img
+            key={`light-hero-${idx}`}
+            src={imgSrc}
+            alt="" aria-hidden="true"
+            animate={{ opacity: !isDark && heroImgIdx === idx ? 0.58 : 0 }}
+            transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none"
+            style={{ imageRendering: '-webkit-optimize-contrast' }}
+          />
+        ))}
         {/* Left-side readability fade so text column stays crisp */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,_var(--bg-primary)_18%,_transparent_58%)]" />
         {/* Right-side soft edge — lighter in light mode so image shows through more */}
@@ -1909,10 +1941,10 @@ export default function Home() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeBatchIndex}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                variants={batchContainerVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
                 className="grid grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-[30px]"
               >
                 {loading ? (
@@ -1923,9 +1955,10 @@ export default function Home() {
                   restaurants.slice(activeBatchIndex * 3, (activeBatchIndex + 1) * 3).map((rest) => (
                     <motion.div 
                       key={rest._id} 
+                      variants={batchCardVariants}
                       whileHover={{ y: -8 }}
                       onClick={() => navigate(`/restaurant/${rest._id}`)}
-                      className="glass-card p-0 overflow-hidden cursor-pointer rounded-[28px] border-[1.5px] border-[var(--border-light)]"
+                      className="glass-card p-0 overflow-hidden cursor-pointer rounded-[28px] border border-[var(--border-light)] group h-full flex flex-col"
                     >
                       <div className="noise-overlay" />
                       
@@ -1934,37 +1967,41 @@ export default function Home() {
                         <SafeImage 
                           src={resolveMediaUrl(rest.coverImage)} 
                           alt={rest.name} 
-                          className="w-full h-full duration-800 transition-transform ease-apple"
+                          className="w-full h-full transition-transform duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
                         />
-                        
-                        {/* Rating Badge */}
-                        <div 
-                          className="absolute top-4 right-4 bg-[#0a0a0d]/70 backdrop-blur-[10px] rounded-[12px] px-3 py-1 flex items-center gap-1.25 border-[1.5px] border-white/10"
-                        >
-                          <Star size={13} fill="#ffc83b" stroke="#ffc83b" />
-                          <span className="text-[13px] font-extrabold text-white">{rest.rating.toFixed(1)}</span>
-                        </div>
                       </div>
 
                       {/* Meta details */}
-                      <div className="p-[26px] text-left">
-                        <h3 className="text-[22px] mb-2 font-normal">{rest.name}</h3>
-                        <p className="text-[14px] text-[var(--text-secondary)] mb-4 block h-11 overflow-hidden leading-[1.5]">
+                      <div className="p-[26px] text-left flex-grow flex flex-col">
+                        <div className="flex justify-between items-baseline mb-2 gap-2">
+                          <h3 className="text-[20px] font-normal tracking-tight transition-colors duration-500 group-hover:text-[var(--primary)]">{rest.name}</h3>
+                          <div className="flex items-center gap-1 text-[var(--accent)] font-semibold text-[13px] shrink-0">
+                            <Star 
+                              size={13} 
+                              fill="#ffc83b" 
+                              stroke="#ffc83b" 
+                              className="transition-transform duration-500 ease-apple group-hover:scale-120 group-hover:rotate-[15deg]"
+                            />
+                            <span className="text-[13px] font-bold text-[var(--text-primary)]">{rest.rating.toFixed(1)}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-[14px] text-[var(--text-secondary)] mb-4 line-clamp-2 leading-[1.5]">
                           {rest.description}
                         </p>
                         
                         {/* Cuisines Tags */}
-                        <div className="flex flex-wrap gap-1.5 mb-4.5">
+                        <div className="flex flex-wrap gap-1.5 mb-5 mt-auto">
                           {rest.tags.slice(0, 3).map(t => (
-                            <span key={t} className="text-[11px] font-bold text-[var(--text-muted)] bg-[var(--surface-container)] px-2.5 py-[5px] rounded-[8px]">
+                            <span key={t} className="text-[10px] uppercase tracking-[0.05em] font-medium text-[var(--text-secondary)] bg-[var(--surface-bright)] border border-[var(--border-light)] px-2.5 py-[5px] rounded-[6px]">
                               {t}
                             </span>
                           ))}
                         </div>
 
-                        <div className="flex justify-between border-t-[1.5px] border-[var(--border-light)] pt-[18px] text-[13px] text-[var(--text-muted)] font-semibold">
+                        <div className="flex justify-between border-t border-[var(--border-light)] pt-[18px] text-[13px] text-[var(--text-muted)] font-medium tracking-wide">
                           {isRestaurantOutOfRange(rest) ? (
-                            <span className="flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/20 py-0.5 px-2 rounded-md text-[10px] uppercase tracking-wide font-extrabold animate-pulse">
+                            <span className="flex items-center gap-1 bg-red-500/10 text-red-500 border border-red-500/20 py-0.5 px-2 rounded-md text-[10px] uppercase tracking-wide font-extrabold">
                               <AlertTriangle size={10} className="text-red-500" /> Out of Local Range
                             </span>
                           ) : (

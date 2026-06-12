@@ -12,12 +12,12 @@
   
   /* Core Colors (Dark Scheme) */
   --bg-primary: #0B0F14;
-  --bg-secondary: #070a0e;
-  --surface: #111827;
-  --surface-bright: #151B24;
-  --surface-hover: #1F2937;
+  --bg-secondary: #08080a;
+  --surface: #121214;
+  --surface-bright: #18181b;
+  --surface-hover: #1e1e21;
   --glass-bg: rgba(15, 15, 18, 0.52);
-  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.05);
   --glass-blur: 16px;
   
   /* Accent Colors (Premium Warm Coral) */
@@ -251,8 +251,8 @@ html.light .glass-card {
 
 .glass-card:hover {
   transform: translateY(-6px);
-  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.12), var(--shadow-glow);
-  border-color: var(--border-glow);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.12), 0 12px 36px rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 255, 255, 0.14);
   background: var(--surface-hover);
 }
 
@@ -260,7 +260,8 @@ html.light .glass-card {
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), var(--shadow-ambient);
 }
 :root.light .glass-card:hover {
-  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.95), var(--shadow-glow);
+  box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.03), 0 12px 36px rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 /* Glass Input Styles */
