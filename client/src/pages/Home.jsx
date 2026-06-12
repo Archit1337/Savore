@@ -1721,7 +1721,7 @@ export default function Home() {
                 hidden: { opacity: 0, x: -12 },
                 visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
               }}
-              className="text-[11px] md:text-[12px] uppercase tracking-[0.3em] text-[var(--text-muted)] font-medium block transition-all duration-500 group-hover:tracking-[0.35em] group-hover:text-white"
+              className="text-[11px] md:text-[12px] uppercase tracking-[0.3em] text-[var(--text-muted)] font-medium block transition-all duration-500 group-hover:tracking-[0.35em] group-hover:text-[var(--text-primary)] dark:group-hover:text-white"
             >
               The Standard
             </motion.span>
