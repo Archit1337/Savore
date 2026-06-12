@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue, animate } from 'framer-motion';
-import { Search, Flame, Sparkles, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Flame, Sparkles, Film, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import MascotChef from '../components/MascotChef';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
@@ -166,6 +166,27 @@ const CATEGORIES = [
   { name: 'Fresh Sushi', tag: 'Fresh' },
   { name: 'Comfort Food', tag: 'Comfort Food' },
   { name: 'Desserts', tag: 'Desserts' },
+];
+
+const PILLARS_DATA = [
+  {
+    num: "01",
+    title: "Elite Selection",
+    desc: "We bypass mass listings to partner exclusively with vetted culinary pioneers and Michelin-level establishments, bringing haute cuisine directly to your table.",
+    image: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=1200&q=85"
+  },
+  {
+    num: "02",
+    title: "Thermal Precision",
+    desc: "Our custom packaging and transit protocols lock in core heat signatures, ensuring dishes arrive at the exact kitchen-exit temperature.",
+    image: "https://images.unsplash.com/photo-1546964124-0cce460f38ef?auto=format&fit=crop&w=1200&q=85"
+  },
+  {
+    num: "03",
+    title: "Cinema Feed",
+    desc: "Watch real-time desaturated cinematic reels from the hot pans of active kitchens before placing your order. Dine with visual confirmation.",
+    image: "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=1200&q=85"
+  }
 ];
 
 const HERO_SLIDES = [
@@ -609,6 +630,37 @@ export default function Home() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [locationModalOpen]);
+
+  const [hoveredPillar, setHoveredPillar] = useState(null);
+
+  // Savoré Pillars Scroll Parallax refs and hooks
+  const pillarsRef = useRef(null);
+  const { scrollYProgress: pillarsScrollProgress } = useScroll({
+    target: pillarsRef,
+    offset: ["start end", "end start"]
+  });
+
+  // Parallax Y translations
+  const col1Y = useTransform(pillarsScrollProgress, [0, 0.5, 1], [40, 0, -40]);
+  const col2Y = useTransform(pillarsScrollProgress, [0, 0.5, 1], [15, 0, -15]);
+  const col3Y = useTransform(pillarsScrollProgress, [0, 0.5, 1], [65, 0, -65]);
+
+  // Floating rotation angles
+  const col1Rotate = useTransform(pillarsScrollProgress, [0, 0.5, 1], [-1.5, 0, 1.5]);
+  const col2Rotate = useTransform(pillarsScrollProgress, [0, 0.5, 1], [0.8, 0, -0.8]);
+  const col3Rotate = useTransform(pillarsScrollProgress, [0, 0.5, 1], [-1.2, 0, 1.2]);
+
+  // Fade-in/out opacity
+  const colOpacity = useTransform(pillarsScrollProgress, [0.05, 0.25, 0.75, 0.95], [0, 1, 1, 0]);
+
+  // Smooth springs
+  const col1YSpring = useSpring(col1Y, { stiffness: 85, damping: 26 });
+  const col2YSpring = useSpring(col2Y, { stiffness: 85, damping: 26 });
+  const col3YSpring = useSpring(col3Y, { stiffness: 85, damping: 26 });
+
+  const col1RotateSpring = useSpring(col1Rotate, { stiffness: 85, damping: 26 });
+  const col2RotateSpring = useSpring(col2Rotate, { stiffness: 85, damping: 26 });
+  const col3RotateSpring = useSpring(col3Rotate, { stiffness: 85, damping: 26 });
 
   const handleNextBatch = () => {
     if ((activeBatchIndex + 1) * 3 < restaurants.length) {
@@ -1613,25 +1665,106 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* 🍱 HORIZONTAL QUICK CATEGORIES ROW */}
+        {/* SAVORÉ EDITORIAL PILLARS */}
         <motion.div 
           variants={categoriesRevealVariant}
           initial="hidden"
           animate={isPageReady ? "visible" : "hidden"}
-          className="mt-[30px] flex flex-wrap justify-center gap-2.5 relative z-10"
+          ref={pillarsRef}
+          className="mt-20 mb-24 w-full max-w-[1200px] mx-auto px-6 relative z-10 h-[600px] md:h-[500px]"
         >
-          {CATEGORIES.slice(1).map((cat) => (
-            <motion.button 
-              key={cat.name} 
-              onClick={() => handleCategoryClick(cat.tag)} 
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 400, damping: 18 }}
-              className="chip text-[13px] px-[22px] py-2.5"
+          <div className="relative w-full h-full border-y border-[var(--border-light)]/25">
+            {/* 🎬 Sliding Focus Indicator */}
+            <div 
+              className="focus-indicator pointer-events-none z-20"
+              style={{
+                opacity: hoveredPillar === null ? 0 : 1,
+                '--desktop-left': hoveredPillar === null ? '0%' : `${20 * hoveredPillar}%`,
+                '--desktop-width': hoveredPillar === null ? `${100 / 3}%` : '60%',
+                '--mobile-top': hoveredPillar === null ? '0%' : `${20 * hoveredPillar}%`,
+                '--mobile-height': hoveredPillar === null ? `${100 / 3}%` : '60%',
+              }}
             >
-              {cat.name}
-            </motion.button>
-          ))}
+              {/* Desktop vertical bleeding extensions */}
+              <div className="hidden md:block indicator-line-v bottom-full left-0 h-[80px]" style={{ '--line-dir': 'to top' }} />
+              <div className="hidden md:block indicator-line-v top-full left-0 h-[80px]" style={{ '--line-dir': 'to bottom' }} />
+              <div className="hidden md:block indicator-line-v bottom-full right-0 h-[80px]" style={{ '--line-dir': 'to top' }} />
+              <div className="hidden md:block indicator-line-v top-full right-0 h-[80px]" style={{ '--line-dir': 'to bottom' }} />
+
+              {/* Mobile horizontal bleeding extensions */}
+              <div className="block md:hidden indicator-line-h right-full top-0 w-[60px]" style={{ '--line-dir': 'to left' }} />
+              <div className="block md:hidden indicator-line-h left-full top-0 w-[60px]" style={{ '--line-dir': 'to right' }} />
+              <div className="block md:hidden indicator-line-h right-full bottom-0 w-[60px]" style={{ '--line-dir': 'to left' }} />
+              <div className="block md:hidden indicator-line-h left-full bottom-0 w-[60px]" style={{ '--line-dir': 'to right' }} />
+            </div>
+
+            {/* Accordion Panels */}
+            {PILLARS_DATA.map((pillar, index) => (
+              <motion.div
+                key={index}
+                onMouseEnter={() => setHoveredPillar(index)}
+                onMouseLeave={() => setHoveredPillar(null)}
+                style={{ 
+                  y: index === 0 ? col1YSpring : index === 1 ? col2YSpring : col3YSpring, 
+                  rotate: index === 0 ? col1RotateSpring : index === 1 ? col2RotateSpring : col3RotateSpring, 
+                  opacity: colOpacity,
+                  '--desktop-left': hoveredPillar === null 
+                    ? `${(100 / 3) * index}%` 
+                    : `${(index <= hoveredPillar ? 20 * index : 20 * (index - 1) + 60)}%`,
+                  '--desktop-width': hoveredPillar === null 
+                    ? `${100 / 3}%` 
+                    : `${(hoveredPillar === index ? 60 : 20)}%`,
+                  '--mobile-top': hoveredPillar === null 
+                    ? `${(100 / 3) * index}%` 
+                    : `${(index <= hoveredPillar ? 20 * index : 20 * (index - 1) + 60)}%`,
+                  '--mobile-height': hoveredPillar === null 
+                    ? `${100 / 3}%` 
+                    : `${(hoveredPillar === index ? 60 : 20)}%`,
+                }}
+                className={`pillar-panel flex flex-col justify-end p-8 text-left border-b md:border-b-0 md:border-r border-white/10 last:border-r-0 last:border-b-0 cursor-pointer overflow-hidden group relative z-10 ${
+                  hoveredPillar !== null && hoveredPillar !== index ? 'opacity-40' : 'opacity-100'
+                }`}
+              >
+                {/* 🖼️ Cinematic Image Background */}
+                <div className="absolute inset-0 z-0">
+                  <img 
+                    src={pillar.image} 
+                    alt={pillar.title}
+                    className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 h-full w-[1200px] object-cover transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] filter grayscale-[30%] brightness-[40%] group-hover:grayscale-0 group-hover:brightness-[60%] group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent z-10" />
+                  <div className="noise-overlay z-20" />
+                </div>
+
+                {/* 📝 Content Overlay */}
+                <div className="relative z-30 flex flex-col h-full justify-between">
+                  <div>
+                    <span className="text-[40px] md:text-[48px] font-extralight tracking-tighter text-white/50 font-serif block leading-none transition-colors duration-500 group-hover:text-[var(--primary)]">
+                      {pillar.num}
+                    </span>
+                  </div>
+                  
+                  <div className="mt-auto">
+                    <h3 className="text-[18px] md:text-[20px] font-medium tracking-[0.05em] uppercase text-white shrink-0">
+                      {pillar.title}
+                    </h3>
+                    <div 
+                      className="transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
+                      style={{
+                        opacity: hoveredPillar === index || hoveredPillar === null ? 1 : 0,
+                        maxHeight: hoveredPillar === index || hoveredPillar === null ? "160px" : "0px",
+                        pointerEvents: hoveredPillar === index || hoveredPillar === null ? "auto" : "none"
+                      }}
+                    >
+                      <p className="text-[13px] md:text-[14px] text-gray-300 leading-relaxed font-light mt-3">
+                        {pillar.desc}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
         {/* 🎥 SOCIAL REELS PREVIEW (TRENDING BITES) WITH VIEWPORT SPRING */}

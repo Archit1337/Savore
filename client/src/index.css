@@ -2535,3 +2535,84 @@ html.light .weather-classic-line {
 html.dark .click-particle {
   filter: invert(1);
 }
+
+/* ==========================================
+   🎬 CODEGRID-INSPIRED FILM STRIP / ACCORDION GALLERY
+   ========================================== */
+
+/* Mobile vertical accordion layout by default */
+.pillar-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--mobile-top);
+  height: var(--mobile-height);
+  width: 100%;
+  transition: top 0.7s cubic-bezier(0.16, 1, 0.3, 1), height 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+}
+
+.focus-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--mobile-top);
+  height: var(--mobile-height);
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  transition: top 0.7s cubic-bezier(0.16, 1, 0.3, 1), height 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+}
+
+/* Light mode focus indicator borders */
+html.light .focus-indicator {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Desktop horizontal accordion layout overrides */
+@media (min-width: 768px) {
+  .pillar-panel {
+    top: 0;
+    bottom: 0;
+    height: auto;
+    left: var(--desktop-left);
+    width: var(--desktop-width);
+    transition: left 0.7s cubic-bezier(0.16, 1, 0.3, 1), width 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+  }
+
+  .focus-indicator {
+    top: 0;
+    bottom: 0;
+    height: auto;
+    left: var(--desktop-left);
+    width: var(--desktop-width);
+    border-top: none;
+    border-bottom: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+    transition: left 0.7s cubic-bezier(0.16, 1, 0.3, 1), width 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+  }
+  
+  html.light .focus-indicator {
+    border-color: rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Focus Indicator Extensions styling */
+.indicator-line-v {
+  position: absolute;
+  width: 1px;
+  background: linear-gradient(var(--line-dir), rgba(255, 255, 255, 0.3), transparent);
+}
+html.light .indicator-line-v {
+  background: linear-gradient(var(--line-dir), rgba(0, 0, 0, 0.2), transparent);
+}
+
+.indicator-line-h {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(var(--line-dir), rgba(255, 255, 255, 0.3), transparent);
+}
+html.light .indicator-line-h {
+  background: linear-gradient(var(--line-dir), rgba(0, 0, 0, 0.2), transparent);
+}
+
