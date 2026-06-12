@@ -1666,32 +1666,61 @@ export default function Home() {
         </section>
 
         {/* SAVORÉ EDITORIAL PILLARS */}
-        <motion.div 
-          variants={categoriesRevealVariant}
-          initial="hidden"
-          animate={isPageReady ? "visible" : "hidden"}
-          ref={pillarsRef}
-          className="mt-4 mb-24 w-full max-w-[1200px] mx-auto px-6 relative z-10"
-        >
+        <div className="mt-4 mb-24 w-full max-w-[1200px] mx-auto px-6 relative z-10">
           {/* ── "Why Savoré" Section Header ── */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-10 text-left"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: "-60px" }}
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.06,
+                  delayChildren: 0.02,
+                }
+              }
+            }}
+            className="mb-10 text-left cursor-default group w-fit"
           >
-            <span className="text-[11px] md:text-[12px] uppercase tracking-[0.3em] text-[var(--text-muted)] font-medium">
+            <motion.span 
+              variants={{
+                hidden: { opacity: 0, x: -12 },
+                visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="text-[11px] md:text-[12px] uppercase tracking-[0.3em] text-[var(--text-muted)] font-medium block transition-all duration-500 group-hover:tracking-[0.35em] group-hover:text-white"
+            >
               The Standard
-            </span>
-            <h2 className="text-[36px] md:text-[48px] font-light tracking-[-0.02em] mt-2 leading-[1.1]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Why <span className="italic text-[var(--primary)]">Savoré</span>
-            </h2>
-            <div className="mt-5 h-px w-[80px] bg-gradient-to-r from-[var(--primary)]/60 to-transparent" />
+            </motion.span>
+            <motion.h2 
+              variants={{
+                hidden: { opacity: 0, y: 15 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="text-[36px] md:text-[48px] font-light tracking-[-0.02em] mt-2 leading-[1.1] transition-all duration-500" 
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            >
+              Why <span className="italic text-[var(--primary)] transition-all duration-500 inline-block group-hover:translate-x-1 group-hover:drop-shadow-[0_0_8px_rgba(244,117,96,0.4)]">Savoré</span>
+            </motion.h2>
+            <motion.div 
+              variants={{
+                hidden: { scaleX: 0 },
+                visible: { scaleX: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              style={{ originX: 0 }}
+              className="mt-5 h-px w-[80px] bg-gradient-to-r from-[var(--primary)]/60 to-transparent transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:w-[140px] group-hover:from-[var(--primary)]"
+            />
           </motion.div>
 
           {/* ── Film Strip Accordion ── */}
-          <div className="relative w-full h-[600px] md:h-[500px] border-y border-[var(--border-light)]/25">
+          <motion.div 
+            variants={categoriesRevealVariant}
+            initial="hidden"
+            animate={isPageReady ? "visible" : "hidden"}
+            ref={pillarsRef}
+            className="relative w-full h-[600px] md:h-[500px] border-y border-[var(--border-light)]/25"
+          >
             {/* 🎬 Sliding Focus Indicator */}
             <div 
               className="focus-indicator pointer-events-none z-20"
@@ -1748,9 +1777,9 @@ export default function Home() {
                   <img 
                     src={pillar.image} 
                     alt={pillar.title}
-                    className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 h-full w-[1200px] object-cover transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] filter grayscale-[30%] brightness-[40%] group-hover:grayscale-0 group-hover:brightness-[60%] group-hover:scale-105"
+                    className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 h-full w-[1200px] object-cover transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] filter grayscale-[30%] brightness-[40%] group-hover:grayscale-0 group-hover:brightness-[80%] group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent z-10" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:from-black/85 group-hover:via-black/25" />
                   <div className="noise-overlay z-20" />
                 </div>
 
@@ -1785,8 +1814,8 @@ export default function Home() {
                 {index < PILLARS_DATA.length - 1 && <div className="film-grain-separator" />}
               </motion.div>
             ))}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* 🎥 SOCIAL REELS PREVIEW (TRENDING BITES) WITH VIEWPORT SPRING */}
         <motion.section 
