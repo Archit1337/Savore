@@ -1319,10 +1319,18 @@ export default function Home() {
                           }}
                         >
                           <svg className="w-full h-full" viewBox="0 0 100 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                              <linearGradient id="interiorGrad" x1="50" y1="40" x2="50" y2="74" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stopColor="#1C0909" />
+                                <stop offset="100%" stopColor="#351818" />
+                              </linearGradient>
+                            </defs>
                             {/* Shadow underlay */}
-                            <rect x="20" y="44" width="60" height="36" rx="6" fill="rgba(0,0,0,0.18)" filter="blur(1.5px)" />
+                            <rect x="20" y="44" width="60" height="36" rx="6" fill="rgba(0,0,0,0.22)" filter="blur(2px)" />
                             {/* Dark interior of the box */}
-                            <rect x="21" y="40" width="58" height="34" rx="4" fill="#3D1E1E" />
+                            <rect x="21" y="40" width="58" height="34" rx="4" fill="url(#interiorGrad)" />
+                            {/* Warm food glow radiating from inside */}
+                            <ellipse cx="50" cy="57" rx="18" ry="10" fill="var(--primary)" opacity="0.4" filter="blur(3px)" />
                           </svg>
                         </motion.div>
                       </div>
@@ -1361,29 +1369,100 @@ export default function Home() {
                           }}
                         >
                           <svg className="w-full h-full" viewBox="0 0 100 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                              {/* Box Front Face Gradient */}
+                              <linearGradient id="boxFrontGrad" x1="50" y1="40" x2="50" y2="76" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stopColor="var(--primary)" />
+                                <stop offset="100%" stopColor="var(--primary-pressed)" />
+                              </linearGradient>
+                              {/* Left Lid Flap Gradient */}
+                              <linearGradient id="leftFlapGrad" x1="20" y1="34" x2="50" y2="40" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stopColor="var(--primary-hover)" />
+                                <stop offset="100%" stopColor="var(--primary)" />
+                              </linearGradient>
+                              {/* Right Lid Flap Gradient */}
+                              <linearGradient id="rightFlapGrad" x1="80" y1="34" x2="50" y2="40" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stopColor="var(--primary-hover)" />
+                                <stop offset="100%" stopColor="var(--primary)" />
+                              </linearGradient>
+                              {/* Shiny Gloss Overlay */}
+                              <linearGradient id="glossGrad" x1="20" y1="40" x2="80" y2="76" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stopColor="rgba(255,255,255,0.12)" />
+                                <stop offset="50%" stopColor="rgba(255,255,255,0.03)" />
+                                <stop offset="50.1%" stopColor="rgba(255,255,255,0)" />
+                                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                              </linearGradient>
+                            </defs>
+
                             {/* Main Front Face */}
-                            <rect x="20" y="40" width="60" height="36" rx="6" fill="var(--primary)" stroke="var(--primary-pressed)" strokeWidth="1.5" />
+                            <rect x="20" y="40" width="60" height="36" rx="6" fill="url(#boxFrontGrad)" stroke="var(--primary-pressed)" strokeWidth="1.2" />
+                            {/* Shiny Gloss Layer */}
+                            <rect x="20" y="40" width="60" height="36" rx="6" fill="url(#glossGrad)" pointerEvents="none" />
                             
-                            {/* Printed savoré label */}
+                            {/* Inner thin decorative border representing high-end packaging */}
+                            <rect x="23" y="43" width="54" height="30" rx="4.5" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
+                            
+                            {/* Subtle cardboard vertical grain lines */}
+                            <g opacity="0.05">
+                              <line x1="26" y1="43" x2="26" y2="73" stroke="#000" strokeWidth="0.8" />
+                              <line x1="32" y1="43" x2="32" y2="73" stroke="#000" strokeWidth="0.8" />
+                              <line x1="38" y1="43" x2="38" y2="73" stroke="#000" strokeWidth="0.8" />
+                              <line x1="44" y1="43" x2="44" y2="73" stroke="#000" strokeWidth="0.8" />
+                              <line x1="56" y1="43" x2="56" y2="73" stroke="#000" strokeWidth="0.8" />
+                              <line x1="62" y1="43" x2="62" y2="73" stroke="#000" strokeWidth="0.8" />
+                              <line x1="68" y1="43" x2="68" y2="73" stroke="#000" strokeWidth="0.8" />
+                              <line x1="74" y1="43" x2="74" y2="73" stroke="#000" strokeWidth="0.8" />
+                            </g>
+
+                            {/* HOT & FRESH Premium sub-label */}
+                            <text 
+                              x="50" 
+                              y="52" 
+                              textAnchor="middle" 
+                              fill="rgba(255,255,255,0.65)" 
+                              fontSize="4.2" 
+                              fontWeight="700" 
+                              letterSpacing="0.18em"
+                              fontFamily="sans-serif"
+                            >
+                              HOT & FRESH
+                            </text>
+
+                            {/* Printed savoré label (with shadow for depth) */}
+                            <text 
+                              x="50" 
+                              y="62.5" 
+                              textAnchor="middle" 
+                              fill="rgba(0,0,0,0.18)" 
+                              fontSize="9.5" 
+                              fontWeight="900" 
+                              letterSpacing="0.05em"
+                              fontFamily="sans-serif"
+                            >
+                              savoré
+                            </text>
                             <text 
                               x="50" 
                               y="62" 
                               textAnchor="middle" 
                               fill="#ffffff" 
-                              fontSize="9" 
-                              fontWeight="800" 
+                              fontSize="9.5" 
+                              fontWeight="900" 
                               letterSpacing="0.05em"
                               fontFamily="sans-serif"
                             >
                               savoré
                             </text>
 
+                            {/* Sleek handle cutout in center-bottom */}
+                            <rect x="44" y="67" width="12" height="4" rx="2" fill="rgba(0,0,0,0.15)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+
                             {/* Left Lid Flap */}
                             <motion.polygon 
                               points="20,40 50,40 48,34 22,34" 
-                              fill="var(--primary-hover)" 
+                              fill="url(#leftFlapGrad)" 
                               stroke="var(--primary-pressed)" 
-                              strokeWidth="1"
+                              strokeWidth="0.8"
                               style={{ transformOrigin: "20px 40px" }}
                               animate={isBoxHovered ? {
                                 rotate: [0, -120, -120, 0],
@@ -1402,9 +1481,9 @@ export default function Home() {
                             {/* Right Lid Flap */}
                             <motion.polygon 
                               points="80,40 50,40 52,34 78,34" 
-                              fill="var(--primary-hover)" 
+                              fill="url(#rightFlapGrad)" 
                               stroke="var(--primary-pressed)" 
-                              strokeWidth="1"
+                              strokeWidth="0.8"
                               style={{ transformOrigin: "80px 40px" }}
                               animate={isBoxHovered ? {
                                 rotate: [0, 120, 120, 0],
