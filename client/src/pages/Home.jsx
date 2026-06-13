@@ -254,7 +254,7 @@ const HERO_SLIDES = [
 const DARK_HERO_IMAGES = [
   "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&w=1800&q=80", // moody artisanal pizza
   "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&w=1800&q=80", // moody luxury chocolate lava cake
-  "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&w=1800&q=80", // gourmet plate on dark slate
+  "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&w=1800&q=80", // luxury A5 wagyu teppanyaki plating
   "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&w=1800&q=80", // steaming gourmet ramen bowl, dark background
 ];
 

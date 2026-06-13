@@ -274,14 +274,34 @@ export default function Navbar() {
           <div className="flex items-center gap-2.5" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}>
             {/* Dashboard shortcut based on roles */}
             {user.role !== 'customer' && (
-              <Link 
-                to={user.role === 'admin' ? '/admin' : '/dashboard'}
+              <motion.div
+                whileHover="hover"
+                whileTap={{ scale: 0.96 }}
                 style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-                className="text-primary flex items-center gap-1.5 no-underline text-sm font-semibold"
+                className="inline-flex"
               >
-                <LayoutDashboard size={15} />
-                Dashboard
-              </Link>
+                <Link 
+                  to={user.role === 'admin' ? '/admin' : '/dashboard'}
+                  className="flex items-center gap-1.5 no-underline text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full border transition-all duration-300 
+                    bg-black/5 dark:bg-white/10 
+                    border-black/10 dark:border-white/10 
+                    text-[var(--text-primary)] 
+                    hover:bg-primary hover:text-white hover:border-primary 
+                    dark:hover:bg-primary dark:hover:text-white dark:hover:border-primary 
+                    shadow-sm"
+                >
+                  <motion.span
+                    variants={{
+                      hover: { rotate: 12, scale: 1.1 }
+                    }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    className="flex items-center"
+                  >
+                    <LayoutDashboard size={13} />
+                  </motion.span>
+                  <span>Dashboard</span>
+                </Link>
+              </motion.div>
             )}
 
             <Link 
