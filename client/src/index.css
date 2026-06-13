@@ -65,18 +65,18 @@
   --btn-primary-border: rgba(255, 255, 255, 0.06);
   --btn-primary-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
   --btn-primary-hover-shadow: 0 6px 16px rgba(255, 106, 77, 0.08);
-
+ 
   /* ── Neumorphic Shadow System (Dark) — Premium Matte Obsidian ── */
-  --neu-bg:          #111827;
+  --neu-bg:          #18181B;          /* Matte Carbon Graphite (Zinc-900) */
   --neu-shadow-out:  6px 6px 14px rgba(0,0,0,0.22), -4px -4px 10px rgba(255,255,255,0.01);
   --neu-shadow-hover:7px 7px 17px rgba(0,0,0,0.25), -5px -5px 11px rgba(255,255,255,0.015);
   --neu-shadow-in:   inset 3px 3px 8px rgba(0,0,0,0.22), inset -2px -2px 6px rgba(255,255,255,0.005);
-  --neu-border:      rgba(255,255,255,0.03);
+  --neu-border:      rgba(255, 255, 255, 0.08); /* Crisp carbon white/gray border */
   /* Primary coral neumorphic — matte, no bloom */
   --neu-primary-shadow:       6px 6px 14px rgba(0,0,0,0.22), -4px -4px 10px rgba(255,255,255,0.01), 0 0 10px rgba(255,90,60,0.03);
   --neu-primary-shadow-hover: 7px 7px 17px rgba(0,0,0,0.25), -5px -5px 11px rgba(255,255,255,0.015), 0 0 14px rgba(255,90,60,0.05);
   --neu-primary-shadow-in:    inset 3px 3px 8px rgba(0,0,0,0.22), inset -2px -2px 6px rgba(255,255,255,0.005);
-
+ 
   /* Bevel Highlights — ultra-subtle, near-zero */
   --neu-inset-highlight:       inset 1px 1px 1.5px rgba(255,255,255,0.01), inset -1px -1px 1.5px rgba(0,0,0,0.22);
   --neu-inset-highlight-hover: inset 1.5px 1.5px 2px rgba(255,255,255,0.015), inset -1.5px -1.5px 2px rgba(0,0,0,0.25);
@@ -86,14 +86,14 @@
 
 /* Light Mode Overrides */
 html.light {
-  --bg-primary: #F6F3EE;
-  --bg-secondary: #ECE7DF;
-  --surface: rgba(255, 255, 255, 0.72);
-  --surface-bright: rgba(255, 255, 255, 0.88);
-  --surface-hover: #ECE7DF;
-  --glass-bg: rgba(255, 255, 255, 0.58);
-  --glass-border: rgba(255, 255, 255, 0.45);
-  --glass-blur: 18px;
+  --bg-primary: #FAF9F5;               /* Silk Cream / Warm Chalk */
+  --bg-secondary: #F3F0E6;             /* Linen Cashmere */
+  --surface: rgba(255, 255, 255, 0.55);  /* Frosted Silk Glass */
+  --surface-bright: rgba(255, 255, 255, 0.82);
+  --surface-hover: #EBE8DB;
+  --glass-bg: rgba(255, 255, 255, 0.48);
+  --glass-border: rgba(24, 22, 21, 0.04); /* Thin Caviar border */
+  --glass-blur: 20px;
   
   --primary: #FF6A4D;
   --primary-hover: #FF7D63;
@@ -103,46 +103,46 @@ html.light {
   --accent-gradient: linear-gradient(135deg, #FF7D63 0%, #FF6A4D 100%);
   --accent-glow: transparent;
   
-  --text-primary: #1C1C1E;      /* Premium Apple black */
-  --text-secondary: #5F6368;    /* Apple secondary gray */
-  --text-muted: #8E8E93;        /* Muted gray */
+  --text-primary: #181615;             /* Caviar Truffle */
+  --text-secondary: #625E5A;           /* Warm Slate */
+  --text-muted: #8A8580;
   
-  --border-light: rgba(0, 0, 0, 0.06); /* Apple soft border */
-  --border-glow: rgba(255, 106, 77, 0.18);
+  --border-light: rgba(24, 22, 21, 0.05);
+  --border-glow: rgba(255, 106, 77, 0.14);
   
-  --shadow-ambient: 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 8px 24px rgba(255, 106, 77, 0.03);
-  --shadow-floating: 0 16px 40px rgba(0, 0, 0, 0.05);
+  --shadow-ambient: 0 8px 24px rgba(24, 22, 21, 0.03);
+  --shadow-glow: 0 8px 24px rgba(255, 106, 77, 0.015);
+  --shadow-floating: 0 16px 40px rgba(24, 22, 21, 0.05);
   
-  --hero-vignette-center: rgba(245, 245, 247, 0.05);
+  --hero-vignette-center: rgba(255, 255, 255, 0.45);
   
   /* Brand Logo Variables */
-  --logo-halo: rgba(255, 106, 77, 0.03);
-  --logo-border: rgba(0, 0, 0, 0.04);
-  --logo-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  --logo-halo: rgba(255, 106, 77, 0.02);
+  --logo-border: rgba(24, 22, 21, 0.03);
+  --logo-shadow: 0 4px 12px rgba(24, 22, 21, 0.02);
   --logo-glow-active: none;
   
   /* Button Specific dynamic layers */
-  --btn-primary-border: rgba(0, 0, 0, 0.04);
-  --btn-primary-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  --btn-primary-hover-shadow: 0 6px 16px rgba(255, 106, 77, 0.04);
+  --btn-primary-border: rgba(24, 22, 21, 0.03);
+  --btn-primary-shadow: 0 4px 10px rgba(24, 22, 21, 0.04);
+  --btn-primary-hover-shadow: 0 6px 16px rgba(255, 106, 77, 0.02);
 
-  /* ── Neumorphic Shadow System (Light) — Creamy Matte Clay ── */
-  --neu-bg:          #ECE7DF;
-  --neu-shadow-out:  6px 6px 14px rgba(0,0,0,0.04), -6px -6px 14px rgba(255,255,255,0.18);
-  --neu-shadow-hover:7px 7px 17px rgba(0,0,0,0.06), -7px -7px 17px rgba(255,255,255,0.22);
-  --neu-shadow-in:   inset 3px 3px 7px rgba(0,0,0,0.06), inset -2px -2px 6px rgba(255,255,255,0.20);
-  --neu-border:      rgba(255,255,255,0.5);
-  /* Primary coral neumorphic — soft, no glare */
-  --neu-primary-shadow:       6px 6px 14px rgba(0,0,0,0.04), -6px -6px 14px rgba(255,255,255,0.18), 0 0 10px rgba(255,90,60,0.04);
-  --neu-primary-shadow-hover: 7px 7px 17px rgba(0,0,0,0.06), -7px -7px 17px rgba(255,255,255,0.22), 0 0 14px rgba(255,90,60,0.06);
-  --neu-primary-shadow-in:    inset 3px 3px 7px rgba(0,0,0,0.04), inset -2px -2px 6px rgba(255,255,255,0.20);
+  /* ── Neumorphic Shadow System (Light) ── */
+  --neu-bg:          #F3F0E6;
+  --neu-shadow-out:  6px 6px 14px rgba(24,22,21,0.03), -6px -6px 14px rgba(255,255,255,0.45);
+  --neu-shadow-hover:7px 7px 17px rgba(24,22,21,0.05), -7px -7px 17px rgba(255,255,255,0.55);
+  --neu-shadow-in:   inset 3px 3px 7px rgba(24,22,21,0.04), inset -2px -2px 6px rgba(255,255,255,0.4);
+  --neu-border:      rgba(255, 255, 255, 0.35);
+  /* Primary coral neumorphic — matte, no bloom */
+  --neu-primary-shadow:       6px 6px 14px rgba(24,22,21,0.03), -6px -6px 14px rgba(255,255,255,0.45), 0 0 10px rgba(255,90,60,0.03);
+  --neu-primary-shadow-hover: 7px 7px 17px rgba(24,22,21,0.05), -7px -7px 17px rgba(255,255,255,0.55), 0 0 14px rgba(255,90,60,0.05);
+  --neu-primary-shadow-in:    inset 3px 3px 7px rgba(24,22,21,0.04), inset -2px -2px 6px rgba(255,255,255,0.4);
 
-  /* Bevel Highlights — creamy, soft */
-  --neu-inset-highlight:       inset 1.5px 1.5px 2px rgba(255,255,255,0.5), inset -1px -1px 2px rgba(0,0,0,0.03);
-  --neu-inset-highlight-hover: inset 2px 2px 3px rgba(255,255,255,0.6), inset -1.5px -1.5px 3px rgba(0,0,0,0.04);
-  --neu-primary-inset:         inset 1.5px 1.5px 2px rgba(255,255,255,0.25), inset -1px -1px 2px rgba(0,0,0,0.08);
-  --neu-primary-inset-hover:   inset 2px 2px 3px rgba(255,255,255,0.35), inset -1.5px -1.5px 3px rgba(0,0,0,0.12);
+  /* Bevel Highlights ── */
+  --neu-inset-highlight:       inset 1.5px 1.5px 2px rgba(255,255,255,0.7), inset -1px -1px 2px rgba(24,22,21,0.02);
+  --neu-inset-highlight-hover: inset 2px 2px 3px rgba(255,255,255,0.8), inset -1.5px -1.5px 3px rgba(24,22,21,0.03);
+  --neu-primary-inset:         inset 1.5px 1.5px 2px rgba(255,255,255,0.3), inset -1px -1px 2px rgba(24,22,21,0.06);
+  --neu-primary-inset-hover:   inset 2px 2px 3px rgba(255,255,255,0.4), inset -1.5px -1.5px 3px rgba(24,22,21,0.08);
 }
 
 /* --- SYSTEM BASICS & GLOBAL SCROLLBAR HIDING ENGINE --- */
@@ -1719,9 +1719,9 @@ button.btn-icon:not(.btn-circle) {
 }
 
 html.light button.btn-icon:not(.btn-circle) {
-  background: rgba(0, 0, 0, 0.02) !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.05), inset -2px -2px 5px rgba(255, 255, 255, 0.22), var(--neu-shadow-out) !important;
+  background: rgba(24, 22, 21, 0.04) !important;
+  border: 1px solid rgba(24, 22, 21, 0.05) !important;
+  box-shadow: inset 1px 1px 3px rgba(24, 22, 21, 0.03), inset -1px -1px 3px rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Dark mode theme toggle base container — matte obsidian */
@@ -1747,9 +1747,9 @@ button.btn-icon:not(.btn-circle)::before {
 /* Light mode Glass Handle — soft cream */
 html.light button.btn-icon:not(.btn-circle)::before {
   left: -3px !important;
-  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.05) 100%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05), -3px -3px 8px rgba(255, 255, 255, 0.22), inset 0 2px 3px rgba(255, 255, 255, 0.18), inset 0 -2px 3px rgba(0, 0, 0, 0.02) !important;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.02) 100%) !important;
+  border: 1.5px solid rgba(24, 22, 21, 0.05) !important;
+  box-shadow: 0 4px 10px rgba(24, 22, 21, 0.04), -2px -2px 6px rgba(255, 255, 255, 0.15), inset 0 2px 3px rgba(255, 255, 255, 0.1), inset 0 -2px 3px rgba(0, 0, 0, 0.01) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
 }
@@ -2084,6 +2084,26 @@ html.light .glass-navbar-premium nav a:hover {
 
 .glass-navbar-premium nav a:active {
   transform: scale(0.97) translateY(0);
+}
+
+/* Light mode overrides to remove the glowing halos from buttons in the navbar */
+html.light .glass-navbar-premium .btn-icon {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border: 1px solid rgba(24, 22, 21, 0.06) !important;
+  box-shadow: 0 2px 6px rgba(24, 22, 21, 0.02) !important;
+}
+
+html.light .glass-navbar-premium .btn-icon:hover {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid rgba(255, 106, 77, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(24, 22, 21, 0.04) !important;
+  transform: translateY(-1px) !important;
+}
+
+html.light .glass-navbar-premium .btn-icon:active {
+  background: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 1px 1px 3px rgba(24, 22, 21, 0.04) !important;
+  transform: scale(0.97) !important;
 }
 
 /* ── UTILITIES & BUTTONS TIGHTENING ── */

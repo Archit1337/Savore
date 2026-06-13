@@ -628,6 +628,7 @@ export default function Home() {
 
   const [isPageReady, setIsPageReady] = useState(false);
 
+
   useEffect(() => {
     if (!window.savoreLoaderComplete) {
       const interval = setInterval(() => {
@@ -1671,13 +1672,41 @@ export default function Home() {
                     <Compass size={16} />
                     Explore Food
                   </button>
-                  <button 
+                  <motion.button 
                     onClick={() => navigate('/reels')}
-                    className="btn btn-secondary px-[26px] py-3 text-[14px] rounded-[16px] flex items-center gap-2 border-[1.5px] border-[var(--border-light)]"
+                    whileHover="hover"
+                    whileTap={{ scale: 0.95 }}
+                    initial="rest"
+                    className="btn btn-secondary px-[26px] py-3 text-[14px] rounded-[16px] flex items-center gap-2 border-[1.5px] border-[var(--border-light)] relative overflow-hidden group transition-shadow duration-300"
                   >
-                    <Play size={16} fill="currentColor" />
-                    Watch Reels
-                  </button>
+                    {/* Premium Shimmer Line */}
+                    <motion.div
+                      className="absolute top-0 -left-[100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent -skew-x-12 pointer-events-none"
+                      variants={{
+                        hover: {
+                          left: "150%",
+                          transition: { duration: 0.85, ease: "easeInOut" }
+                        }
+                      }}
+                    />
+                    
+                    {/* Animated Play Icon */}
+                    <motion.span
+                      variants={{
+                        rest: { scale: 1, rotate: 0 },
+                        hover: { 
+                          scale: [1, 1.28, 1.15],
+                          rotate: [0, -10, 15, 0],
+                          transition: { duration: 0.55, ease: "easeOut" }
+                        }
+                      }}
+                      className="flex items-center justify-center text-primary dark:text-[#FF8A72]"
+                    >
+                      <Play size={16} fill="currentColor" />
+                    </motion.span>
+                    
+                    <span className="relative z-10">Watch Reels</span>
+                  </motion.button>
                 </motion.div>
               </motion.div>
             </div>
