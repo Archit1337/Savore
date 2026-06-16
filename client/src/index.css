@@ -618,9 +618,10 @@ html.light .btn-glass:hover {
 }
 
 html.light .chip {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  background: rgba(24, 22, 21, 0.04);
+  border-color: rgba(24, 22, 21, 0.08);
+  box-shadow: 0 4px 15px rgba(24, 22, 21, 0.015);
+  color: var(--text-secondary);
 }
 
 .chip:hover {
@@ -630,18 +631,20 @@ html.light .chip {
 }
 
 html.light .chip:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(24, 22, 21, 0.08);
+  border-color: var(--primary);
+  color: var(--text-primary);
 }
 
 .chip:active {
   transform: scale(0.96);
 }
 
-.chip.active {
+.chip.active, html.light .chip.active {
   background: var(--primary-gradient);
   border-color: transparent;
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(255, 106, 77, 0.2);
+  box-shadow: 0 4px 15px rgba(255, 106, 77, 0.25);
 }
 
 /* --- TYPOGRAPHY & LAYOUTS --- */
@@ -2731,4 +2734,27 @@ html.light .film-grain-separator {
       );
   }
 }
+
+/* --- GLOBAL LIGHT MODE CONTRAST & VISIBILITY OVERRIDES FOR TRANSLUCENT CLASSROOMS --- */
+html.light .bg-white\/\[0\.005\] { background-color: rgba(24, 22, 21, 0.01) !important; }
+html.light .bg-white\/\[0\.01\] { background-color: rgba(24, 22, 21, 0.02) !important; }
+html.light .bg-white\/\[0\.02\] { background-color: rgba(24, 22, 21, 0.04) !important; }
+html.light .bg-white\/\[0\.03\] { background-color: rgba(24, 22, 21, 0.05) !important; }
+html.light .bg-white\/\[0\.04\] { background-color: rgba(24, 22, 21, 0.06) !important; }
+html.light .bg-white\/\[0\.05\] { background-color: rgba(24, 22, 21, 0.08) !important; }
+html.light .bg-white\/5 { background-color: rgba(24, 22, 21, 0.08) !important; }
+html.light .bg-white\/10 { background-color: rgba(24, 22, 21, 0.12) !important; }
+html.light .hover\:bg-white\/\[0\.03\]:hover { background-color: rgba(24, 22, 21, 0.06) !important; }
+html.light .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(24, 22, 21, 0.08) !important; }
+html.light .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(24, 22, 21, 0.1) !important; }
+html.light .hover\:bg-white\/\[0\.08\]:hover { background-color: rgba(24, 22, 21, 0.12) !important; }
+html.light .hover\:bg-white\/\[0\.1\]:hover { background-color: rgba(24, 22, 21, 0.15) !important; }
+html.light .hover\:bg-white\/10:hover { background-color: rgba(24, 22, 21, 0.15) !important; }
+html.light .hover\:bg-white\/20:hover { background-color: rgba(24, 22, 21, 0.25) !important; }
+html.light .border-white\/5 { border-color: rgba(24, 22, 21, 0.08) !important; }
+html.light .border-white\/10 { border-color: rgba(24, 22, 21, 0.12) !important; }
+html.light .border-white\/\[0\.03\] { border-color: rgba(24, 22, 21, 0.05) !important; }
+html.light .border-white\/\[0\.04\] { border-color: rgba(24, 22, 21, 0.06) !important; }
+html.light .border-white\/\[0\.05\] { border-color: rgba(24, 22, 21, 0.08) !important; }
+
 

@@ -135,12 +135,12 @@ export default function Login() {
         </p>
 
         {/* Double-Tab Glassmorphic Mode Switcher */}
-        <div className="flex bg-white/5 border border-white/10 rounded-xl p-1.5 mb-7 relative select-none">
+        <div className="flex bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-xl p-1.5 mb-7 relative select-none">
           <button
             type="button"
             className={`flex-1 py-2 px-3 rounded-lg text-[13px] font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-1.5 z-10 ${
               activeTab === 'password'
-                ? 'bg-white/10 text-white shadow-md backdrop-blur-md border border-white/10'
+                ? 'bg-primary text-white shadow-md border border-primary/10'
                 : 'text-text-secondary hover:text-text-primary'
             }`}
             onClick={() => {
@@ -155,7 +155,7 @@ export default function Login() {
             type="button"
             className={`flex-1 py-2 px-3 rounded-lg text-[13px] font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-1.5 z-10 ${
               activeTab === 'otp'
-                ? 'bg-white/10 text-white shadow-md backdrop-blur-md border border-white/10'
+                ? 'bg-primary text-white shadow-md border border-primary/10'
                 : 'text-text-secondary hover:text-text-primary'
             }`}
             onClick={() => {
