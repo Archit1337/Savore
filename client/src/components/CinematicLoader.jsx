@@ -59,8 +59,11 @@ const DiningBowlIcon = () => (
 
 const ICONS = [ChefHatIcon, SushiIcon, PizzaIcon, WineIcon, ClocheIcon, FlameIcon, DiningBowlIcon];
 
+const GREETINGS = ["Hello", "Bonjour", "Namaste", "Ciao", "Hola", "Konnichiwa", "Hej", "Nǐ Hǎo"];
+
 export default function CinematicLoader({ onComplete }) {
   const [activeIconIndex, setActiveIconIndex] = useState(() => Math.floor(Math.random() * ICONS.length));
+  const [greetingIndex, setGreetingIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
 
@@ -73,9 +76,18 @@ export default function CinematicLoader({ onComplete }) {
     return () => clearInterval(iconInterval);
   }, [isExiting]);
 
+  // Cycle hello greetings in multiple languages
+  useEffect(() => {
+    if (isExiting) return;
+    const greetingInterval = setInterval(() => {
+      setGreetingIndex((prev) => (prev + 1) % GREETINGS.length);
+    }, 500);
+    return () => clearInterval(greetingInterval);
+  }, [isExiting]);
+
   // Smooth progress bar pacing
   useEffect(() => {
-    const duration = 1600; // 1.6s progress path
+    const duration = 2600; // 2.6s progress path
     const intervalTime = 16; // ~60fps updates
     const step = 100 / (duration / intervalTime);
 
@@ -290,15 +302,25 @@ export default function CinematicLoader({ onComplete }) {
           </motion.div>
         </motion.div>
 
-        {/* Slogan */}
-        <motion.p
-          className="text-[11px] uppercase tracking-[0.24em] font-medium text-text-muted mb-7 opacity-75 sm:whitespace-nowrap"
-          animate={isExiting ? { opacity: 0, y: 12, scale: 0.94, filter: "blur(3px)" } : { opacity: 0.7 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          initial={{ opacity: 0 }}
+        {/* Languages Greeting Animator */}
+        <motion.div 
+          className="h-[20px] mb-7 flex items-center justify-center overflow-hidden"
+          animate={isExiting ? { opacity: 0, y: 10, filter: "blur(3px)" } : { opacity: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          Cinematic Dining Experience
-        </motion.p>
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={greetingIndex}
+              initial={{ opacity: 0, y: 10, filter: "blur(2.5px)" }}
+              animate={{ opacity: 0.75, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -10, filter: "blur(2.5px)" }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="text-[11px] uppercase tracking-[0.24em] font-semibold text-text-muted select-none whitespace-nowrap"
+            >
+              {GREETINGS[greetingIndex]}
+            </motion.p>
+          </AnimatePresence>
+        </motion.div>
 
         {/* 🌀 Premium Coral Progress Line Container */}
         <motion.div 
