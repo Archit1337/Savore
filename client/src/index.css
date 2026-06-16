@@ -89,7 +89,7 @@ html.light {
   --bg-primary: #FAF9F5;               /* Silk Cream / Warm Chalk */
   --bg-secondary: #F3F0E6;             /* Linen Cashmere */
   --surface: rgba(255, 255, 255, 0.55);  /* Frosted Silk Glass */
-  --surface-bright: rgba(255, 255, 255, 0.82);
+  --surface-bright: #ffffff;
   --surface-hover: #EBE8DB;
   --glass-bg: rgba(255, 255, 255, 0.48);
   --glass-border: rgba(24, 22, 21, 0.04); /* Thin Caviar border */
@@ -304,6 +304,25 @@ html.light .glass-input:focus,
 :root.light .glass-input:focus {
   background: var(--bg-primary);
   animation: siriFocusGlowLight 6s infinite linear;
+}
+
+select.glass-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 14px !important;
+  padding-right: 36px !important;
+}
+
+html.light select.glass-input,
+:root.light select.glass-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-opacity='0.5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 14px !important;
 }
 
 @keyframes siriFocusGlow {
@@ -2782,6 +2801,14 @@ html.light .brand-shimmer-text {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   text-fill-color: transparent;
+}
+
+/* 👾 Retro Pixel-Art Canvas Scaling Engine */
+.pixelated-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 

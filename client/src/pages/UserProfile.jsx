@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -977,183 +978,187 @@ export default function UserProfile() {
                 )}
 
                 {/* SAVED ADDRESS ADD/EDIT MODAL OVERLAY */}
-                <AnimatePresence>
-                  {addressModalOpen && (
-                    <div className="fixed inset-0 flex items-center justify-center z-50 p-6 select-none">
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setAddressModalOpen(false)}
-                        className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer animate-fade-in"
-                      />
-                      
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                        className="bg-[var(--surface-bright)] border border-border-light rounded-[24px] p-7 max-w-[540px] w-full relative z-10 text-left shadow-2xl overflow-y-auto max-h-[85vh] text-[var(--text-primary)]"
-                      >
-                        <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
-                          <h3 className="text-base font-bold flex items-center gap-2">
-                            <MapPin size={16} className="text-primary" />
-                            {isEditingAddress ? 'Edit Delivery Address' : 'Add New Delivery Address'}
-                          </h3>
-                          <button onClick={() => setAddressModalOpen(false)} className="btn-icon btn-circle w-7 h-7">
-                            <X size={13} />
-                          </button>
-                        </div>
-
-                        {addressFormError && (
-                          <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
-                            <ShieldAlert size={15} />
-                            <span>{addressFormError}</span>
-                          </div>
-                        )}
-
-                        {addressFormSuccess && (
-                          <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
-                            <CheckCircle size={15} />
-                            <span>{addressFormSuccess}</span>
-                          </div>
-                        )}
-
-                        <form onSubmit={handleAddressSubmit} className="flex flex-col gap-4.5">
-                          {/* Address Type segmented buttons */}
-                          <div>
-                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">Address Type</label>
-                            <div className="grid grid-cols-4 gap-2">
-                              {['Home', 'Work', 'Apartment', 'Other'].map((type) => (
-                                <button
-                                  type="button"
-                                  key={type}
-                                  onClick={() => setAddrType(type)}
-                                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                                    addrType === type 
-                                      ? 'bg-primary border-primary text-white shadow-sm' 
-                                      : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
-                                  }`}
-                                >
-                                  {type}
-                                </button>
-                              ))}
-                            </div>
+                {createPortal(
+                  <AnimatePresence>
+                    {addressModalOpen && (
+                      <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none">
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setAddressModalOpen(false)}
+                          className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer animate-fade-in"
+                        />
+                        
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                          className="bg-[var(--surface-bright)] border border-border-light rounded-[24px] p-7 max-w-[540px] w-full relative z-10 text-left shadow-2xl overflow-y-auto max-h-[85vh] text-[var(--text-primary)]"
+                        >
+                          <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
+                            <h3 className="text-base font-bold flex items-center gap-2">
+                              <MapPin size={16} className="text-primary" />
+                              {isEditingAddress ? 'Edit Delivery Address' : 'Add New Delivery Address'}
+                            </h3>
+                            <button onClick={() => setAddressModalOpen(false)} className="btn-icon btn-circle w-7 h-7">
+                              <X size={13} />
+                            </button>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5">House / Flat No.</label>
-                              <input 
-                                type="text" 
-                                className="glass-input !h-10 text-[13px]" 
-                                placeholder="e.g. Flat 402, 4th Floor"
-                                value={addrHouseNumber}
-                                onChange={(e) => setAddrHouseNumber(e.target.value)}
-                              />
+                          {addressFormError && (
+                            <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
+                              <ShieldAlert size={15} />
+                              <span>{addressFormError}</span>
                             </div>
-                            <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5">Street / Road *</label>
-                              <input 
-                                type="text" 
-                                className="glass-input !h-10 text-[13px]" 
-                                placeholder="e.g. Hill Road, Bandra West"
-                                value={addrStreet}
-                                onChange={(e) => setAddrStreet(e.target.value)}
-                                required
-                              />
-                            </div>
-                          </div>
+                          )}
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5">Locality / Area *</label>
-                              <input 
-                                type="text" 
-                                className="glass-input !h-10 text-[13px]" 
-                                placeholder="e.g. Bandra West"
-                                value={addrArea}
-                                onChange={(e) => setAddrArea(e.target.value)}
-                                required
-                              />
+                          {addressFormSuccess && (
+                            <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
+                              <CheckCircle size={15} />
+                              <span>{addressFormSuccess}</span>
                             </div>
-                            <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5">Landmark (Optional)</label>
-                              <input 
-                                type="text" 
-                                className="glass-input !h-10 text-[13px]" 
-                                placeholder="e.g. Near Mehboob Studio"
-                                value={addrLandmark}
-                                onChange={(e) => setAddrLandmark(e.target.value)}
-                              />
-                            </div>
-                          </div>
+                          )}
 
-                          <div className="grid grid-cols-3 gap-3">
+                          <form onSubmit={handleAddressSubmit} className="flex flex-col gap-[26px]">
+                            {/* Address Type segmented buttons */}
                             <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5">Indian City *</label>
-                              <select 
-                                className="glass-input !h-10 text-[13px] !py-0 !px-2.5 rounded-xl cursor-pointer"
-                                value={addrCity}
-                                onChange={(e) => setAddrCity(e.target.value)}
-                                required
-                              >
-                                {CITIES.map(c => (
-                                  <option key={c} value={c} className="bg-[var(--surface-bright)] text-[var(--text-primary)]">{c}</option>
+                              <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Address Type</label>
+                              <div className="grid grid-cols-4 gap-2">
+                                {['Home', 'Work', 'Apartment', 'Other'].map((type) => (
+                                  <button
+                                    type="button"
+                                    key={type}
+                                    onClick={() => setAddrType(type)}
+                                    className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                      addrType === type 
+                                        ? 'bg-primary border-primary text-white shadow-sm' 
+                                        : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
+                                    }`}
+                                    style={{ padding: '10px 4px' }}
+                                  >
+                                    {type}
+                                  </button>
                                 ))}
-                              </select>
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5">State *</label>
-                              <input 
-                                type="text" 
-                                className="glass-input !h-10 text-[13px]" 
-                                placeholder="e.g. Maharashtra"
-                                value={addrState}
-                                onChange={(e) => setAddrState(e.target.value)}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-1.5">Pincode *</label>
-                              <input 
-                                type="text" 
-                                className="glass-input !h-10 text-[13px]" 
-                                placeholder="6 digits (e.g. 400050)"
-                                value={addrPincode}
-                                onChange={(e) => setAddrPincode(e.target.value)}
-                                required
-                              />
-                            </div>
-                          </div>
 
-                          {/* Default toggle switch */}
-                          <div className="flex items-center gap-2 mt-2">
-                            <input 
-                              type="checkbox" 
-                              id="addrIsDefault"
-                              checked={addrIsDefault}
-                              onChange={(e) => setAddrIsDefault(e.target.checked)}
-                              className="w-4 h-4 accent-primary rounded cursor-pointer"
-                            />
-                            <label htmlFor="addrIsDefault" className="text-xs font-semibold text-text-primary cursor-pointer select-none">
-                              Set as primary active delivery target
-                            </label>
-                          </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">House / Flat No.</label>
+                                <input 
+                                  type="text" 
+                                  className="glass-input h-11 text-[13.5px]" 
+                                  placeholder="e.g. Flat 402, 4th Floor"
+                                  value={addrHouseNumber}
+                                  onChange={(e) => setAddrHouseNumber(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Street / Road *</label>
+                                <input 
+                                  type="text" 
+                                  className="glass-input h-11 text-[13.5px]" 
+                                  placeholder="e.g. Hill Road, Bandra West"
+                                  value={addrStreet}
+                                  onChange={(e) => setAddrStreet(e.target.value)}
+                                  required
+                                />
+                              </div>
+                            </div>
 
-                          <button 
-                            type="submit" 
-                            className={`w-full h-11 bg-primary text-white border-none rounded-xl font-bold flex items-center justify-center gap-2 mt-4 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${
-                              addressFormLoading ? 'opacity-75 pointer-events-none' : ''
-                            }`}
-                          >
-                            {addressFormLoading ? 'Saving...' : 'Save Address Info'}
-                          </button>
-                        </form>
-                      </motion.div>
-                    </div>
-                  )}
-                </AnimatePresence>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Locality / Area *</label>
+                                <input 
+                                  type="text" 
+                                  className="glass-input h-11 text-[13.5px]" 
+                                  placeholder="e.g. Bandra West"
+                                  value={addrArea}
+                                  onChange={(e) => setAddrArea(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Landmark (Optional)</label>
+                                <input 
+                                  type="text" 
+                                  className="glass-input h-11 text-[13.5px]" 
+                                  placeholder="e.g. Near Mehboob Studio"
+                                  value={addrLandmark}
+                                  onChange={(e) => setAddrLandmark(e.target.value)}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Indian City *</label>
+                                <select 
+                                  className="glass-input h-11 text-[13.5px] !py-0 !px-2.5 rounded-xl cursor-pointer"
+                                  value={addrCity}
+                                  onChange={(e) => setAddrCity(e.target.value)}
+                                  required
+                                >
+                                  {CITIES.map(c => (
+                                    <option key={c} value={c} className="bg-[var(--surface-bright)] text-[var(--text-primary)]">{c}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">State *</label>
+                                <input 
+                                  type="text" 
+                                  className="glass-input h-11 text-[13.5px]" 
+                                  placeholder="e.g. Maharashtra"
+                                  value={addrState}
+                                  onChange={(e) => setAddrState(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Pincode *</label>
+                                <input 
+                                  type="text" 
+                                  className="glass-input h-11 text-[13.5px]" 
+                                  placeholder="6 digits (e.g. 400050)"
+                                  value={addrPincode}
+                                  onChange={(e) => setAddrPincode(e.target.value)}
+                                  required
+                                />
+                              </div>
+                            </div>
+
+                            {/* Default toggle switch */}
+                            <div className="flex items-center gap-2 mt-2">
+                              <input 
+                                type="checkbox" 
+                                id="addrIsDefault"
+                                checked={addrIsDefault}
+                                onChange={(e) => setAddrIsDefault(e.target.checked)}
+                                className="w-4 h-4 accent-primary rounded cursor-pointer"
+                              />
+                              <label htmlFor="addrIsDefault" className="text-xs font-semibold text-text-primary cursor-pointer select-none">
+                                Set as primary active delivery target
+                              </label>
+                            </div>
+
+                            <button 
+                              type="submit" 
+                              className={`w-full h-12 bg-primary text-white border-none rounded-xl font-bold flex items-center justify-center gap-2 mt-6 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${
+                                addressFormLoading ? 'opacity-75 pointer-events-none' : ''
+                              }`}
+                            >
+                              {addressFormLoading ? 'Saving...' : 'Save Address Info'}
+                            </button>
+                          </form>
+                        </motion.div>
+                      </div>
+                    )}
+                  </AnimatePresence>,
+                  document.body
+                )}
               </div>
             )}
 
@@ -1399,57 +1404,60 @@ export default function UserProfile() {
       </div>
 
       {/* 4. DANGER ZONE CONFIRMATION MODAL OVERLAY */}
-      <AnimatePresence>
-        {deleteModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-6 select-none">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDeleteModalOpen(false)}
-              className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer animate-fade-in"
-            />
-            
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="bg-[var(--surface-bright)] border border-red-500/20 rounded-[24px] p-8 max-w-[480px] w-full relative z-10 text-left shadow-2xl overflow-y-auto text-[var(--text-primary)]"
-            >
-              <div className="flex items-center gap-3 border-b border-border-light/45 pb-4 mb-4">
-                <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500">
-                  <ShieldAlert size={20} className="animate-pulse" />
+      {createPortal(
+        <AnimatePresence>
+          {deleteModalOpen && (
+            <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setDeleteModalOpen(false)}
+                className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer animate-fade-in"
+              />
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-[var(--surface-bright)] border border-red-500/20 rounded-[24px] p-8 max-w-[480px] w-full relative z-10 text-left shadow-2xl overflow-y-auto text-[var(--text-primary)]"
+              >
+                <div className="flex items-center gap-3 border-b border-border-light/45 pb-4 mb-4">
+                  <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500">
+                    <ShieldAlert size={20} className="animate-pulse" />
+                  </div>
+                  <h3 className="text-lg font-bold text-text-primary">Irreversible Account Deletion</h3>
                 </div>
-                <h3 className="text-lg font-bold text-text-primary">Irreversible Account Deletion</h3>
-              </div>
 
-              <p className="text-sm text-text-secondary leading-relaxed mb-6">
-                Are you absolutely sure you want to permanently delete your Savoré profile? This will terminate your session and completely purge your database record. This action cannot be undone.
-              </p>
+                <p className="text-sm text-text-secondary leading-relaxed mb-6">
+                  Are you absolutely sure you want to permanently delete your Savoré profile? This will terminate your session and completely purge your database record. This action cannot be undone.
+                </p>
 
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => { soundController?.playClick(); setDeleteModalOpen(false); }}
-                  className="py-2.5 px-4 rounded-xl text-xs font-bold transition-all border border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer bg-transparent"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteAccount}
-                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all bg-red-500 hover:bg-red-600 text-white border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)] ${
-                    deleteLoading ? 'opacity-70 pointer-events-none' : ''
-                  }`}
-                >
-                  {deleteLoading ? 'Purging Profile...' : 'Confirm Permanent Deletion'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => { soundController?.playClick(); setDeleteModalOpen(false); }}
+                    className="py-2.5 px-4 rounded-xl text-xs font-bold transition-all border border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer bg-transparent"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all bg-red-500 hover:bg-red-600 text-white border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)] ${
+                      deleteLoading ? 'opacity-70 pointer-events-none' : ''
+                    }`}
+                  >
+                    {deleteLoading ? 'Purging Profile...' : 'Confirm Permanent Deletion'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

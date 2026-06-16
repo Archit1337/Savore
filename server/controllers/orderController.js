@@ -3,6 +3,67 @@ const Restaurant = require('../models/Restaurant');
 const FoodItem = require('../models/FoodItem');
 const mongoose = require('mongoose');
 
+const CITY_PINCODE_PREFIXES = {
+  mumbai: ['400'],
+  delhi: ['11'],
+  bengaluru: ['560'],
+  bangalore: ['560'],
+  hyderabad: ['500'],
+  chennai: ['600'],
+  kolkata: ['700'],
+  pune: ['411', '412'],
+  ahmedabad: ['380', '382'],
+  jaipur: ['302'],
+  chandigarh: ['160'],
+  goa: ['403'],
+  kochi: ['682'],
+  lucknow: ['226'],
+  indore: ['452'],
+  surat: ['395']
+};
+
+const getCityAliases = (city) => {
+  if (!city) return [];
+  const c = city.toLowerCase().trim();
+  if (c === 'bengaluru' || c === 'bangalore') {
+    return ['bengaluru', 'bangalore'];
+  }
+  if (c === 'mumbai' || c === 'bombay') {
+    return ['mumbai', 'bombay'];
+  }
+  if (c === 'kolkata' || c === 'calcutta') {
+    return ['kolkata', 'calcutta'];
+  }
+  if (c === 'chennai' || c === 'madras') {
+    return ['chennai', 'madras'];
+  }
+  return [c];
+};
+
+const isAddressMatchingCity = (addressStr, city) => {
+  if (!addressStr || !city) return false;
+  const addr = addressStr.toLowerCase().trim();
+  const aliases = getCityAliases(city);
+  return aliases.some(alias => addr.includes(alias));
+};
+
+const isAddressValidForRestaurantCity = (addressStr, city) => {
+  if (!addressStr || !city) return false;
+  
+  const pins = addressStr.match(/\b\d{6}\b/g);
+  if (pins && pins.length > 0) {
+    const normalizedCity = city.toLowerCase().trim();
+    const prefixes = CITY_PINCODE_PREFIXES[normalizedCity];
+    if (prefixes) {
+      const hasValidPin = pins.some(pin => prefixes.some(pref => pin.startsWith(pref)));
+      if (hasValidPin) return true;
+      return false;
+    }
+  }
+
+  return isAddressMatchingCity(addressStr, city);
+};
+
 // @desc    Place a new order
 // @route   POST /api/orders
 // @access  Private (Customer)
@@ -37,6 +98,14 @@ const placeOrder = async (req, res, next) => {
       if (restaurant.city.toLowerCase().trim() !== userRegion.toLowerCase().trim()) {
         res.status(400);
         return next(new Error(`This restaurant (${restaurant.name}) is outside your active delivery zone (${userRegion}).`));
+      }
+    }
+
+    // Server-side Delivery Address City/Pincode validation (bypassed for test orders)
+    if (restaurant.city && !isTestOrder) {
+      if (!isAddressValidForRestaurantCity(deliveryAddress, restaurant.city)) {
+        res.status(400);
+        return next(new Error(`The delivery address pincode or city name does not match the restaurant's operating city (${restaurant.city}).`));
       }
     }
 

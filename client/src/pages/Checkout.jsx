@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, MapPin, CreditCard, ChevronRight, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ShoppingBag, MapPin, CreditCard, ChevronRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { LocationContext } from '../context/LocationContext';
 import { AuthContext } from '../context/AuthContext';
@@ -168,28 +168,132 @@ function DeliveryMapSimulator({ orderId, onDeliveryComplete }) {
   );
 }
 
+const CITY_PINCODE_PREFIXES = {
+  mumbai: ['400'],
+  delhi: ['11'],
+  bengaluru: ['560'],
+  bangalore: ['560'],
+  hyderabad: ['500'],
+  chennai: ['600'],
+  kolkata: ['700'],
+  pune: ['411', '412'],
+  ahmedabad: ['380', '382'],
+  jaipur: ['302'],
+  chandigarh: ['160'],
+  goa: ['403'],
+  kochi: ['682'],
+  lucknow: ['226'],
+  indore: ['452'],
+  surat: ['395']
+};
+
+const getCityAliases = (city) => {
+  if (!city) return [];
+  const c = city.toLowerCase().trim();
+  if (c === 'bengaluru' || c === 'bangalore') {
+    return ['bengaluru', 'bangalore'];
+  }
+  if (c === 'mumbai' || c === 'bombay') {
+    return ['mumbai', 'bombay'];
+  }
+  if (c === 'kolkata' || c === 'calcutta') {
+    return ['kolkata', 'calcutta'];
+  }
+  if (c === 'chennai' || c === 'madras') {
+    return ['chennai', 'madras'];
+  }
+  return [c];
+};
+
+const isPincodeValidForCity = (pin, city) => {
+  if (!pin || !city) return false;
+  const normalizedCity = city.toLowerCase().trim();
+  const prefixes = CITY_PINCODE_PREFIXES[normalizedCity];
+  if (!prefixes) return true;
+  
+  const cleanPin = pin.trim();
+  if (cleanPin.length !== 6 || isNaN(cleanPin)) return false;
+  
+  return prefixes.some(pref => cleanPin.startsWith(pref));
+};
+
+const isAddressMatchingCity = (addressStr, city) => {
+  if (!addressStr || !city) return false;
+  const addr = addressStr.toLowerCase().trim();
+  const aliases = getCityAliases(city);
+  return aliases.some(alias => addr.includes(alias));
+};
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, restaurant, subtotal, deliveryFee, tax, total, deleteItemRow } = useContext(CartContext);
   const { user, isAuthenticated } = useContext(AuthContext);
   const { placeOrder, activeOrder, getOrderDetails, setActiveOrder, updateOrderStatus } = useContext(OrderContext);
-  const { activeCity } = useContext(LocationContext);
+  const { activeCity, savedAddresses, addSavedAddress } = useContext(LocationContext);
   const isOwnRestaurant = isAuthenticated && user && restaurant && (restaurant.owner === user._id || restaurant.owner?._id === user._id);
   const isOutOfRegion = restaurant && activeCity && restaurant.city && restaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim() && !isOwnRestaurant;
 
   const [step, setStep] = useState(1); // Stepper: 1 - Cart Review, 2 - Delivery, 3 - Payment/Status
-  const [address, setAddress] = useState(user?.address || '');
+  const [address, setAddress] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [saveAddressToProfile, setSaveAddressToProfile] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(isOwnRestaurant ? 'SIMULATED' : 'COD'); // COD or CARD or SIMULATED
   const [errorMsg, setErrorMsg] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
 
-  // Prefill address
+  // Prefill address based on restaurant city matching
   useEffect(() => {
-    if (user && user.address) {
-      setAddress(user.address);
+    if (!restaurant) return;
+
+    // 1. Check for default saved address matching the restaurant's city
+    const matchedDefault = savedAddresses.find(
+      (addr) => addr.isDefault && addr.city && addr.city.toLowerCase().trim() === restaurant.city.toLowerCase().trim()
+    );
+
+    if (matchedDefault) {
+      const formatted = [
+        matchedDefault.houseNumber,
+        matchedDefault.street,
+        matchedDefault.area,
+        matchedDefault.landmark ? `(Near ${matchedDefault.landmark})` : '',
+        matchedDefault.state
+      ].filter(Boolean).join(', ');
+      setAddress(formatted);
+      setPincode(matchedDefault.pincode || '');
+      return;
     }
-  }, [user]);
+
+    // 2. Check for any saved address matching the restaurant's city
+    const matchedAny = savedAddresses.find(
+      (addr) => addr.city && addr.city.toLowerCase().trim() === restaurant.city.toLowerCase().trim()
+    );
+
+    if (matchedAny) {
+      const formatted = [
+        matchedAny.houseNumber,
+        matchedAny.street,
+        matchedAny.area,
+        matchedAny.landmark ? `(Near ${matchedAny.landmark})` : '',
+        matchedAny.state
+      ].filter(Boolean).join(', ');
+      setAddress(formatted);
+      setPincode(matchedAny.pincode || '');
+      return;
+    }
+
+    // 3. Fallback to profile user.address if it contains the city name
+    if (user && user.address && isAddressMatchingCity(user.address, restaurant.city)) {
+      setAddress(user.address);
+      const pins = user.address.match(/\b\d{6}\b/);
+      setPincode(pins ? pins[0] : '');
+      return;
+    }
+
+    // 4. Default to empty if no city match
+    setAddress('');
+    setPincode('');
+  }, [user, savedAddresses, restaurant]);
 
   // Handle Merchant Simulation payment method lock
   useEffect(() => {
@@ -226,8 +330,58 @@ export default function Checkout() {
       return;
     }
 
+    if (!pincode.trim() || pincode.trim().length !== 6 || isNaN(pincode.trim())) {
+      setErrorMsg('Please specify a valid 6-digit pincode.');
+      return;
+    }
+
+    if (restaurant && restaurant.city && !isPincodeValidForCity(pincode, restaurant.city)) {
+      setErrorMsg(`Your delivery pincode (${pincode}) does not match the restaurant's operating city (${restaurant.city}).`);
+      return;
+    }
+
     setIsPlacing(true);
     setErrorMsg('');
+
+    // Optionally save address to profile if checked
+    if (saveAddressToProfile) {
+      try {
+        const stateFallback = {
+          mumbai: 'Maharashtra',
+          delhi: 'Delhi',
+          bengaluru: 'Karnataka',
+          bangalore: 'Karnataka',
+          hyderabad: 'Telangana',
+          chennai: 'Tamil Nadu',
+          kolkata: 'West Bengal',
+          pune: 'Maharashtra',
+          ahmedabad: 'Gujarat',
+          jaipur: 'Rajasthan',
+          chandigarh: 'Chandigarh',
+          goa: 'Goa',
+          kochi: 'Kerala',
+          lucknow: 'Uttar Pradesh',
+          indore: 'Madhya Pradesh',
+          surat: 'Gujarat'
+        };
+        const normalizedCity = restaurant.city ? restaurant.city.toLowerCase().trim() : '';
+        const detectedState = stateFallback[normalizedCity] || 'India';
+
+        await addSavedAddress({
+          houseNumber: '',
+          street: address.trim(),
+          area: restaurant.locality || '',
+          landmark: '',
+          city: restaurant.city || activeCity,
+          state: detectedState,
+          pincode: pincode.trim(),
+          addressType: 'Home',
+          isDefault: false
+        });
+      } catch (saveErr) {
+        console.warn('Failed to save address to profile:', saveErr.message);
+      }
+    }
 
     const transactionId = paymentMethod === 'CARD' ? `pi_mock_${Date.now()}` : undefined;
 
@@ -239,7 +393,7 @@ export default function Checkout() {
         price: item.price,
       })),
       paymentMethod,
-      deliveryAddress: address.trim(),
+      deliveryAddress: `${address.trim()} - ${pincode.trim()}`,
       transactionId,
     };
 
@@ -282,6 +436,13 @@ export default function Checkout() {
     return `flex items-center gap-2 font-bold text-[15px] ${colorClass}`;
   };
 
+  const userDefaultAddressCity = user?.address ? (
+    Object.keys(CITY_PINCODE_PREFIXES).find(c => user.address.toLowerCase().includes(c))
+  ) : null;
+
+  const hasCityMismatch = restaurant && restaurant.city && userDefaultAddressCity && 
+    !isAddressMatchingCity(user.address, restaurant.city);
+
   return (
     <div className="container fade-in px-6 text-left" style={{ marginTop: '-6.5rem', paddingTop: '0.5rem', paddingBottom: '6rem', minHeight: 'calc(100vh - 320px)' }}>
       
@@ -320,6 +481,18 @@ export default function Checkout() {
               <ShoppingBag size={20} className="text-primary" />
               Shopping Cart Items
             </h3>
+
+            {hasCityMismatch && !isOutOfRegion && (
+              <div className="bg-[rgba(217,167,82,0.1)] border border-[#d9a752]/40 text-[#d9a752] rounded-[12px] py-4 px-5 flex items-start gap-3 mb-6 text-[14px] relative overflow-hidden backdrop-blur-md">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-[15px] font-bold mb-1 text-[#d9a752]">Delivery City Mismatch Notice</strong>
+                  <span className="leading-relaxed text-text-secondary">
+                    Your default profile address is in <strong>{userDefaultAddressCity.charAt(0).toUpperCase() + userDefaultAddressCity.slice(1)}</strong>, but you are ordering from a restaurant in <strong>{restaurant.city}</strong>. You will need to specify a valid {restaurant.city} address and pincode in the next step.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {isOutOfRegion && (
               <div className="bg-[rgba(255,180,171,0.1)] border border-[var(--error)] text-[var(--error)] rounded-[8px] py-3 px-4 flex items-center gap-2.5 mb-6 text-[14px] animate-pulse">
@@ -422,19 +595,99 @@ export default function Checkout() {
               Delivery Details
             </h3>
 
-            {/* Address input */}
-            <div className="mb-8">
-              <label className="block text-[13px] font-semibold text-text-secondary mb-2">
-                Delivery Address
-              </label>
-              <textarea 
-                className="glass-input resize-none rounded-[12px]" 
-                rows="3"
-                placeholder="Specify street address, apartment, building number..."
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
+            {/* Matching Saved Addresses */}
+            {restaurant && savedAddresses.filter(addr => addr.city && addr.city.toLowerCase().trim() === restaurant.city.toLowerCase().trim()).length > 0 && (
+              <div className="mb-6">
+                <span className="block text-[13px] font-semibold text-text-secondary mb-3">
+                  Saved Addresses in {restaurant.city}
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {savedAddresses
+                    .filter(addr => addr.city && addr.city.toLowerCase().trim() === restaurant.city.toLowerCase().trim())
+                    .map((addr) => {
+                      const formatted = [
+                        addr.houseNumber,
+                        addr.street,
+                        addr.area,
+                        addr.landmark ? `(Near ${addr.landmark})` : '',
+                        addr.state
+                      ].filter(Boolean).join(', ');
+                      
+                      const isSelected = address.trim() === formatted.trim() && pincode.trim() === addr.pincode.trim();
+                      
+                      return (
+                        <div 
+                          key={addr._id}
+                          onClick={() => {
+                            setAddress(formatted);
+                            setPincode(addr.pincode || '');
+                          }}
+                          className={`glass-card p-4 rounded-xl cursor-pointer border-[1.5px] text-left transition-all duration-200 ${
+                            isSelected 
+                              ? 'border-primary shadow-[var(--shadow-glow)] bg-primary/5' 
+                              : 'border-[var(--border-light)] hover:border-primary/45 bg-white/[0.01]'
+                          }`}
+                        >
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                            {addr.addressType || 'Home'} {addr.isDefault && '(Default)'}
+                          </span>
+                          <p className="text-[13px] font-semibold text-text-primary mt-1 truncate">
+                            {addr.houseNumber ? `${addr.houseNumber}, ` : ''}{addr.street}
+                          </p>
+                          <p className="text-[11px] text-text-muted mt-0.5 truncate">
+                            {addr.city} - {addr.pincode}
+                          </p>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Address & Pincode Input Form */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-6 mb-4">
+              <div>
+                <label className="block text-[13px] font-semibold text-text-secondary mb-2">
+                  Delivery Address
+                </label>
+                <textarea 
+                  className="glass-input resize-none rounded-[12px] w-full" 
+                  rows="3"
+                  placeholder="Specify street address, apartment, building number..."
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-[13px] font-semibold text-text-secondary mb-2">
+                  6-Digit Pincode
+                </label>
+                <input 
+                  type="text"
+                  maxLength="6"
+                  className="glass-input rounded-[12px] w-full h-[76px] text-[18px] text-center tracking-widest font-mono" 
+                  placeholder="560034"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
             </div>
+
+            {/* Save Address Checkbox */}
+            {isAuthenticated && (
+              <div className="flex items-center gap-2 mb-8 select-none">
+                <input 
+                  type="checkbox"
+                  id="saveAddressCheckbox"
+                  checked={saveAddressToProfile}
+                  onChange={(e) => setSaveAddressToProfile(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                />
+                <label htmlFor="saveAddressCheckbox" className="text-[13px] text-text-secondary cursor-pointer">
+                  Save this address to my profile for future orders
+                </label>
+              </div>
+            )}
 
             {isOwnRestaurant && (
               <div className="glass-panel border-[#d9a752]/40 bg-[#d9a752]/10 p-4 rounded-[20px] mb-6 flex items-center gap-3 text-left relative overflow-hidden animate-fade-in">

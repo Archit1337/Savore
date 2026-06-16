@@ -1,7 +1,7 @@
 // Savoré — Premium Cinematic Loader System
 // 100% Modular, Isolated, and High-Performance (Stable 60fps GPU execution)
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // 🍽️ Minimal Luxury Outline SVGs
@@ -83,6 +83,208 @@ export default function CinematicLoader({ onComplete }) {
   const [greetingIndex, setGreetingIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
+
+  const canvasRef = useRef(null);
+
+  const getTimeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 16) {
+      return 'day'; // Morning/Afternoon
+    } else if (hour >= 16 && hour < 19) {
+      return 'evening'; // Sunset
+    } else {
+      return 'night'; // Night Moon & Stars
+    }
+  };
+
+  // ☀️/🌙 High-Definition 4K Retro-Wave Canvas Background Animation Loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationId;
+    let frame = 0;
+
+    // Responsive Canvas Resizing for 4K / Retina high definition sharp rendering
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    const w = canvas.width / (window.devicePixelRatio || 1);
+    const h = canvas.height / (window.devicePixelRatio || 1);
+
+    // Responsive virtual pixel size (8px on desktop, 6px on mobile)
+    const pixelSize = window.innerWidth < 768 ? 6 : 8;
+
+    // Twinkling stars (for night mode) - generated relative to grid columns/rows
+    const gridCols = Math.ceil(w / pixelSize);
+    const gridRows = Math.ceil(h / pixelSize);
+
+    const stars = Array.from({ length: 35 }, () => ({
+      px: Math.floor(Math.random() * gridCols),
+      py: Math.floor(Math.random() * (gridRows * 0.6)), // keep in upper sky
+      speed: 0.015 + Math.random() * 0.02,
+      phase: Math.random() * Math.PI * 2
+    }));
+
+    // Drift clouds grid positions
+    let cloud1X = Math.floor(gridCols * 0.85);
+    let cloud2X = Math.floor(gridCols * 0.25);
+
+    const timeOfDay = getTimeOfDay();
+
+    // Helper to draw a pixel block at virtual grid coordinates
+    const drawPixelRect = (px, py, pw, ph, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(px * pixelSize, py * pixelSize, pw * pixelSize, ph * pixelSize);
+    };
+
+    // Helper to draw a pixel-art fluffy cloud on the grid
+    const drawRetroCloud = (cx, cy, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect((cx - 6) * pixelSize, cy * pixelSize, 13 * pixelSize, 2 * pixelSize);
+      ctx.fillRect((cx - 4) * pixelSize, (cy - 1) * pixelSize, 9 * pixelSize, 1 * pixelSize);
+      ctx.fillRect((cx - 1) * pixelSize, (cy - 2) * pixelSize, 4 * pixelSize, 1 * pixelSize);
+      ctx.fillRect((cx - 8) * pixelSize, (cy + 1) * pixelSize, 16 * pixelSize, 1 * pixelSize);
+    };
+
+    // Helper to draw a retro sun with horizontal synthwave stripe cuts
+    const drawRetroSun = (cx, cy, radius, color) => {
+      for (let y = cy - radius; y <= cy + radius; y++) {
+        // Retro stripe cuts: skip rows towards the bottom
+        if (y > cy + 1 && (y - cy) % 2 === 0) continue;
+        const dx = Math.round(Math.sqrt(radius * radius - (y - cy) * (y - cy)));
+        if (dx > 0) {
+          drawPixelRect(cx - dx, y, dx * 2, 1, color);
+        }
+      }
+    };
+
+    // Helper to draw a procedurally jagged pixel-art mountain range
+    const drawRetroMountains = (baseColor, outlineColor) => {
+      const rowY = gridRows - 6; // Base height line
+      for (let col = 0; col <= gridCols; col++) {
+        // Procedural mountain peak heights on grid
+        const peakY = Math.floor(rowY - Math.abs(Math.sin(col * 0.16) * 4) - Math.abs(Math.cos(col * 0.06) * 2));
+        // Fill mountain body down to screen bottom
+        drawPixelRect(col, peakY, 1, gridRows - peakY, baseColor);
+        // Neon outline
+        if (outlineColor) {
+          drawPixelRect(col, peakY, 1, 1, outlineColor);
+        }
+      }
+    };
+
+    const draw = () => {
+      frame++;
+      const currentW = canvas.width / (window.devicePixelRatio || 1);
+      const currentH = canvas.height / (window.devicePixelRatio || 1);
+      const currentCols = Math.ceil(currentW / pixelSize);
+      const currentRows = Math.ceil(currentH / pixelSize);
+      ctx.clearRect(0, 0, currentW, currentH);
+
+      if (timeOfDay === 'day') {
+        // --- DAY SKY ---
+        const grad = ctx.createLinearGradient(0, 0, 0, currentH);
+        grad.addColorStop(0, '#2980b9'); // Rich sky blue
+        grad.addColorStop(1, '#6dd5fa'); // Soft cyan gradient
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, currentW, currentH);
+
+        // Retro Sun (Yellow with cuts)
+        const sunX = Math.floor(currentCols * 0.8);
+        const sunY = 10;
+        drawRetroSun(sunX, sunY, 7, '#f1c40f');
+
+        // Drift Clouds
+        cloud1X -= 0.04;
+        if (cloud1X < -10) cloud1X = currentCols + 10;
+        drawRetroCloud(Math.floor(cloud1X), 14, 'rgba(255, 255, 255, 0.6)');
+
+        cloud2X -= 0.02;
+        if (cloud2X < -10) cloud2X = currentCols + 10;
+        drawRetroCloud(Math.floor(cloud2X), 20, 'rgba(255, 255, 255, 0.45)');
+
+        // Distant mountains (soft blue-gray silhouette)
+        drawRetroMountains('#4ba3df', null);
+
+      } else if (timeOfDay === 'evening') {
+        // --- SUNSET ---
+        const grad = ctx.createLinearGradient(0, 0, 0, currentH);
+        grad.addColorStop(0, '#1a1c4b'); // Deep twilight purple
+        grad.addColorStop(0.55, '#c33764'); // Crimson magenta
+        grad.addColorStop(1, '#e67e22'); // Warm sunset orange
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, currentW, currentH);
+
+        // Synthwave Sun (Vibrant peach gradient with cuts)
+        const sunX = Math.floor(currentCols * 0.75);
+        const sunY = Math.floor(currentRows * 0.6);
+        drawRetroSun(sunX, sunY, 9, '#ff7675');
+
+        // Twilight Clouds
+        cloud1X -= 0.035;
+        if (cloud1X < -10) cloud1X = currentCols + 10;
+        drawRetroCloud(Math.floor(cloud1X), 12, 'rgba(253, 121, 168, 0.4)');
+
+        cloud2X -= 0.018;
+        if (cloud2X < -10) cloud2X = currentCols + 10;
+        drawRetroCloud(Math.floor(cloud2X), 18, 'rgba(253, 121, 168, 0.25)');
+
+        // Neon sunset mountains (deep violet with a bright orange rim)
+        drawRetroMountains('#6c5ce7', '#fdcb6e');
+
+      } else {
+        // --- NIGHT ---
+        const grad = ctx.createLinearGradient(0, 0, 0, currentH);
+        grad.addColorStop(0, '#04050d'); // Jet black space
+        grad.addColorStop(1, '#0e111d'); // Obsidian navy
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, currentW, currentH);
+
+        // Twinkling Star Pixels
+        stars.forEach((star) => {
+          const alpha = 0.2 + Math.abs(Math.sin(frame * star.speed + star.phase)) * 0.8;
+          drawPixelRect(star.px, star.py, 1, 1, `rgba(255, 255, 255, ${alpha})`);
+        });
+
+        // Retro Crescent Moon (facing left)
+        const moonX = Math.floor(currentCols * 0.8);
+        const moonY = 10;
+        ctx.fillStyle = '#f6e58d'; // Pale silver-yellow
+        ctx.fillRect((moonX + 2) * pixelSize, (moonY - 4) * pixelSize, 2 * pixelSize, 1 * pixelSize);
+        ctx.fillRect((moonX + 1) * pixelSize, (moonY - 3) * pixelSize, 2 * pixelSize, 1 * pixelSize);
+        ctx.fillRect(moonX * pixelSize, (moonY - 2) * pixelSize, 2 * pixelSize, 2 * pixelSize);
+        ctx.fillRect((moonX + 1) * pixelSize, moonY * pixelSize, 2 * pixelSize, 1 * pixelSize);
+        ctx.fillRect((moonX + 2) * pixelSize, (moonY + 1) * pixelSize, 2 * pixelSize, 1 * pixelSize);
+
+        // Cyberpunk night mountains (obsidian black with neon coral outline)
+        drawRetroMountains('#0b0f19', '#ff7675');
+      }
+
+      animationId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isExiting]);
 
   // Cycle active icon in center with precise cinematic timings
   useEffect(() => {
@@ -168,56 +370,15 @@ export default function CinematicLoader({ onComplete }) {
         transition: { duration: 0.2 }
       }}
     >
-      {/* Background Soft Parallax Drift Glows (Completely isolated slow camera zoom-out) */}
-      <motion.div 
-        className="absolute inset-0 pointer-events-none z-0"
-        initial={{ scale: 1.04 }}
-        animate={isExiting ? { scale: 1.04, opacity: 0 } : { scale: 1.0 }}
-        transition={{ duration: 2.6, ease: "easeOut" }}
-      >
-        <motion.div 
-          className="absolute w-[350px] h-[350px] rounded-full bg-[#FF6A4D]/[0.03] blur-[80px]"
-          animate={isExiting ? {
-            scale: 1.6,
-            opacity: 0,
-            x: 80,
-            y: -60,
-          } : {
-            x: [0, 40, -20, 0],
-            y: [0, -30, 30, 0],
-          }}
-          transition={isExiting ? {
-            duration: 0.6,
-            ease: [0.16, 1, 0.3, 1]
-          } : {
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ top: '15%', left: '20%' }}
-        />
-        <motion.div 
-          className="absolute w-[300px] h-[300px] rounded-full bg-[#FF8A72]/[0.025] blur-[90px]"
-          animate={isExiting ? {
-            scale: 1.6,
-            opacity: 0,
-            x: -80,
-            y: 60,
-          } : {
-            x: [0, -30, 50, 0],
-            y: [0, 40, -40, 0],
-          }}
-          transition={isExiting ? {
-            duration: 0.6,
-            ease: [0.16, 1, 0.3, 1]
-          } : {
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ bottom: '15%', right: '20%' }}
-        />
-      </motion.div>
+      {/* ☀️/🌙 High-Definition 4K Time-of-Day Canvas Background */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-0"
+        style={{
+          opacity: isExiting ? 0 : 0.82,
+          transition: 'opacity 0.60s ease'
+        }}
+      />
 
       {/* 🧊 Floating Premium Glassmorphic Card Container */}
       <motion.div
