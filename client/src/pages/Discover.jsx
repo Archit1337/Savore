@@ -5,13 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Clock, Star, Filter, Tag, Compass, ChevronRight, 
   MapPin, ChevronDown, X, Navigation, SlidersHorizontal, Check, 
-  Home, Briefcase, Building, Sparkles, IndianRupee, Globe, AlertTriangle
+  Home, Briefcase, Building, Sparkles, IndianRupee, Globe, AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
 import { resolveMediaUrl } from '../utils/mediaResolver';
 import SafeImage from '../components/SafeImage';
 import { LocationContext, CITIES, CITY_LOCALITIES, CITY_COORDINATES } from '../context/LocationContext';
+import { AuthContext } from '../context/AuthContext';
 
 const CUISINES = ['All', 'French', 'Italian', 'Indian', 'Japanese', 'European', 'Sushi', 'Desserts', 'Seafood', 'Bakery'];
 
@@ -127,6 +128,8 @@ const IndiaMap = ({ size = 18, className = "" }) => {
 export default function Discover() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const { user, isAuthenticated } = useContext(AuthContext);
 
   const {
     activeCity,
@@ -688,41 +691,49 @@ export default function Discover() {
           ) : restaurants.length > 0 ? (
             <>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-6">
-                {restaurants.map((rest, index) => (
-                  <motion.div 
-                    key={rest._id} 
-                    initial={{ opacity: 0, y: 25 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-40px" }}
-                    transition={{ duration: 0.5, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
-                    whileHover="hover"
-                    className="glass-card p-0 overflow-hidden cursor-pointer text-left border-[1.5px] border-[var(--border-light)] hover:border-primary/20 transition-all duration-300 relative group flex flex-col justify-between" 
-                    onClick={() => navigate(`/restaurant/${rest._id}`)}
-                  >
-                    <div className="noise-overlay" />
+                {restaurants.map((rest, index) => {
+                  const isOwnRest = isAuthenticated && user && (rest.owner === user._id || rest.owner?._id === user._id);
+                  return (
+                    <motion.div 
+                      key={rest._id} 
+                      initial={{ opacity: 0, y: 25 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{ duration: 0.5, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                      whileHover="hover"
+                      className="glass-card p-0 overflow-hidden cursor-pointer text-left border-[1.5px] border-[var(--border-light)] hover:border-primary/20 transition-all duration-300 relative group flex flex-col justify-between" 
+                      onClick={() => navigate(`/restaurant/${rest._id}`)}
+                    >
+                      <div className="noise-overlay" />
 
-                    <div>
-                      {/* Image Zoom Wrapper */}
-                      <div className="w-full aspect-[16/10] relative overflow-hidden rounded-t-[inherit]">
-                        <SafeImage 
-                          src={resolveMediaUrl(rest.coverImage)} 
-                          alt={rest.name} 
-                          variants={{ hover: { scale: 1.05 } }}
-                          transition={{ duration: 0.45, ease: "easeOut" }}
-                          className="w-full h-full object-cover"
-                        />
-                        
-                        {/* Custom Price Rating absolute badge */}
-                        <div className="absolute top-3.5 right-3.5 bg-black/60 backdrop-blur-md rounded-[12px] py-[4px] px-[10px] flex items-center gap-1 border border-white/10 shadow-lg z-[5]">
-                          <Star size={11} fill="#ffc83b" stroke="#ffc83b" />
-                          <span className="text-[12px] font-bold text-white">{rest.rating.toFixed(1)}</span>
+                      <div>
+                        {/* Image Zoom Wrapper */}
+                        <div className="w-full aspect-[16/10] relative overflow-hidden rounded-t-[inherit]">
+                          {isOwnRest && (
+                            <div className="absolute top-3.5 left-3.5 bg-[#d9a752] text-white rounded-[12px] py-[4px] px-[10px] flex items-center gap-1 shadow-lg z-[5] text-[10px] font-extrabold uppercase tracking-wider">
+                              <ShieldCheck size={11} />
+                              My Kitchen
+                            </div>
+                          )}
+                          <SafeImage 
+                            src={resolveMediaUrl(rest.coverImage)} 
+                            alt={rest.name} 
+                            variants={{ hover: { scale: 1.05 } }}
+                            transition={{ duration: 0.45, ease: "easeOut" }}
+                            className="w-full h-full object-cover"
+                          />
+                          
+                          {/* Custom Price Rating absolute badge */}
+                          <div className="absolute top-3.5 right-3.5 bg-black/60 backdrop-blur-md rounded-[12px] py-[4px] px-[10px] flex items-center gap-1 border border-white/10 shadow-lg z-[5]">
+                            <Star size={11} fill="#ffc83b" stroke="#ffc83b" />
+                            <span className="text-[12px] font-bold text-white">{rest.rating.toFixed(1)}</span>
+                          </div>
+
+                          {/* Local Price Range Tag */}
+                          <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm z-[5]">
+                            {rest.priceRange || '₹₹'} • {rest.locality || 'Bandra'}
+                          </span>
                         </div>
-
-                        {/* Local Price Range Tag */}
-                        <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm z-[5]">
-                          {rest.priceRange || '₹₹'} • {rest.locality || 'Bandra'}
-                        </span>
-                      </div>
 
                       <div className="p-5">
                         <div className="flex justify-between items-start gap-2 mb-1.5">
@@ -762,8 +773,9 @@ export default function Discover() {
                         </span>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
 
               {/* Pagination indicators */}

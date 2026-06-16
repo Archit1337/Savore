@@ -106,7 +106,7 @@ const handleWebhook = async (req, res, next) => {
 
           // Credit merchant revenues (SaaS metric)
           const restaurant = await Restaurant.findById(order.restaurant);
-          if (restaurant) {
+          if (restaurant && !order.isTestOrder) {
             restaurant.revenue = parseFloat((restaurant.revenue + order.subtotal).toFixed(2));
             await restaurant.save();
 

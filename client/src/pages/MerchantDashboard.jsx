@@ -1435,7 +1435,14 @@ export default function MerchantDashboard() {
                         className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-2xl p-6 grid grid-cols-1 md:grid-cols-[1.4fr_1fr_0.9fr] gap-5 items-center hover:bg-white/[0.01] transition-colors text-left"
                       >
                         <div>
-                          <span className="text-[11px] text-text-muted block font-semibold mb-1">Dining Token ID: {ord._id}</span>
+                          <span className="text-[11px] text-text-muted flex items-center gap-2 font-semibold mb-1">
+                            Dining Token ID: {ord._id}
+                            {ord.isTestOrder && (
+                              <span className="bg-[#d9a752]/20 border border-[#d9a752]/30 text-[#d9a752] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider">
+                                SIMULATED
+                              </span>
+                            )}
+                          </span>
                           <h4 className="text-base font-extrabold text-text-primary mb-2 leading-relaxed">
                             {ord.items.map(i => `${i.quantity}x ${i.foodItem?.name || 'Chef Dish'}`).join(', ')}
                           </h4>

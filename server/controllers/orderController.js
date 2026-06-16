@@ -28,15 +28,12 @@ const placeOrder = async (req, res, next) => {
       return next(new Error('Restaurant not found'));
     }
 
-    // Prevent self-ordering (restaurant owners cannot place orders at their own kitchen)
-    if (restaurant.owner.toString() === req.user.id) {
-      res.status(400);
-      return next(new Error('You cannot place an order at your own restaurant.'));
-    }
+    // Determine if this is a test order placed by the owner
+    const isTestOrder = restaurant.owner.toString() === req.user.id;
 
-    // Server-side Region Locked Ordering validation
+    // Server-side Region Locked Ordering validation (bypassed for test orders)
     const userRegion = req.headers['x-user-region'] || req.body.userRegion;
-    if (userRegion && restaurant.city) {
+    if (userRegion && restaurant.city && !isTestOrder) {
       if (restaurant.city.toLowerCase().trim() !== userRegion.toLowerCase().trim()) {
         res.status(400);
         return next(new Error(`This restaurant (${restaurant.name}) is outside your active delivery zone (${userRegion}).`));
@@ -71,7 +68,9 @@ const placeOrder = async (req, res, next) => {
 
     // Handle payment status based on method
     let paymentStatus = 'pending';
-    if (paymentMethod === 'COD') {
+    if (isTestOrder) {
+      paymentStatus = 'paid';
+    } else if (paymentMethod === 'COD') {
       paymentStatus = 'pending'; // COD paid on delivery
     }
 
@@ -85,9 +84,10 @@ const placeOrder = async (req, res, next) => {
       total,
       paymentMethod,
       paymentStatus,
-      transactionId: transactionId || undefined,
+      transactionId: transactionId || (isTestOrder ? `TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}` : undefined),
       deliveryAddress,
-      status: 'pending',
+      status: isTestOrder ? 'preparing' : 'pending',
+      isTestOrder,
     });
 
     // Emit live socket event to the restaurant owner's room
@@ -267,7 +267,7 @@ const updateOrderStatus = async (req, res, next) => {
     }
 
     // If transitioning to delivered, resolve COD payment and credit restaurant revenue
-    if (status === 'delivered' && order.status !== 'delivered') {
+    if (status === 'delivered' && order.status !== 'delivered' && !order.isTestOrder) {
       if (order.paymentMethod === 'COD' && order.paymentStatus !== 'paid') {
         order.paymentStatus = 'paid';
         restaurant.revenue = parseFloat((restaurant.revenue + order.subtotal).toFixed(2));

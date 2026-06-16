@@ -795,7 +795,6 @@ export default function ReelsFeed() {
                     className="text-[13.5px] font-semibold cursor-pointer inline-flex items-center gap-1.5 text-white hover:text-primary transition-colors"
                   >
                     @{activeReel.restaurantDetails?.name || 'Chef Gastronomy'}
-                    <span className="text-[7px] bg-primary text-white py-0.5 px-1 rounded-[5px] font-extrabold tracking-wider shrink-0 uppercase animate-pulse">VERIFIED</span>
                   </h3>
                 </div>
                 

@@ -16,13 +16,14 @@ export default function RestaurantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { cartItems, restaurant: cartRestaurant, total, addToCart, removeFromCart, clearCart } = useContext(CartContext);
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const { showToast } = useToast();
   const chefMood = useChefMood();
   const { activeCity } = useContext(LocationContext);
 
   const [restaurant, setRestaurant] = useState(null);
-  const isOutOfRegion = restaurant && activeCity && restaurant.city && restaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim();
+  const isOwnRestaurant = isAuthenticated && user && restaurant && (restaurant.owner === user._id || restaurant.owner?._id === user._id);
+  const isOutOfRegion = restaurant && activeCity && restaurant.city && restaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim() && !isOwnRestaurant;
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -158,14 +159,6 @@ export default function RestaurantDetail() {
         {/* Content Info overlay */}
         <div className="absolute bottom-8 left-8 right-8 text-left flex justify-between items-end z-10">
           <div>
-            {/* Michelin / Elite Saffron Glowing Ribbon */}
-            <div 
-              className="inline-flex items-center gap-1.5 bg-[rgba(255,107,53,0.22)] border-[1.5px] border-primary shadow-[0_0_15px_rgba(255,107,53,0.3)] rounded-[12px] py-1.25 px-3.5 text-white text-[12px] font-medium uppercase tracking-[0.08em] mb-3.5"
-            >
-              <ShieldCheck size={14} className="text-primary" />
-              Savoré Elite Gold Kitchen
-            </div>
-
             <h1 className="text-[46px] text-white mb-2 tracking-[0.01em] font-light">
               {restaurant.name}
             </h1>
@@ -205,6 +198,17 @@ export default function RestaurantDetail() {
           <div>
             <h4 className="text-[14px] font-bold text-text-primary">Outside Active Delivery Zone</h4>
             <p className="text-[12.5px] text-text-secondary leading-relaxed">This restaurant is located in {restaurant.city}. You can browse their menu, but ordering is restricted to your selected region ({activeCity}).</p>
+          </div>
+        </div>
+      )}
+
+      {isOwnRestaurant && (
+        <div className="glass-panel border-[#d9a752]/40 bg-[#d9a752]/10 p-4 rounded-[20px] mb-6 flex items-center gap-3 text-left relative overflow-hidden animate-fade-in">
+          <div className="noise-overlay" />
+          <ShieldCheck className="text-[#d9a752] shrink-0" size={20} />
+          <div>
+            <h4 className="text-[14px] font-bold text-[#d9a752]">Merchant Simulation Mode</h4>
+            <p className="text-[12.5px] text-text-secondary leading-relaxed">You are viewing your own kitchen profile. You can place simulated orders to test the checkout flow, cooking timers, and delivery dashboard live without processing real payments.</p>
           </div>
         </div>
       )}
@@ -285,7 +289,7 @@ export default function RestaurantDetail() {
                                   className="btn btn-primary btn-pill px-[18px] py-[9px] text-[13.5px] font-medium"
                                 >
                                   <Plus size={14} />
-                                  Add To Order
+                                  {isOwnRestaurant ? 'Simulate Order' : 'Add To Order'}
                                 </motion.button>
 
                                 {inCartItem && (
@@ -399,7 +403,7 @@ export default function RestaurantDetail() {
                         : 'btn-primary cursor-pointer'
                     }`}
                   >
-                    {isOutOfRegion ? 'Outside Active Zone' : 'Proceed To Checkout'}
+                    {isOutOfRegion ? 'Outside Active Zone' : isOwnRestaurant ? 'Simulate Checkout' : 'Proceed To Checkout'}
                   </motion.button>
                 </motion.div>
               ) : (

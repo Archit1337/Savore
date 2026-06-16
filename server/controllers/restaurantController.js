@@ -52,7 +52,21 @@ const getRestaurants = async (req, res, next) => {
       };
     }
 
-    const totalRestaurants = await Restaurant.countDocuments(query);
+    // Build a separate query for countDocuments to avoid the $near operator restriction
+    const countQuery = { ...query };
+    if (hasCoords) {
+      const lat = parseFloat(req.query.lat);
+      const lng = parseFloat(req.query.lng);
+      const maxDistance = parseFloat(req.query.maxDistance) || 30;
+      const radiusInRadians = maxDistance / 6378.1;
+      countQuery.coordinates = {
+        $geoWithin: {
+          $centerSphere: [[lng, lat], radiusInRadians]
+        }
+      };
+    }
+
+    const totalRestaurants = await Restaurant.countDocuments(countQuery);
     const totalPages = Math.ceil(totalRestaurants / limit) || 1;
 
     let mongooseQuery = Restaurant.find(query);
@@ -166,6 +180,7 @@ const getOwnerAnalytics = async (req, res, next) => {
     const completedOrdersCount = await Order.countDocuments({
       restaurant: restaurant._id,
       status: 'delivered',
+      isTestOrder: { $ne: true },
     });
 
     // 4. Calculate conversions (true Reels CTR based on impressions vs clicks)
@@ -185,7 +200,8 @@ const getOwnerAnalytics = async (req, res, next) => {
       {
         $match: {
           restaurant: restaurant._id,
-          status: 'delivered'
+          status: 'delivered',
+          isTestOrder: { $ne: true }
         }
       },
       {
@@ -202,7 +218,8 @@ const getOwnerAnalytics = async (req, res, next) => {
       {
         $match: {
           restaurant: restaurant._id,
-          status: 'delivered'
+          status: 'delivered',
+          isTestOrder: { $ne: true }
         }
       },
       {

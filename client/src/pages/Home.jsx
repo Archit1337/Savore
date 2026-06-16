@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue, animate } from 'framer-motion';
-import { Search, Flame, Sparkles, Film, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Flame, Sparkles, Film, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
 import MascotChef from '../components/MascotChef';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
@@ -12,6 +12,7 @@ import { useChefMood } from '../components/ChefSystem/ChefMoodEngine';
 import { soundController } from '../components/ChefSystem/SoundController';
 import { LocationContext, CITIES, CITY_LOCALITIES, CITY_COORDINATES } from '../context/LocationContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { AuthContext } from '../context/AuthContext';
 
 const bgRevealVariant = {
   hidden: { opacity: 0, scale: 1.08 },
@@ -613,6 +614,7 @@ const WEATHER_POOLS = {
 };
 
 export default function Home() {
+  const { user, isAuthenticated } = useContext(AuthContext);
   const {
     activeCity,
     activeLocality,
@@ -1987,24 +1989,32 @@ export default function Home() {
                     <div key={i} className="glass-primary skeleton-box h-[320px] opacity-40" />
                   ))
                 ) : restaurants.length > 0 ? (
-                  restaurants.slice(activeBatchIndex * 3, (activeBatchIndex + 1) * 3).map((rest) => (
-                    <motion.div 
-                      key={rest._id} 
-                      variants={batchCardVariants}
-                      whileHover={{ y: -8 }}
-                      onClick={() => navigate(`/restaurant/${rest._id}`)}
-                      className="glass-card p-0 overflow-hidden cursor-pointer rounded-[28px] border border-[var(--border-light)] group h-full flex flex-col"
-                    >
-                      <div className="noise-overlay" />
-                      
-                      {/* Cover Image with soft zoom capability */}
-                      <div className="w-full aspect-[16/10] relative overflow-hidden rounded-t-[inherit]">
-                        <SafeImage 
-                          src={resolveMediaUrl(rest.coverImage)} 
-                          alt={rest.name} 
-                          className="w-full h-full transition-transform duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
-                        />
-                      </div>
+                  restaurants.slice(activeBatchIndex * 3, (activeBatchIndex + 1) * 3).map((rest) => {
+                    const isOwnRest = isAuthenticated && user && (rest.owner === user._id || rest.owner?._id === user._id);
+                    return (
+                      <motion.div 
+                        key={rest._id} 
+                        variants={batchCardVariants}
+                        whileHover={{ y: -8 }}
+                        onClick={() => navigate(`/restaurant/${rest._id}`)}
+                        className="glass-card p-0 overflow-hidden cursor-pointer rounded-[28px] border border-[var(--border-light)] group h-full flex flex-col"
+                      >
+                        <div className="noise-overlay" />
+                        
+                        {/* Cover Image with soft zoom capability */}
+                        <div className="w-full aspect-[16/10] relative overflow-hidden rounded-t-[inherit]">
+                          {isOwnRest && (
+                            <div className="absolute top-3.5 left-3.5 bg-[#d9a752] text-white rounded-[12px] py-[4px] px-[10px] flex items-center gap-1 shadow-lg z-10 text-[10px] font-extrabold uppercase tracking-wider">
+                              <ShieldCheck size={11} />
+                              My Kitchen
+                            </div>
+                          )}
+                          <SafeImage 
+                            src={resolveMediaUrl(rest.coverImage)} 
+                            alt={rest.name} 
+                            className="w-full h-full transition-transform duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
+                          />
+                        </div>
 
                       {/* Meta details */}
                       <div className="p-[26px] text-left flex-grow flex flex-col">
@@ -2049,9 +2059,10 @@ export default function Home() {
                             Delivery: {rest.deliveryFee === 0 ? 'FREE' : formatPrice(rest.deliveryFee)}
                           </span>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))
+                        </div>
+                      </motion.div>
+                    );
+                  })
                 ) : (
                   <div className="glass-primary flex-center h-[140px] text-[var(--text-secondary)] col-span-full">
                     <div className="noise-overlay" />

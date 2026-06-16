@@ -174,11 +174,12 @@ export default function Checkout() {
   const { user, isAuthenticated } = useContext(AuthContext);
   const { placeOrder, activeOrder, getOrderDetails, setActiveOrder, updateOrderStatus } = useContext(OrderContext);
   const { activeCity } = useContext(LocationContext);
-  const isOutOfRegion = restaurant && activeCity && restaurant.city && restaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim();
+  const isOwnRestaurant = isAuthenticated && user && restaurant && (restaurant.owner === user._id || restaurant.owner?._id === user._id);
+  const isOutOfRegion = restaurant && activeCity && restaurant.city && restaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim() && !isOwnRestaurant;
 
   const [step, setStep] = useState(1); // Stepper: 1 - Cart Review, 2 - Delivery, 3 - Payment/Status
   const [address, setAddress] = useState(user?.address || '');
-  const [paymentMethod, setPaymentMethod] = useState('COD'); // COD or CARD
+  const [paymentMethod, setPaymentMethod] = useState(isOwnRestaurant ? 'SIMULATED' : 'COD'); // COD or CARD or SIMULATED
   const [errorMsg, setErrorMsg] = useState('');
   const [isPlacing, setIsPlacing] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
@@ -189,6 +190,13 @@ export default function Checkout() {
       setAddress(user.address);
     }
   }, [user]);
+
+  // Handle Merchant Simulation payment method lock
+  useEffect(() => {
+    if (isOwnRestaurant) {
+      setPaymentMethod('SIMULATED');
+    }
+  }, [isOwnRestaurant]);
 
   // Status Polling for the successfully placed COD order (every 5 seconds)
   // Active only if successOrder is placed and has a status to track
@@ -428,6 +436,19 @@ export default function Checkout() {
               />
             </div>
 
+            {isOwnRestaurant && (
+              <div className="glass-panel border-[#d9a752]/40 bg-[#d9a752]/10 p-4 rounded-[20px] mb-6 flex items-center gap-3 text-left relative overflow-hidden animate-fade-in">
+                <div className="noise-overlay" />
+                <ShieldCheck className="text-[#d9a752] shrink-0" size={20} />
+                <div>
+                  <h4 className="text-[14px] font-bold text-[#d9a752]">Merchant Simulation Mode</h4>
+                  <p className="text-[12.5px] text-text-secondary leading-relaxed">
+                    Placing a simulated order at your own kitchen. This allows you to test checkout, receipts, status tracking, and merchant alerts end-to-end.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <h3 className="text-[22px] mb-6 flex items-center gap-2.5">
               <CreditCard size={20} className="text-[var(--accent)]" />
               Payment Methods
@@ -435,29 +456,41 @@ export default function Checkout() {
 
             {/* Payment selectors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-              <div 
-                className={`glass-card flex-center flex-col gap-3 p-6 cursor-pointer border-[1.5px] transition-all duration-200 ${
-                  paymentMethod === 'COD' 
-                    ? 'border-primary shadow-[var(--shadow-glow)]' 
-                    : 'border-[var(--border-light)] shadow-none'
-                }`}
-                onClick={() => setPaymentMethod('COD')}
-              >
-                <div className="font-extrabold text-[18px] text-primary">COD</div>
-                <div className="text-[13px] text-text-secondary">Cash On Delivery</div>
-              </div>
+              {isOwnRestaurant ? (
+                <div 
+                  className="glass-card flex-center flex-col gap-3 p-6 border-primary shadow-[var(--shadow-glow)] border-[1.5px] cursor-default w-full col-span-2"
+                >
+                  <ShieldCheck size={28} className="text-[#d9a752]" />
+                  <div className="font-extrabold text-[18px] text-[#d9a752]">Merchant Simulation (Free)</div>
+                  <div className="text-[13px] text-text-secondary">Fully functional order simulation. No payment required.</div>
+                </div>
+              ) : (
+                <>
+                  <div 
+                    className={`glass-card flex-center flex-col gap-3 p-6 cursor-pointer border-[1.5px] transition-all duration-200 ${
+                      paymentMethod === 'COD' 
+                        ? 'border-primary shadow-[var(--shadow-glow)]' 
+                        : 'border-[var(--border-light)] shadow-none'
+                    }`}
+                    onClick={() => setPaymentMethod('COD')}
+                  >
+                    <div className="font-extrabold text-[18px] text-primary">COD</div>
+                    <div className="text-[13px] text-text-secondary">Cash On Delivery</div>
+                  </div>
 
-              <div 
-                className={`glass-card flex-center flex-col gap-3 p-6 cursor-pointer border-[1.5px] transition-all duration-200 ${
-                  paymentMethod === 'CARD' 
-                    ? 'border-primary shadow-[var(--shadow-glow)]' 
-                    : 'border-[var(--border-light)] shadow-none'
-                }`}
-                onClick={() => setPaymentMethod('CARD')}
-              >
-                <CreditCard size={28} className="text-[var(--accent)]" />
-                <div className="text-[13px] text-text-secondary">Credit Card (Stripe)</div>
-              </div>
+                  <div 
+                    className={`glass-card flex-center flex-col gap-3 p-6 cursor-pointer border-[1.5px] transition-all duration-200 ${
+                      paymentMethod === 'CARD' 
+                        ? 'border-primary shadow-[var(--shadow-glow)]' 
+                        : 'border-[var(--border-light)] shadow-none'
+                    }`}
+                    onClick={() => setPaymentMethod('CARD')}
+                  >
+                    <CreditCard size={28} className="text-[var(--accent)]" />
+                    <div className="text-[13px] text-text-secondary">Credit Card (Stripe)</div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex justify-between">
@@ -469,7 +502,7 @@ export default function Checkout() {
                 className={`btn btn-primary ${isPlacing ? 'btn-disabled' : ''}`}
                 disabled={isPlacing}
               >
-                {isPlacing ? 'Placing Order...' : 'Place Order'}
+                {isPlacing ? 'Placing Order...' : isOwnRestaurant ? 'Place Test Order' : 'Place Order'}
               </button>
             </div>
           </div>

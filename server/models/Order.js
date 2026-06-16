@@ -48,7 +48,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['COD', 'CARD', 'ONLINE'],
+      enum: ['COD', 'CARD', 'ONLINE', 'SIMULATED'],
       required: true,
     },
     paymentStatus: {
@@ -76,6 +76,10 @@ const orderSchema = new mongoose.Schema(
     deliveryAddress: {
       type: String,
       required: [true, 'Please provide a delivery address'],
+    },
+    isTestOrder: {
+      type: Boolean,
+      default: false,
     },
   },
   {
