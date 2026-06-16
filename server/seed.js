@@ -546,7 +546,8 @@ const seedDatabase = async () => {
     });
 
     const owners = [];
-    for (let i = 1; i <= 6; i++) {
+    const totalRestaurants = RESTAURANTS_DATA.length;
+    for (let i = 1; i <= totalRestaurants; i++) {
       const owner = await User.create({
         username: `chef_owner_${i}`, email: `owner${i}@savore.com`, password: 'password123',
         role: 'restaurant', address: `${20 + i} Gastronomy Lane, Milan`,
@@ -584,13 +585,13 @@ const seedDatabase = async () => {
     ];
 
     // 3. Generate Restaurants & Menus
-    console.log('🏪 Seeding 18 Premium Indian Restaurants & Menus...');
+    console.log(`🏪 Seeding ${RESTAURANTS_DATA.length} Premium Indian Restaurants & Menus (1 owner per kitchen)...`);
     const seededRestaurants = [];
     const seededFoodItems = [];
 
     for (let i = 0; i < RESTAURANTS_DATA.length; i++) {
       const restMeta = RESTAURANTS_DATA[i];
-      const assignedOwner = owners[i % owners.length];
+      const assignedOwner = owners[i];
       const locMeta = INDIAN_LOCATIONS[i % INDIAN_LOCATIONS.length];
 
       const restaurant = await Restaurant.create({
