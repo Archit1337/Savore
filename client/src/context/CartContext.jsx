@@ -1,10 +1,12 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { LocationContext } from './LocationContext';
+import { AuthContext } from './AuthContext';
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const { activeCity } = useContext(LocationContext);
+  const { user, isAuthenticated } = useContext(AuthContext) || { user: null, isAuthenticated: false };
   const [cartItems, setCartItems] = useState(() => {
     try {
       const savedCart = localStorage.getItem('savore_cart');
@@ -37,8 +39,13 @@ export const CartProvider = ({ children }) => {
 
   // Add Item to Cart
   const addToCart = (foodItem, targetRestaurant, quantity = 1) => {
+    // Check if this is the user's own restaurant (merchant simulation mode)
+    const isOwnRestaurant = isAuthenticated && user && targetRestaurant && 
+      (targetRestaurant.owner === user._id || targetRestaurant.owner?._id === user._id);
+
     // If target restaurant is outside user selected active city region, block checkout
-    if (activeCity && targetRestaurant.city && targetRestaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim()) {
+    // EXCEPT if it is the owner's own restaurant (simulation mode)
+    if (!isOwnRestaurant && activeCity && targetRestaurant.city && targetRestaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim()) {
       throw new Error(
         `Region Lock Restriction: "${targetRestaurant.name}" is outside your active delivery region (${activeCity}).`
       );
@@ -115,6 +122,20 @@ export const CartProvider = ({ children }) => {
     setRestaurant(null);
   };
 
+  // Clear and Add to Cart
+  const clearAndAddToCart = (foodItem, targetRestaurant, quantity = 1) => {
+    setCartItems([
+      {
+        foodItem: foodItem._id,
+        name: foodItem.name,
+        price: foodItem.price,
+        image: foodItem.image,
+        quantity: quantity,
+      }
+    ]);
+    setRestaurant(targetRestaurant);
+  };
+
   // Totals calculations
   const itemsCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const subtotal = parseFloat(cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0).toFixed(2));
@@ -134,6 +155,7 @@ export const CartProvider = ({ children }) => {
     removeFromCart,
     deleteItemRow,
     clearCart,
+    clearAndAddToCart,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

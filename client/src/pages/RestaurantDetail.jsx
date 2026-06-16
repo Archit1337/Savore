@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Clock, ShoppingBag, Plus, Minus, AlertTriangle, ShieldCheck, Heart } from 'lucide-react';
+import { Star, Clock, ShoppingBag, Plus, Minus, AlertTriangle, ShieldCheck, Heart, ArrowLeft } from 'lucide-react';
 import { LocationContext } from '../context/LocationContext';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
@@ -15,7 +15,7 @@ import SafeImage from '../components/SafeImage';
 export default function RestaurantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { cartItems, restaurant: cartRestaurant, total, addToCart, removeFromCart, clearCart } = useContext(CartContext);
+  const { cartItems, restaurant: cartRestaurant, total, addToCart, removeFromCart, clearCart, clearAndAddToCart } = useContext(CartContext);
   const { isAuthenticated, user } = useContext(AuthContext);
   const { showToast } = useToast();
   const chefMood = useChefMood();
@@ -71,6 +71,18 @@ export default function RestaurantDetail() {
     checkIfSaved();
   }, [id, isAuthenticated]);
 
+  // Lock body scroll when cross-restaurant checkout confirmation is open
+  useEffect(() => {
+    if (showClearConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showClearConfirm]);
+
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -100,15 +112,22 @@ export default function RestaurantDetail() {
   };
 
   const handleConfirmClearCart = () => {
-    clearCart();
     setShowClearConfirm(false);
     setCrossRestError('');
-    if (pendingItem) {
-      addToCart(pendingItem, restaurant);
-      chefMood.celebrate('item_added');
-      showToast("Added to cart 🍕");
-      setPendingItem(null);
-    }
+    
+    // Defer heavy updates to prevent thread-blocking during modal close transition
+    setTimeout(() => {
+      if (pendingItem) {
+        clearAndAddToCart(pendingItem, restaurant);
+        if (chefMood && chefMood.celebrate) {
+          chefMood.celebrate('item_added');
+        }
+        showToast("Added to cart 🍕");
+        setPendingItem(null);
+      } else {
+        clearCart();
+      }
+    }, 16);
   };
 
   if (loading) {
@@ -138,6 +157,19 @@ export default function RestaurantDetail() {
 
   return (
     <div className="container fade-in -mt-10 md:-mt-14 pb-[120px]">
+      
+      {/* 🔙 BACK BUTTON */}
+      <div className="flex justify-start mb-4">
+        <motion.button
+          whileHover={{ x: -4, scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate(-1)}
+          className="btn btn-secondary py-2 px-4 rounded-[14px] flex items-center gap-2 border-[1.5px] border-[var(--border-light)] relative overflow-hidden group transition-shadow duration-300 select-none text-[13px] font-semibold cursor-pointer"
+        >
+          <ArrowLeft size={16} className="text-[var(--text-secondary)] group-hover:text-primary transition-colors" />
+          <span className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">Go Back</span>
+        </motion.button>
+      </div>
       
       {/* 🎬 RESTAURANT PARALLAX BANNER (Apple-Style Overlay) */}
       <motion.div 
@@ -423,17 +455,21 @@ export default function RestaurantDetail() {
         </div>
       </div>
 
-      {/* ⚠️ CROSS-RESTAURANT BLOCK MODAL (Physical Bounce transition enabled!) */}
+      {/* ⚠️ CROSS-RESTAURANT BLOCK MODAL (Physical exit animation resolved!) */}
       <AnimatePresence>
         {showClearConfirm && (
-          <div 
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
             className="flex-center fixed inset-0 bg-[#050508]/78 backdrop-blur-[12px] z-[1000]"
           >
             <motion.div 
-              initial={{ opacity: 0, scale: 0.85, y: 50 }}
+              initial={{ opacity: 0, scale: 0.92, y: 25 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 30 }}
-              transition={{ type: 'spring', damping: 22, stiffness: 180 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="glass-floating max-w-[450px] p-9 rounded-[28px] border-[1.5px] border-[var(--primary)] text-center mx-6 shadow-[var(--shadow-floating),_0_0_50px_rgba(255,107,53,0.2)]"
             >
               <div className="noise-overlay" />
@@ -456,7 +492,10 @@ export default function RestaurantDetail() {
                 <button 
                   onClick={() => {
                     setShowClearConfirm(false);
-                    setPendingItem(null);
+                    // Defer clearing the pending item to allow immediate close of the modal
+                    setTimeout(() => {
+                      setPendingItem(null);
+                    }, 50);
                   }} 
                   className="btn btn-secondary flex-1 p-3.25 rounded-[12px] font-bold border border-[var(--border-light)]"
                 >
@@ -464,7 +503,7 @@ export default function RestaurantDetail() {
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
