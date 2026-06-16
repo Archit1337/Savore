@@ -59,7 +59,24 @@ const DiningBowlIcon = () => (
 
 const ICONS = [ChefHatIcon, SushiIcon, PizzaIcon, WineIcon, ClocheIcon, FlameIcon, DiningBowlIcon];
 
-const GREETINGS = ["Hello", "Bonjour", "Namaste", "Ciao", "Hola", "Konnichiwa", "Hej", "Nǐ Hǎo"];
+const GREETINGS = [
+  { text: "नमस्ते", isIndic: true },
+  { text: "नमस्कार", isIndic: true },
+  { text: "வணக்கம்", isIndic: true },
+  { text: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ", isIndic: true },
+  { text: "নমস্কার", isIndic: true },
+  { text: "నమస్కారం", isIndic: true },
+  { text: "നമസ്കാരം", isIndic: true },
+  { text: "HELLO", isIndic: false }
+];
+
+const PARTICLES = [
+  { id: 1, x: -75, delay: 0.1, duration: 4.2, size: 3 },
+  { id: 2, x: 45, delay: 1.0, duration: 4.8, size: 4 },
+  { id: 3, x: -35, delay: 1.8, duration: 4.5, size: 3 },
+  { id: 4, x: 70, delay: 0.5, duration: 3.9, size: 5 },
+  { id: 5, x: -15, delay: 2.2, duration: 5.2, size: 2.5 }
+];
 
 export default function CinematicLoader({ onComplete }) {
   const [activeIconIndex, setActiveIconIndex] = useState(() => Math.floor(Math.random() * ICONS.length));
@@ -81,13 +98,13 @@ export default function CinematicLoader({ onComplete }) {
     if (isExiting) return;
     const greetingInterval = setInterval(() => {
       setGreetingIndex((prev) => (prev + 1) % GREETINGS.length);
-    }, 500);
+    }, 400);
     return () => clearInterval(greetingInterval);
   }, [isExiting]);
 
   // Smooth progress bar pacing
   useEffect(() => {
-    const duration = 2600; // 2.6s progress path
+    const duration = 3200; // 3.2s progress path
     const intervalTime = 16; // ~60fps updates
     const step = 100 / (duration / intervalTime);
 
@@ -110,7 +127,6 @@ export default function CinematicLoader({ onComplete }) {
   }, [onComplete]);
 
   const ActiveIcon = ICONS[activeIconIndex];
-  const brandLetters = ["S", "A", "V", "O", "R", "É"];
 
   // Adaptive theme check
   const isLightMode = typeof document !== 'undefined' && (
@@ -152,8 +168,13 @@ export default function CinematicLoader({ onComplete }) {
         transition: { duration: 0.2 }
       }}
     >
-      {/* Background Soft Parallax Drift Glows (Completely isolated) */}
-      <div className="absolute inset-0 pointer-events-none z-0">
+      {/* Background Soft Parallax Drift Glows (Completely isolated slow camera zoom-out) */}
+      <motion.div 
+        className="absolute inset-0 pointer-events-none z-0"
+        initial={{ scale: 1.04 }}
+        animate={isExiting ? { scale: 1.04, opacity: 0 } : { scale: 1.0 }}
+        transition={{ duration: 2.6, ease: "easeOut" }}
+      >
         <motion.div 
           className="absolute w-[350px] h-[350px] rounded-full bg-[#FF6A4D]/[0.03] blur-[80px]"
           animate={isExiting ? {
@@ -196,7 +217,7 @@ export default function CinematicLoader({ onComplete }) {
           }}
           style={{ bottom: '15%', right: '20%' }}
         />
-      </div>
+      </motion.div>
 
       {/* 🧊 Floating Premium Glassmorphic Card Container */}
       <motion.div
@@ -221,6 +242,35 @@ export default function CinematicLoader({ onComplete }) {
         {/* Shimmer Sweep overlay layer */}
         {!isExiting && <div className="cinematic-loader-shimmer" />}
 
+        {/* Floating Culinary Particles */}
+        {!isExiting && (
+          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+            {PARTICLES.map((p) => (
+              <motion.div
+                key={p.id}
+                className="absolute rounded-full bg-gradient-to-t from-[#FF6A4D]/25 to-[#FF8A72]/15"
+                style={{
+                  left: `calc(50% + ${p.x}px)`,
+                  bottom: '0px',
+                  width: p.size,
+                  height: p.size,
+                }}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ 
+                  y: -240, 
+                  opacity: [0, 0.6, 0.6, 0] 
+                }}
+                transition={{
+                  duration: p.duration,
+                  delay: p.delay,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* 👨‍🍳 Dynamic Active Vector Outlined Illustration in Center */}
         <motion.div 
           className="w-16 h-16 rounded-full bg-white/[0.03] dark:bg-black/[0.12] border border-white/[0.04] flex items-center justify-center text-[#FF6A4D] mb-6 relative z-20"
@@ -240,6 +290,22 @@ export default function CinematicLoader({ onComplete }) {
             ease: [0.16, 1, 0.3, 1] 
           }}
         >
+          {/* Circular Glass Orbit Ring & Orbiting Dot */}
+          {!isExiting && (
+            <div className="absolute w-[80px] h-[80px] rounded-full border border-white/5 dark:border-white/[0.02] pointer-events-none flex items-center justify-center z-10">
+              <motion.div
+                className="absolute w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72] shadow-[0_0_6px_#FF6A4D]"
+                style={{ 
+                  left: '0px', 
+                  top: 'calc(50% - 3px)',
+                  transformOrigin: '40px center' 
+                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 4.0, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
+          )}
+
           {/* Subtle Outer Glowing Coral Pulse Ring */}
           {!isExiting && (
             <motion.div 
@@ -264,65 +330,54 @@ export default function CinematicLoader({ onComplete }) {
           </motion.div>
         </motion.div>
 
-        {/* ✨ Centerpiece Editorial Letter Reveal */}
+        {/* ✨ Centerpiece Editorial Letter Reveal with Metallic Shimmer */}
         <motion.div 
           className="flex items-center gap-2 mb-2 select-none"
           animate={isExiting ? { opacity: 0, y: 12, scale: 0.94, filter: "blur(3px)" } : { opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <motion.div 
-            className="flex items-center gap-2"
-            initial="initial"
-            animate="animate"
-            variants={{
-              initial: { opacity: 0 },
-              animate: {
-                opacity: 1,
-                transition: { staggerChildren: 0.06 }
-              }
+          <motion.span
+            className="brand-shimmer-text text-[26px] font-light tracking-[0.38em] font-sans"
+            initial={{ opacity: 0, y: 8, filter: "blur(2.5px)" }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              filter: "blur(0px)"
             }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           >
-            {brandLetters.map((letter, idx) => (
-              <motion.span
-                key={idx}
-                className="text-[26px] font-light tracking-[0.08em] font-sans"
-                variants={{
-                  initial: { opacity: 0, y: 8, filter: "blur(2.5px)" },
-                  animate: { 
-                    opacity: 1, 
-                    y: 0, 
-                    filter: "blur(0px)",
-                    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } 
-                  }
-                }}
-              >
-                {letter}
-              </motion.span>
-            ))}
-          </motion.div>
+            SAVORÉ
+          </motion.span>
         </motion.div>
 
-        {/* Languages Greeting Animator */}
+        {/* Languages Greeting Animator with a soft glow backdrop */}
         <motion.div 
-          className="h-[20px] mb-7 flex items-center justify-center overflow-hidden"
+          className="h-[24px] mb-7 flex items-center justify-center overflow-hidden relative w-full"
           animate={isExiting ? { opacity: 0, y: 10, filter: "blur(3px)" } : { opacity: 1 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
+          {/* Soft ambient highlight behind text */}
+          <div className="absolute w-[80px] h-[20px] bg-[#FF6A4D]/5 rounded-full blur-md pointer-events-none" />
+
           <AnimatePresence mode="wait">
             <motion.p
               key={greetingIndex}
-              initial={{ opacity: 0, y: 10, filter: "blur(2.5px)" }}
-              animate={{ opacity: 0.75, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -10, filter: "blur(2.5px)" }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="text-[11px] uppercase tracking-[0.24em] font-semibold text-text-muted select-none whitespace-nowrap"
+              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className={`bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72] bg-clip-text text-transparent select-none whitespace-nowrap drop-shadow-[0_2px_8px_rgba(255,106,77,0.15)] ${
+                GREETINGS[greetingIndex].isIndic
+                  ? "text-[15px] font-semibold tracking-normal"
+                  : "text-[13px] uppercase tracking-[0.3em] font-bold"
+              }`}
             >
-              {GREETINGS[greetingIndex]}
+              {GREETINGS[greetingIndex].text}
             </motion.p>
           </AnimatePresence>
         </motion.div>
 
-        {/* 🌀 Premium Coral Progress Line Container */}
+        {/* 🌀 Premium Coral Progress Line Container with Laser Glow */}
         <motion.div 
           className="w-[180px] h-[3px] rounded-full bg-white/[0.06] dark:bg-black/[0.22] overflow-hidden relative"
           animate={isExiting ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
@@ -330,7 +385,10 @@ export default function CinematicLoader({ onComplete }) {
         >
           <motion.div 
             className="h-full bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72]"
-            style={{ width: `${progress}%` }}
+            style={{ 
+              width: `${progress}%`,
+              boxShadow: '0 0 10px rgba(255, 106, 77, 0.6), 0 0 4px rgba(255, 138, 114, 0.4)'
+            }}
           />
         </motion.div>
       </motion.div>

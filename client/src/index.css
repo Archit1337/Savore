@@ -2757,4 +2757,32 @@ html.light .border-white\/\[0\.03\] { border-color: rgba(24, 22, 21, 0.05) !impo
 html.light .border-white\/\[0\.04\] { border-color: rgba(24, 22, 21, 0.06) !important; }
 html.light .border-white\/\[0\.05\] { border-color: rgba(24, 22, 21, 0.08) !important; }
 
+/* ── Savoré Brand Name Metallic Shimmer ── */
+@keyframes textShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.brand-shimmer-text {
+  background: linear-gradient(110deg, #94a3b8 38%, #ffffff 50%, #94a3b8 62%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
+  animation: textShimmer 3.2s linear infinite;
+}
+html.light .brand-shimmer-text {
+  background: linear-gradient(110deg, #2a2a2d 38%, #ffffff 50%, #2a2a2d 62%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
+}
+
+
 
