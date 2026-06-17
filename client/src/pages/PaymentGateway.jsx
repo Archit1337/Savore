@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CreditCard, Shield, Calendar, Key, User, ArrowLeft, CheckCircle, RefreshCw, Sparkles } from 'lucide-react';
 import { OrderContext } from '../context/OrderContext';
+import { CartContext } from '../context/CartContext';
 import { usePolling } from '../hooks/usePolling';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
@@ -11,6 +12,7 @@ export default function PaymentGateway() {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeOrder, getOrderDetails, setActiveOrder } = useContext(OrderContext);
+  const { clearCart } = useContext(CartContext);
   const chefMood = useChefMood();
 
   const { orderId, total, transactionId } = location.state || {};
@@ -155,6 +157,7 @@ export default function PaymentGateway() {
       
       if (webhookRes.data && webhookRes.data.received) {
         setSuccess(true);
+        clearCart();
         if (chefMood && typeof chefMood.celebrate === 'function') {
           chefMood.celebrate('order_placed');
         }
@@ -179,10 +182,10 @@ export default function PaymentGateway() {
           
           <button 
             onClick={() => navigate('/checkout')} 
-            className="bg-none border-none text-text-muted flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold mb-6 p-0"
+            className="bg-none border-none text-text-muted flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold mb-6 p-0 transition-all duration-300 hover:text-primary active:scale-95 group"
             disabled={processing}
           >
-            <ArrowLeft size={14} /> Back to Checkout
+            <ArrowLeft size={14} className="transition-transform duration-300 group-hover:-translate-x-1" /> Back to Checkout
           </button>
 
           <h2 className="text-[26px] tracking-tight mb-2">Secure Checkout Gateway</h2>
