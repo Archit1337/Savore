@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, MapPin, CreditCard, ChevronRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { LocationContext } from '../context/LocationContext';
@@ -226,6 +226,7 @@ const isAddressMatchingCity = (addressStr, city) => {
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { cartItems, restaurant, subtotal, deliveryFee, tax, total, deleteItemRow } = useContext(CartContext);
   const { user, isAuthenticated } = useContext(AuthContext);
   const { placeOrder, activeOrder, getOrderDetails, setActiveOrder, updateOrderStatus } = useContext(OrderContext);
@@ -245,6 +246,16 @@ export default function Checkout() {
   // Prefill address based on restaurant city matching
   useEffect(() => {
     if (!restaurant) return;
+
+    // 0. If in Merchant Simulation mode, prefill test address and matching pincode automatically
+    if (isOwnRestaurant) {
+      setAddress(`[Simulation] Owner Kitchen HQ, ${restaurant.city}`);
+      const cityKey = restaurant.city.toLowerCase().trim();
+      const prefixes = CITY_PINCODE_PREFIXES[cityKey];
+      const prefix = (prefixes && prefixes[0]) || '560';
+      setPincode(prefix.padEnd(6, '0'));
+      return;
+    }
 
     // 1. Check for default saved address matching the restaurant's city
     const matchedDefault = savedAddresses.find(
@@ -293,7 +304,7 @@ export default function Checkout() {
     // 4. Default to empty if no city match
     setAddress('');
     setPincode('');
-  }, [user, savedAddresses, restaurant]);
+  }, [user, savedAddresses, restaurant, isOwnRestaurant]);
 
   // Handle Merchant Simulation payment method lock
   useEffect(() => {
@@ -318,6 +329,28 @@ export default function Checkout() {
     5000,
     !!successOrder && successOrder.status !== 'delivered' && successOrder.status !== 'cancelled'
   );
+
+  // Restore step and successOrder if activeOrder or location state (redirect from payment) is present
+  useEffect(() => {
+    const orderId = location.state?.orderId || activeOrder?._id;
+    if (orderId) {
+      if (activeOrder && activeOrder._id === orderId) {
+        setSuccessOrder(activeOrder);
+        setStep(3);
+      } else {
+        const fetchOrder = async () => {
+          try {
+            const ord = await getOrderDetails(orderId);
+            setSuccessOrder(ord);
+            setStep(3);
+          } catch (err) {
+            console.warn('Failed to load redirect order details:', err.message);
+          }
+        };
+        fetchOrder();
+      }
+    }
+  }, [location.state, activeOrder, getOrderDetails]);
 
   const handlePlaceOrderSubmit = async () => {
     if (!isAuthenticated) {

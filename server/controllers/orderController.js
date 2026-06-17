@@ -94,6 +94,11 @@ const placeOrder = async (req, res, next) => {
     // Determine if this is a test order placed by the owner
     const isTestOrder = restaurant.owner.toString() === req.user.id;
 
+    if (paymentMethod === 'SIMULATED' && !isTestOrder) {
+      res.status(400);
+      return next(new Error('Simulation payment mode is only available for the kitchen owner.'));
+    }
+
     // Server-side Region Locked Ordering validation (bypassed for test orders)
     const userRegion = req.headers['x-user-region'] || req.body.userRegion;
     if (userRegion && restaurant.city && !isTestOrder) {
