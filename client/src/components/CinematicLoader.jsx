@@ -83,6 +83,7 @@ export default function CinematicLoader({ onComplete }) {
   const [greetingIndex, setGreetingIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
+  const progressRef = useRef(0);
 
   // Parallax Tilt 3D mouse tracking
   const containerRef = useRef(null);
@@ -122,7 +123,9 @@ export default function CinematicLoader({ onComplete }) {
   useEffect(() => {
     if (isExiting) return;
     const iconInterval = setInterval(() => {
-      setActiveIconIndex((prev) => (prev + 1) % ICONS.length);
+      if (progressRef.current < 90) {
+        setActiveIconIndex((prev) => (prev + 1) % ICONS.length);
+      }
     }, 700);
     return () => clearInterval(iconInterval);
   }, [isExiting]);
@@ -150,6 +153,7 @@ export default function CinematicLoader({ onComplete }) {
       const currentProgress = easedT * 100;
 
       setProgress(currentProgress);
+      progressRef.current = currentProgress;
 
       if (t < 1) {
         animationFrameId = requestAnimationFrame(updateProgress);
