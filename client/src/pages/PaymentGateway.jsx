@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CreditCard, Shield, Calendar, Key, User, ArrowLeft, CheckCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { CreditCard, Shield, Calendar, Key, User, ArrowLeft, CheckCircle, RefreshCw, Sparkles, AlertTriangle } from 'lucide-react';
 import { OrderContext } from '../context/OrderContext';
 import { CartContext } from '../context/CartContext';
 import { usePolling } from '../hooks/usePolling';
@@ -27,6 +27,8 @@ export default function PaymentGateway() {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [pollingOrder, setPollingOrder] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   // If no order details are passed in navigation state, kick back to discover
   useEffect(() => {
@@ -181,9 +183,9 @@ export default function PaymentGateway() {
         <div className="glass-panel p-9 rounded-[24px]">
           
           <button 
-            onClick={() => navigate('/checkout')} 
+            onClick={() => { if (!processing && !success) setShowCancelModal(true); }} 
             className="bg-none border-none text-text-muted flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold mb-6 p-0 transition-all duration-300 hover:text-primary active:scale-95 group"
-            disabled={processing}
+            disabled={processing || success}
           >
             <ArrowLeft size={14} className="transition-transform duration-300 group-hover:-translate-x-1" /> Back to Checkout
           </button>
@@ -407,6 +409,78 @@ export default function PaymentGateway() {
         </div>
 
       </div>
+
+      {/* Premium Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          onClick={() => { if (!cancelling) setShowCancelModal(false); }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" style={{ animation: 'fadeIn 0.2s ease-out' }} />
+          
+          {/* Modal Card */}
+          <div 
+            className="relative glass-panel border border-[var(--border-light)] rounded-[24px] p-8 max-w-[420px] w-full shadow-[0_25px_60px_rgba(0,0,0,0.5),var(--shadow-glow)] text-center"
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: 'scaleIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
+          >
+            {/* Warning Icon */}
+            <div className="w-[56px] h-[56px] rounded-full bg-[rgba(255,180,60,0.1)] border-2 border-[#d9a752] inline-flex items-center justify-center mx-auto mb-5">
+              <AlertTriangle size={26} className="text-[#d9a752]" />
+            </div>
+
+            <h3 className="text-[20px] font-extrabold mb-2 text-text-primary">Cancel Payment?</h3>
+            <p className="text-[13px] text-text-secondary leading-relaxed mb-7">
+              Your current order will be <strong className="text-[var(--error,#ffb4ab)]">cancelled</strong> and you'll be returned to checkout. You can always place a new order.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelling}
+                className="btn btn-secondary flex-1 h-11 rounded-[12px] text-[13px] font-bold transition-all duration-200 hover:bg-white/[0.08] active:scale-[0.97]"
+              >
+                Keep Payment
+              </button>
+              <button 
+                onClick={async () => {
+                  setCancelling(true);
+                  try {
+                    await api.put(`/orders/${orderId}/status`, { status: 'cancelled' });
+                  } catch (err) {
+                    console.warn('Failed to cancel order:', err.message);
+                  }
+                  setActiveOrder(null);
+                  setShowCancelModal(false);
+                  navigate('/checkout', { state: { fromPaymentCancel: true } });
+                }}
+                disabled={cancelling}
+                className="flex-1 h-11 rounded-[12px] text-[13px] font-bold border-none cursor-pointer bg-[var(--error,#ffb4ab)]/15 text-[var(--error,#ffb4ab)] border border-[var(--error,#ffb4ab)]/30 transition-all duration-200 hover:bg-[var(--error,#ffb4ab)]/30 hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(255,180,171,0.2)] active:scale-[0.95] active:brightness-90 flex items-center justify-center gap-2"
+              >
+                {cancelling ? (
+                  <><RefreshCw size={14} className="animate-stir" /> Cancelling...</>
+                ) : (
+                  'Cancel Order'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Animations */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.9) translateY(10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
 
     </div>
   );

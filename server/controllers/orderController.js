@@ -337,7 +337,12 @@ const updateOrderStatus = async (req, res, next) => {
     const isOwnerOrAdmin = restaurant && (restaurant.owner.toString() === req.user.id || req.user.role === 'admin');
     const isCustomerOwnerOfOrder = order.user.toString() === req.user.id;
 
-    if (!isOwnerOrAdmin && !(isCustomerOwnerOfOrder && order.status === 'out_for_delivery' && status === 'delivered')) {
+    // Customers can cancel their own unpaid orders (e.g. abandoning card payment)
+    const canCustomerCancel = isCustomerOwnerOfOrder && status === 'cancelled' && order.paymentStatus === 'pending';
+    // Customers can confirm delivery of their own out-for-delivery orders
+    const canCustomerDelivery = isCustomerOwnerOfOrder && order.status === 'out_for_delivery' && status === 'delivered';
+
+    if (!isOwnerOrAdmin && !canCustomerCancel && !canCustomerDelivery) {
       res.status(403);
       return next(new Error('Unauthorized to modify this order status'));
     }

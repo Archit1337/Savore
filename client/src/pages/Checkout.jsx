@@ -332,23 +332,37 @@ export default function Checkout() {
 
   // Restore step and successOrder if activeOrder or location state (redirect from payment) is present
   useEffect(() => {
+    // If user just cancelled card payment, clear stale state and stay at Step 1
+    if (location.state?.fromPaymentCancel) {
+      setActiveOrder(null);
+      window.history.replaceState({}, document.title);
+      return;
+    }
+
     const orderId = location.state?.orderId || activeOrder?._id;
     if (orderId) {
-      if (activeOrder && activeOrder._id === orderId) {
-        setSuccessOrder(activeOrder);
-        setStep(3);
-      } else {
-        const fetchOrder = async () => {
-          try {
-            const ord = await getOrderDetails(orderId);
+      const fetchAndRestore = async () => {
+        try {
+          const ord = await getOrderDetails(orderId);
+          // Only restore to Step 3 if the order is genuinely successful:
+          // - For CARD payments: only if paymentStatus is 'paid'
+          // - For COD/SIMULATED: always valid if order exists and isn't cancelled
+          const isCardPending = ord.paymentMethod === 'CARD' && ord.paymentStatus !== 'paid';
+          const isCancelled = ord.status === 'cancelled';
+          if (!isCardPending && !isCancelled) {
             setSuccessOrder(ord);
             setStep(3);
-          } catch (err) {
-            console.warn('Failed to load redirect order details:', err.message);
+          } else {
+            // Stale/cancelled/unpaid order — don't restore, clear context
+            setActiveOrder(null);
           }
-        };
-        fetchOrder();
-      }
+        } catch (err) {
+          console.warn('Failed to load redirect order details:', err.message);
+        }
+      };
+      fetchAndRestore();
+      // Clear location state to prevent re-triggering on subsequent renders
+      window.history.replaceState({}, document.title);
     }
   }, [location.state, activeOrder, getOrderDetails]);
 
