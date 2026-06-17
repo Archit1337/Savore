@@ -443,6 +443,18 @@ export default function Checkout() {
   const hasCityMismatch = restaurant && restaurant.city && userDefaultAddressCity && 
     !isAddressMatchingCity(user.address, restaurant.city);
 
+  const isAlreadySaved = savedAddresses.some(addr => {
+    const formatted = [
+      addr.houseNumber,
+      addr.street,
+      addr.area,
+      addr.landmark ? `(Near ${addr.landmark})` : '',
+      addr.state
+    ].filter(Boolean).join(', ').trim();
+    
+    return address.trim() === formatted && pincode.trim() === addr.pincode.trim();
+  });
+
   return (
     <div className="container fade-in px-6 text-left" style={{ marginTop: '-6.5rem', paddingTop: '0.5rem', paddingBottom: '6rem', minHeight: 'calc(100vh - 320px)' }}>
       
@@ -674,7 +686,7 @@ export default function Checkout() {
             </div>
 
             {/* Save Address Checkbox */}
-            {isAuthenticated && (
+            {isAuthenticated && !isAlreadySaved && (
               <div className="flex items-center gap-2 mb-8 select-none">
                 <input 
                   type="checkbox"

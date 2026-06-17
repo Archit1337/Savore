@@ -10,8 +10,38 @@ export const resolveMediaUrl = (url, fallback = '') => {
     return fallback;
   }
 
-  // If already absolute or data URI, return as-is
+  // If already absolute or data URI, handle Unsplash optimization
   if (/^(https?:\/\/|data:)/i.test(url)) {
+    if (url.includes('images.unsplash.com')) {
+      let upgradedUrl = url;
+      
+      // Match the width parameter (w=...)
+      const wMatch = url.match(/[?&]w=(\d+)/);
+      if (wMatch) {
+        const currentW = parseInt(wMatch[1], 10);
+        let targetW = 1920; // Default to full HD for cover images
+        if (currentW <= 150) {
+          targetW = 300; // Small profile pictures/avatars
+        } else if (currentW <= 400) {
+          targetW = 1000; // Medium food/dish cards
+        } else if (currentW <= 800) {
+          targetW = 1920; // Large cover banners
+        }
+        upgradedUrl = upgradedUrl.replace(/([?&])w=\d+/, `$1w=${targetW}`);
+      } else {
+        // If no width parameter is defined, default to 1920 for banners
+        upgradedUrl += (upgradedUrl.includes('?') ? '&' : '?') + 'w=1920';
+      }
+
+      // Upgrade quality to 90 for HD crispness
+      if (upgradedUrl.includes('q=')) {
+        upgradedUrl = upgradedUrl.replace(/([?&])q=\d+/, '$1q=90');
+      } else {
+        upgradedUrl += '&q=90';
+      }
+
+      return upgradedUrl;
+    }
     return url;
   }
 
