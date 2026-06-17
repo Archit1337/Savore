@@ -636,8 +636,8 @@ export default function Checkout() {
                           }}
                           className={`glass-card p-4 rounded-xl cursor-pointer border-[1.5px] text-left transition-all duration-200 ${
                             isSelected 
-                              ? 'border-primary shadow-[var(--shadow-glow)] bg-primary/5' 
-                              : 'border-[var(--border-light)] hover:border-primary/45 bg-white/[0.01]'
+                              ? '!border-primary !shadow-[var(--shadow-glow)] bg-primary/5' 
+                              : '!border-[var(--border-light)] hover:border-primary/45 bg-white/[0.01]'
                           }`}
                         >
                           <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
@@ -734,8 +734,8 @@ export default function Checkout() {
                   <div 
                     className={`glass-card flex-center flex-col gap-3 p-6 cursor-pointer border-[1.5px] transition-all duration-200 ${
                       paymentMethod === 'COD' 
-                        ? 'border-primary shadow-[var(--shadow-glow)]' 
-                        : 'border-[var(--border-light)] shadow-none'
+                        ? '!border-primary !shadow-[var(--shadow-glow)] bg-primary/5' 
+                        : '!border-[var(--border-light)] shadow-none bg-white/[0.01]'
                     }`}
                     onClick={() => setPaymentMethod('COD')}
                   >
@@ -746,8 +746,8 @@ export default function Checkout() {
                   <div 
                     className={`glass-card flex-center flex-col gap-3 p-6 cursor-pointer border-[1.5px] transition-all duration-200 ${
                       paymentMethod === 'CARD' 
-                        ? 'border-primary shadow-[var(--shadow-glow)]' 
-                        : 'border-[var(--border-light)] shadow-none'
+                        ? '!border-primary !shadow-[var(--shadow-glow)] bg-primary/5' 
+                        : '!border-[var(--border-light)] shadow-none bg-white/[0.01]'
                     }`}
                     onClick={() => setPaymentMethod('CARD')}
                   >

@@ -168,7 +168,10 @@ export default function PaymentGateway() {
   };
 
   return (
-    <div className="container fade-in py-10 px-6 pb-20 text-left min-h-[calc(100vh-120px)] flex items-center justify-center">
+    <div 
+      className="container fade-in pb-20 px-6 text-left min-h-[calc(100vh-160px)] flex justify-center"
+      style={{ marginTop: '-5rem', paddingTop: '0.5rem' }}
+    >
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full max-w-[1000px] items-start">
         {/* Left Side: Elegant Credit Card Visualization & Form */}
@@ -254,8 +257,8 @@ export default function PaymentGateway() {
                 <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input 
                   type="text" 
-                  className="glass-input pl-11" 
-                  placeholder="John Doe" 
+                  className="glass-input !pl-11" 
+                  placeholder="John Cena" 
                   value={cardName}
                   onChange={(e) => setCardName(e.target.value)}
                   disabled={processing || success}
@@ -272,7 +275,7 @@ export default function PaymentGateway() {
                 <CreditCard size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input 
                   type="text" 
-                  className="glass-input pl-11" 
+                  className="glass-input !pl-11" 
                   placeholder="4000 1234 5678 9010" 
                   value={cardNumber}
                   onChange={handleCardNumberChange}
@@ -291,7 +294,7 @@ export default function PaymentGateway() {
                   <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
                   <input 
                     type="text" 
-                    className="glass-input pl-11" 
+                    className="glass-input !pl-11" 
                     placeholder="MM/YY" 
                     value={expiry}
                     onChange={handleExpiryChange}
@@ -309,7 +312,7 @@ export default function PaymentGateway() {
                   <Key size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
                   <input 
                     type="password" 
-                    className="glass-input pl-11" 
+                    className="glass-input !pl-11" 
                     placeholder="•••" 
                     value={cvv}
                     onChange={handleCvvChange}
