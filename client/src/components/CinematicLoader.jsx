@@ -2,7 +2,7 @@
 // 100% Modular, Isolated, and High-Performance (Stable 60fps GPU execution)
 
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 
 // 🍽️ Minimal Luxury Outline SVGs
 const ChefHatIcon = () => (
@@ -84,6 +84,40 @@ export default function CinematicLoader({ onComplete }) {
   const [progress, setProgress] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
 
+  // Parallax Tilt 3D mouse tracking
+  const containerRef = useRef(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Smooth physical spring damping
+  const springConfig = { damping: 25, stiffness: 150 };
+  const rotateX = useSpring(mouseY, springConfig);
+  const rotateY = useSpring(mouseX, springConfig);
+
+  const handleMouseMove = (e) => {
+    if (isExiting || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    
+    // Normalize coordinates between -1 and 1 relative to center
+    const relativeX = e.clientX - rect.left - width / 2;
+    const relativeY = e.clientY - rect.top - height / 2;
+    
+    const normX = relativeX / (width / 2);
+    const normY = relativeY / (height / 2);
+
+    // Subtle limit to 10 degrees tilt rotation
+    mouseX.set(normX * 10);
+    mouseY.set(-normY * 10);
+  };
+
+  const handleMouseLeave = () => {
+    // Reset back to center smoothly
+    mouseX.set(0);
+    mouseY.set(0);
+  };
+
   // Cycle active icon in center with precise cinematic timings
   useEffect(() => {
     if (isExiting) return;
@@ -102,28 +136,39 @@ export default function CinematicLoader({ onComplete }) {
     return () => clearInterval(greetingInterval);
   }, [isExiting]);
 
-  // Smooth progress bar pacing
+  // Smooth progress bar pacing with organic EaseOutCubic acceleration
   useEffect(() => {
-    const duration = 3200; // 3.2s progress path
-    const intervalTime = 16; // ~60fps updates
-    const step = 100 / (duration / intervalTime);
+    const duration = 2800; // 2.8 seconds
+    const startTime = Date.now();
+    let animationFrameId;
 
-    const progressTimer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(progressTimer);
-          setIsExiting(true);
-          // Wait slightly for exit zoom animation, then trigger complete
-          setTimeout(() => {
-            if (onComplete) onComplete();
-          }, 600);
-          return 100;
-        }
-        return prev + step;
-      });
-    }, intervalTime);
+    const updateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      const t = Math.min(1, elapsed / duration);
+      // EaseOutCubic: f(t) = 1 - (1-t)^3
+      const easedT = 1 - Math.pow(1 - t, 3);
+      const currentProgress = easedT * 100;
 
-    return () => clearInterval(progressTimer);
+      setProgress(currentProgress);
+
+      if (t < 1) {
+        animationFrameId = requestAnimationFrame(updateProgress);
+      } else {
+        setIsExiting(true);
+        // Wait slightly for exit zoom animation, then trigger complete
+        setTimeout(() => {
+          if (onComplete) onComplete();
+        }, 600);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(updateProgress);
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
   }, [onComplete]);
 
   const ActiveIcon = ICONS[activeIconIndex];
@@ -154,6 +199,9 @@ export default function CinematicLoader({ onComplete }) {
 
   return (
     <motion.div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className="cinematic-loader-overlay fixed inset-0 z-[9999] flex items-center justify-center select-none overflow-hidden"
       initial={{ backgroundColor: startBg, opacity: 1 }}
       animate={isExiting ? { 
@@ -163,185 +211,204 @@ export default function CinematicLoader({ onComplete }) {
         opacity: 1
       }}
       transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+      style={{ perspective: 1000 }}
       exit={{ 
         opacity: 0,
         transition: { duration: 0.2 }
       }}
     >
-
-      {/* 🧊 Floating Premium Glassmorphic Card Container */}
-      <motion.div
-        className="cinematic-loader-card relative z-10 w-[310px] sm:w-[350px] py-10 px-8 flex flex-col items-center justify-center rounded-[28px] text-center"
-        initial={{ opacity: 0, scale: 0.94, y: 15 }}
-        animate={{ 
-          opacity: isExiting ? 0.99 : 1, 
-          scale: isExiting ? 1.05 : 1, 
-          y: isExiting ? -10 : 0,
-          backgroundColor: cardBg,
-          border: cardBorder,
-          boxShadow: cardShadow,
-          backdropFilter: cardBlur,
-          WebkitBackdropFilter: cardBlur,
-        }}
+      {/* 🧊 Floating Premium Glassmorphic Card Wrapper */}
+      <div 
+        className="cinematic-loader-card-wrapper pointer-events-none"
         style={{
-          animation: isExiting ? 'none' : undefined,
-          overflow: isExiting ? 'visible' : 'hidden'
+          perspective: 1000,
+          transformStyle: 'preserve-3d',
+          animation: isExiting ? 'none' : undefined
         }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       >
-        {/* Shimmer Sweep overlay layer */}
-        {!isExiting && <div className="cinematic-loader-shimmer" />}
-
-        {/* Floating Culinary Particles */}
-        {!isExiting && (
-          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-            {PARTICLES.map((p) => (
-              <motion.div
-                key={p.id}
-                className="absolute rounded-full bg-gradient-to-t from-[#FF6A4D]/25 to-[#FF8A72]/15"
-                style={{
-                  left: `calc(50% + ${p.x}px)`,
-                  bottom: '0px',
-                  width: p.size,
-                  height: p.size,
-                }}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ 
-                  y: -240, 
-                  opacity: [0, 0.6, 0.6, 0] 
-                }}
-                transition={{
-                  duration: p.duration,
-                  delay: p.delay,
-                  repeat: Infinity,
-                  ease: "easeOut",
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* 👨‍🍳 Dynamic Active Vector Outlined Illustration in Center */}
-        <motion.div 
-          className="w-16 h-16 rounded-full bg-white/[0.03] dark:bg-black/[0.12] border border-white/[0.04] flex items-center justify-center text-[#FF6A4D] mb-6 relative z-20"
-          animate={isExiting ? { 
-            scale: 30, 
-            opacity: [1, 0.9, 0],
-            y: -25,
-            rotate: 15,
-          } : { 
-            scale: 1, 
-            opacity: 1,
-            rotate: 0,
-            y: 0,
+        <motion.div
+          className="cinematic-loader-card relative z-10 w-[310px] sm:w-[350px] py-10 px-8 flex flex-col items-center justify-center rounded-[28px] text-center"
+          initial={{ opacity: 0, scale: 0.94, y: 15 }}
+          animate={{ 
+            opacity: isExiting ? 0.99 : 1, 
+            scale: isExiting ? 1.05 : 1, 
+            y: isExiting ? -10 : 0,
+            backgroundColor: cardBg,
+            border: cardBorder,
+            boxShadow: cardShadow,
+            backdropFilter: cardBlur,
+            WebkitBackdropFilter: cardBlur,
           }}
-          transition={{ 
-            duration: 0.65, 
-            ease: [0.16, 1, 0.3, 1] 
+          style={{
+            rotateX,
+            rotateY,
+            transformStyle: 'preserve-3d',
+            overflow: isExiting ? 'visible' : 'hidden'
           }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Circular Glass Orbit Ring & Orbiting Dot */}
+          {/* Shimmer Sweep overlay layer */}
+          {!isExiting && <div className="cinematic-loader-shimmer" />}
+
+          {/* Floating Culinary Particles */}
           {!isExiting && (
-            <div className="absolute w-[80px] h-[80px] rounded-full border border-white/5 dark:border-white/[0.02] pointer-events-none flex items-center justify-center z-10">
-              <motion.div
-                className="absolute w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72] shadow-[0_0_6px_#FF6A4D]"
-                style={{ 
-                  left: '0px', 
-                  top: 'calc(50% - 3px)',
-                  transformOrigin: '40px center' 
-                }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 4.0, repeat: Infinity, ease: "linear" }}
-              />
+            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+              {PARTICLES.map((p) => (
+                <motion.div
+                  key={p.id}
+                  className="absolute rounded-full bg-gradient-to-t from-[#FF6A4D]/25 to-[#FF8A72]/15"
+                  style={{
+                    left: `calc(50% + ${p.x}px)`,
+                    bottom: '0px',
+                    width: p.size,
+                    height: p.size,
+                  }}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ 
+                    y: -240, 
+                    opacity: [0, 0.6, 0.6, 0] 
+                  }}
+                  transition={{
+                    duration: p.duration,
+                    delay: p.delay,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                  }}
+                />
+              ))}
             </div>
           )}
 
-          {/* Subtle Outer Glowing Coral Pulse Ring */}
-          {!isExiting && (
-            <motion.div 
-              className="absolute inset-0 rounded-full border border-[#FF6A4D]/25"
-              animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-            />
-          )}
+          {/* 👨‍🍳 Dynamic Active Vector Outlined Illustration in Center */}
+          <div className="w-16 h-16 mb-6 relative z-20 flex items-center justify-center">
+            {/* Circular Glass Orbit Ring & Orbiting Dot */}
+            {!isExiting && (
+              <div className="absolute w-[80px] h-[80px] rounded-full border border-white/5 dark:border-white/[0.02] pointer-events-none flex items-center justify-center z-10">
+                <motion.div
+                  className="absolute w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72] shadow-[0_0_6px_#FF6A4D]"
+                  style={{ 
+                    left: '0px', 
+                    top: 'calc(50% - 3px)',
+                    transformOrigin: '40px center' 
+                  }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 4.0, repeat: Infinity, ease: "linear" }}
+                />
+              </div>
+            )}
 
-          <motion.div
-            key={activeIconIndex}
-            initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1, 
-              rotate: 0,
-            }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} 
-            className="flex items-center justify-center w-full h-full"
+            {/* Subtle Outer Glowing Coral Pulse Ring */}
+            {!isExiting && (
+              <motion.div 
+                className="absolute inset-0 rounded-full border border-[#FF6A4D]/25"
+                animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
+
+            {/* High-Resolution Scaled Container */}
+            <motion.div 
+              className="cinematic-illustration-circle absolute w-[512px] h-[512px] rounded-full bg-white/[0.03] dark:bg-black/[0.12] border border-white/[0.04] flex items-center justify-center text-[#FF6A4D]"
+              animate={isExiting ? { 
+                scale: 5.0, 
+                opacity: [1, 0.9, 0],
+                y: -25,
+                rotate: 15,
+              } : { 
+                scale: 0.125, 
+                opacity: 1,
+                rotate: 0,
+                y: 0,
+              }}
+              style={{
+                transformOrigin: 'center center',
+              }}
+              transition={{ 
+                duration: 0.65, 
+                ease: [0.16, 1, 0.3, 1] 
+              }}
+            >
+              <motion.div
+                key={activeIconIndex}
+                initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
+                animate={{ 
+                  opacity: 1, 
+                  scale: 1, 
+                  rotate: 0,
+                }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} 
+                className="flex items-center justify-center w-full h-full"
+              >
+                <ActiveIcon />
+              </motion.div>
+            </motion.div>
+          </div>
+
+          {/* ✨ Centerpiece Editorial Letter Reveal with Metallic Shimmer */}
+          <motion.div 
+            className="flex items-center gap-2 mb-2 select-none"
+            animate={isExiting ? { opacity: 0, y: 12, scale: 0.94, filter: "blur(3px)" } : { opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <ActiveIcon />
+            <motion.span
+              className="brand-shimmer-text text-[26px] font-light tracking-[0.38em] font-sans"
+              initial={{ opacity: 0, y: 8, filter: "blur(2.5px)" }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                filter: "blur(0px)"
+              }}
+              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            >
+              SAVORÉ
+            </motion.span>
+          </motion.div>
+
+          {/* Languages Greeting Animator with a soft glow backdrop */}
+          <motion.div 
+            className="h-[24px] mb-7 flex items-center justify-center overflow-hidden relative w-full"
+            animate={isExiting ? { opacity: 0, y: 10, filter: "blur(3px)" } : { opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {/* Soft ambient highlight behind text */}
+            <div className="absolute w-[80px] h-[20px] bg-[#FF6A4D]/5 rounded-full blur-md pointer-events-none" />
+
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={greetingIndex}
+                initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                className={`bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72] bg-clip-text text-transparent select-none whitespace-nowrap drop-shadow-[0_2px_8px_rgba(255,106,77,0.15)] ${
+                  GREETINGS[greetingIndex].isIndic
+                    ? "text-[15px] font-semibold tracking-normal"
+                    : "text-[13px] uppercase tracking-[0.3em] font-bold"
+                }`}
+              >
+                {GREETINGS[greetingIndex].text}
+              </motion.p>
+            </AnimatePresence>
+          </motion.div>
+
+          {/* 🌀 Premium Coral Progress Line Container with Laser Glow */}
+          <motion.div 
+            className="w-[180px] h-[3px] rounded-full bg-white/[0.06] dark:bg-black/[0.22] overflow-hidden relative"
+            animate={isExiting ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+          >
+            <motion.div 
+              className="h-full w-full bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72]"
+              style={{ 
+                transformOrigin: 'left',
+                scaleX: progress / 100,
+                willChange: 'transform',
+                boxShadow: '0 0 10px rgba(255, 106, 77, 0.6), 0 0 4px rgba(255, 138, 114, 0.4)'
+              }}
+            />
           </motion.div>
         </motion.div>
-
-        {/* ✨ Centerpiece Editorial Letter Reveal with Metallic Shimmer */}
-        <motion.div 
-          className="flex items-center gap-2 mb-2 select-none"
-          animate={isExiting ? { opacity: 0, y: 12, scale: 0.94, filter: "blur(3px)" } : { opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        >
-          <motion.span
-            className="brand-shimmer-text text-[26px] font-light tracking-[0.38em] font-sans"
-            initial={{ opacity: 0, y: 8, filter: "blur(2.5px)" }}
-            animate={{ 
-              opacity: 1, 
-              y: 0, 
-              filter: "blur(0px)"
-            }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          >
-            SAVORÉ
-          </motion.span>
-        </motion.div>
-
-        {/* Languages Greeting Animator with a soft glow backdrop */}
-        <motion.div 
-          className="h-[24px] mb-7 flex items-center justify-center overflow-hidden relative w-full"
-          animate={isExiting ? { opacity: 0, y: 10, filter: "blur(3px)" } : { opacity: 1 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-        >
-          {/* Soft ambient highlight behind text */}
-          <div className="absolute w-[80px] h-[20px] bg-[#FF6A4D]/5 rounded-full blur-md pointer-events-none" />
-
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={greetingIndex}
-              initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className={`bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72] bg-clip-text text-transparent select-none whitespace-nowrap drop-shadow-[0_2px_8px_rgba(255,106,77,0.15)] ${
-                GREETINGS[greetingIndex].isIndic
-                  ? "text-[15px] font-semibold tracking-normal"
-                  : "text-[13px] uppercase tracking-[0.3em] font-bold"
-              }`}
-            >
-              {GREETINGS[greetingIndex].text}
-            </motion.p>
-          </AnimatePresence>
-        </motion.div>
-
-        {/* 🌀 Premium Coral Progress Line Container with Laser Glow */}
-        <motion.div 
-          className="w-[180px] h-[3px] rounded-full bg-white/[0.06] dark:bg-black/[0.22] overflow-hidden relative"
-          animate={isExiting ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-        >
-          <motion.div 
-            className="h-full bg-gradient-to-r from-[#FF6A4D] to-[#FF8A72]"
-            style={{ 
-              width: `${progress}%`,
-              boxShadow: '0 0 10px rgba(255, 106, 77, 0.6), 0 0 4px rgba(255, 138, 114, 0.4)'
-            }}
-          />
-        </motion.div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
