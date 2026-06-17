@@ -50,8 +50,10 @@ const isAddressMatchingCity = (addressStr, city) => {
 const isAddressValidForRestaurantCity = (addressStr, city) => {
   if (!addressStr || !city) return false;
   
-  const pins = addressStr.match(/\b\d{6}\b/g);
-  if (pins && pins.length > 0) {
+  // Extract pincodes (6 digits, optionally separated by a space in the middle)
+  const rawPins = addressStr.match(/\b\d{3}\s?\d{3}\b/g);
+  if (rawPins && rawPins.length > 0) {
+    const pins = rawPins.map(pin => pin.replace(/\s+/g, ''));
     const normalizedCity = city.toLowerCase().trim();
     const prefixes = CITY_PINCODE_PREFIXES[normalizedCity];
     if (prefixes) {

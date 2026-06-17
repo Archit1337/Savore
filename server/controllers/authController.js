@@ -536,9 +536,6 @@ const getAddresses = async (req, res, next) => {
   }
 };
 
-// @desc    Add new saved address
-// @route   POST /api/auth/addresses
-// @access  Private
 const addAddress = async (req, res, next) => {
   try {
     const { houseNumber, street, area, landmark, city, state, pincode, addressType, isDefault } = req.body;
@@ -548,14 +545,32 @@ const addAddress = async (req, res, next) => {
       return next(new Error('User not found'));
     }
 
+    // 1. Quota Limit: Enforce maximum of 15 saved addresses to prevent database bloat/abuse
+    if (user.addresses && user.addresses.length >= 15) {
+      res.status(400);
+      return next(new Error('You have reached the maximum limit of 15 saved addresses. Please delete an address before adding a new one.'));
+    }
+
+    // 2. Required Fields Validation: Ensure critical address details are provided
+    if (!street?.trim() || !area?.trim() || !city?.trim() || !state?.trim() || !pincode?.trim()) {
+      res.status(400);
+      return next(new Error('Required address fields (Street, Area, City, State, Pincode) cannot be empty.'));
+    }
+
+    // 3. Indian Pincode Format Validation: Must be exactly 6 digits
+    if (pincode && !/^\d{6}$/.test(pincode.trim())) {
+      res.status(400);
+      return next(new Error('Pincode must be exactly 6 digits.'));
+    }
+
     const newAddress = {
-      houseNumber: houseNumber || '',
-      street: street || '',
-      area: area || '',
-      landmark: landmark || '',
-      city: city || 'Mumbai',
-      state: state || 'Maharashtra',
-      pincode: pincode || '',
+      houseNumber: houseNumber ? houseNumber.trim() : '',
+      street: street.trim(),
+      area: area.trim(),
+      landmark: landmark ? landmark.trim() : '',
+      city: city.trim(),
+      state: state.trim(),
+      pincode: pincode.trim(),
       addressType: addressType || 'Home',
       isDefault: !!isDefault || user.addresses.length === 0
     };
@@ -597,13 +612,35 @@ const editAddress = async (req, res, next) => {
       return next(new Error('Address not found'));
     }
 
-    if (houseNumber !== undefined) address.houseNumber = houseNumber;
-    if (street !== undefined) address.street = street;
-    if (area !== undefined) address.area = area;
-    if (landmark !== undefined) address.landmark = landmark;
-    if (city !== undefined) address.city = city;
-    if (state !== undefined) address.state = state;
-    if (pincode !== undefined) address.pincode = pincode;
+    // Validation checks for updates
+    if (pincode !== undefined && !/^\d{6}$/.test(pincode.trim())) {
+      res.status(400);
+      return next(new Error('Pincode must be exactly 6 digits.'));
+    }
+    if (street !== undefined && !street.trim()) {
+      res.status(400);
+      return next(new Error('Street cannot be empty.'));
+    }
+    if (area !== undefined && !area.trim()) {
+      res.status(400);
+      return next(new Error('Area cannot be empty.'));
+    }
+    if (city !== undefined && !city.trim()) {
+      res.status(400);
+      return next(new Error('City cannot be empty.'));
+    }
+    if (state !== undefined && !state.trim()) {
+      res.status(400);
+      return next(new Error('State cannot be empty.'));
+    }
+
+    if (houseNumber !== undefined) address.houseNumber = houseNumber.trim();
+    if (street !== undefined) address.street = street.trim();
+    if (area !== undefined) address.area = area.trim();
+    if (landmark !== undefined) address.landmark = landmark ? landmark.trim() : '';
+    if (city !== undefined) address.city = city.trim();
+    if (state !== undefined) address.state = state.trim();
+    if (pincode !== undefined) address.pincode = pincode.trim();
     if (addressType !== undefined) address.addressType = addressType;
     if (isDefault !== undefined) {
       address.isDefault = !!isDefault;
