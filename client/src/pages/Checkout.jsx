@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingBag, MapPin, CreditCard, ChevronRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, MapPin, CreditCard, ChevronRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck, QrCode } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { LocationContext } from '../context/LocationContext';
 import { AuthContext } from '../context/AuthContext';
@@ -430,7 +430,11 @@ export default function Checkout() {
       }
     }
 
-    const transactionId = paymentMethod === 'CARD' ? `pi_mock_${Date.now()}` : undefined;
+    const transactionId = paymentMethod === 'CARD' 
+      ? `pi_mock_${Date.now()}` 
+      : paymentMethod === 'UPI' 
+      ? `upi_mock_${Date.now()}` 
+      : undefined;
 
     const orderPayload = {
       restaurant: restaurant._id,
@@ -446,13 +450,14 @@ export default function Checkout() {
 
     try {
       const placed = await placeOrder(orderPayload);
-      if (paymentMethod === 'CARD') {
+      if (paymentMethod === 'CARD' || paymentMethod === 'UPI') {
         // Redirect to Payment Gateway passing transactionId / client secret mock details
         navigate('/payment-gateway', { 
           state: { 
             orderId: placed._id,
             total,
-            transactionId
+            transactionId,
+            paymentMethod
           } 
         });
       } else {
@@ -800,6 +805,18 @@ export default function Checkout() {
                   >
                     <CreditCard size={28} className="text-[var(--accent)]" />
                     <div className="text-[13px] text-text-secondary">Credit Card (Stripe)</div>
+                  </div>
+
+                  <div 
+                    className={`glass-card flex-center flex-col gap-3 p-6 cursor-pointer border-[1.5px] transition-all duration-200 ${
+                      paymentMethod === 'UPI' 
+                        ? '!border-primary !shadow-[var(--shadow-glow)] bg-primary/5' 
+                        : '!border-[var(--border-light)] shadow-none bg-white/[0.01]'
+                    }`}
+                    onClick={() => setPaymentMethod('UPI')}
+                  >
+                    <QrCode size={28} className="text-[var(--accent)]" />
+                    <div className="text-[13px] text-text-secondary">UPI / QR Code</div>
                   </div>
                 </>
               )}

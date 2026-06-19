@@ -299,7 +299,7 @@ const updateOwnerRestaurant = async (req, res, next) => {
   try {
     const { 
       name, description, coverImage, tags, cuisines, deliveryTime, deliveryFee, timings,
-      city, locality, priceRange, deliveryRadius, serviceableZones, latitude, longitude
+      city, locality, priceRange, deliveryRadius, serviceableZones, latitude, longitude, upiVpa
     } = req.body;
     const restaurant = await Restaurant.findOne({ owner: req.user.id });
 
@@ -324,6 +324,13 @@ const updateOwnerRestaurant = async (req, res, next) => {
       restaurant.serviceableZones = Array.isArray(serviceableZones)
         ? serviceableZones
         : serviceableZones.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (upiVpa !== undefined) {
+      if (upiVpa !== '' && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upiVpa.trim())) {
+        res.status(400);
+        return next(new Error('Invalid UPI ID format. Please use a valid VPA (e.g. name@bank).'));
+      }
+      restaurant.upiVpa = upiVpa.trim();
     }
     if (latitude !== undefined && longitude !== undefined) {
       restaurant.coordinates = {

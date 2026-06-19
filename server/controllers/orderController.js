@@ -70,13 +70,17 @@ const isAddressValidForRestaurantCity = (addressStr, city) => {
 // @route   POST /api/orders
 // @access  Private (Customer)
 const placeOrder = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const { restaurant: restaurantId, items, paymentMethod, deliveryAddress, transactionId } = req.body;
 
     // Idempotency: Prevent duplicate submissions
     if (transactionId) {
-      const existingOrder = await Order.findOne({ transactionId });
+      const existingOrder = await Order.findOne({ transactionId }).session(session);
       if (existingOrder) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(200).json({
           success: true,
           data: existingOrder,
@@ -85,10 +89,10 @@ const placeOrder = async (req, res, next) => {
       }
     }
 
-    const restaurant = await Restaurant.findById(restaurantId);
+    const restaurant = await Restaurant.findById(restaurantId).session(session);
     if (!restaurant) {
       res.status(404);
-      return next(new Error('Restaurant not found'));
+      throw new Error('Restaurant not found');
     }
 
     // Determine if this is a test order placed by the owner
@@ -96,7 +100,7 @@ const placeOrder = async (req, res, next) => {
 
     if (paymentMethod === 'SIMULATED' && !isTestOrder) {
       res.status(400);
-      return next(new Error('Simulation payment mode is only available for the kitchen owner.'));
+      throw new Error('Simulation payment mode is only available for the kitchen owner.');
     }
 
     // Server-side Region Locked Ordering validation (bypassed for test orders)
@@ -104,7 +108,7 @@ const placeOrder = async (req, res, next) => {
     if (userRegion && restaurant.city && !isTestOrder) {
       if (restaurant.city.toLowerCase().trim() !== userRegion.toLowerCase().trim()) {
         res.status(400);
-        return next(new Error(`This restaurant (${restaurant.name}) is outside your active delivery zone (${userRegion}).`));
+        throw new Error(`This restaurant (${restaurant.name}) is outside your active delivery zone (${userRegion}).`);
       }
     }
 
@@ -112,7 +116,7 @@ const placeOrder = async (req, res, next) => {
     if (restaurant.city && !isTestOrder) {
       if (!isAddressValidForRestaurantCity(deliveryAddress, restaurant.city)) {
         res.status(400);
-        return next(new Error(`The delivery address pincode or city name does not match the restaurant's operating city (${restaurant.city}).`));
+        throw new Error(`The delivery address pincode or city name does not match the restaurant's operating city (${restaurant.city}).`);
       }
     }
 
@@ -121,10 +125,10 @@ const placeOrder = async (req, res, next) => {
     const validatedItems = [];
 
     for (const item of items) {
-      const foodItem = await FoodItem.findById(item.foodItem);
+      const foodItem = await FoodItem.findById(item.foodItem).session(session);
       if (!foodItem || !foodItem.isAvailable) {
         res.status(400);
-        return next(new Error(`Item ${item.foodItem} is not available`));
+        throw new Error(`Item ${item.foodItem} is not available`);
       }
       
       const itemPrice = foodItem.price;
@@ -150,7 +154,7 @@ const placeOrder = async (req, res, next) => {
       paymentStatus = 'pending'; // COD paid on delivery
     }
 
-    const order = await Order.create({
+    const [order] = await Order.create([{
       user: req.user.id,
       restaurant: restaurant._id,
       items: validatedItems,
@@ -164,9 +168,12 @@ const placeOrder = async (req, res, next) => {
       deliveryAddress,
       status: isTestOrder ? 'preparing' : 'pending',
       isTestOrder,
-    });
+    }], { session });
 
-    // Emit live socket event to the restaurant owner's room
+    await session.commitTransaction();
+    session.endSession();
+
+    // Emit live socket event to the restaurant owner's room (outside transaction block)
     const io = req.app.get('io');
     if (io) {
       io.to(`merchant_${restaurant.owner.toString()}`).emit('new_order_alert', {
@@ -181,6 +188,8 @@ const placeOrder = async (req, res, next) => {
       data: order,
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     next(error);
   }
 };
@@ -288,7 +297,7 @@ const getOrderById = async (req, res, next) => {
       return next(new Error('Order not found'));
     }
     const order = await Order.findById(req.params.id)
-      .populate('restaurant', 'name coverImage deliveryFee deliveryTime cuisines owner')
+      .populate('restaurant', 'name coverImage deliveryFee deliveryTime cuisines owner upiVpa')
       .populate('items.foodItem', 'name price image')
       .populate('user', 'username email');
 

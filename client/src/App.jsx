@@ -15,6 +15,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
 import BecomePartner from './pages/BecomePartner';
+import ResetPassword from './pages/ResetPassword';
 import { AuthContext } from './context/AuthContext';
 import { ChefMoodProvider } from './components/ChefSystem/ChefMoodEngine';
 import CinematicLoader from './components/CinematicLoader';
@@ -54,6 +55,16 @@ function ScrollToTop() {
   return null;
 }
 
+// ConditionalFooter determines if the footer should be visible based on route
+function ConditionalFooter() {
+  const location = useLocation();
+  const hideFooterPaths = ['/login', '/register', '/reset-password'];
+  const shouldHide = hideFooterPaths.some(path => location.pathname.startsWith(path));
+  
+  if (shouldHide) return null;
+  return <Footer />;
+}
+
 export default function App() {
   const [appLoading, setAppLoading] = useState(true);
 
@@ -86,6 +97,7 @@ export default function App() {
             {/* Session Screens */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
             {/* Protected Client Screens */}
             <Route 
@@ -147,7 +159,7 @@ export default function App() {
           </main>
 
           {/* Global Premium Footer */}
-          <Footer />
+          <ConditionalFooter />
         </div>
       </ChefMoodProvider>
     </BrowserRouter>

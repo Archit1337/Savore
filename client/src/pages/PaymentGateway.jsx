@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CreditCard, Shield, Calendar, Key, User, ArrowLeft, CheckCircle, RefreshCw, Sparkles, AlertTriangle } from 'lucide-react';
+import { CreditCard, Shield, Calendar, Key, User, ArrowLeft, CheckCircle, RefreshCw, Sparkles, AlertTriangle, QrCode, Smartphone, Copy, Check } from 'lucide-react';
 import { OrderContext } from '../context/OrderContext';
 import { CartContext } from '../context/CartContext';
 import { usePolling } from '../hooks/usePolling';
@@ -15,7 +15,7 @@ export default function PaymentGateway() {
   const { clearCart } = useContext(CartContext);
   const chefMood = useChefMood();
 
-  const { orderId, total, transactionId } = location.state || {};
+  const { orderId, total, transactionId, paymentMethod } = location.state || {};
 
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
@@ -23,12 +23,40 @@ export default function PaymentGateway() {
   const [cvv, setCvv] = useState('');
   const [isFlipped, setIsFlipped] = useState(false);
   
+  // UPI states
+  const [upiId, setUpiId] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [upiTimer, setUpiTimer] = useState(300); // 5 minutes
+
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [pollingOrder, setPollingOrder] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  // UPI Countdown timer effect
+  useEffect(() => {
+    if (paymentMethod !== 'UPI' || success || processing || upiTimer <= 0) return;
+    const interval = setInterval(() => {
+      setUpiTimer((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [paymentMethod, success, processing, upiTimer]);
+
+  const formatUpiTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const handleCopyUpi = () => {
+    const merchantVpa = pollingOrder?.restaurant?.upiVpa || 'savore@ybl';
+    const merchantName = encodeURIComponent(pollingOrder?.restaurant?.name || 'Savore Kitchen');
+    navigator.clipboard.writeText(`upi://pay?pa=${merchantVpa}&am=${total}&pn=${merchantName}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // If no order details are passed in navigation state, kick back to discover
   useEffect(() => {
@@ -172,6 +200,49 @@ export default function PaymentGateway() {
     }
   };
 
+  const handleUpiSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!upiId.trim() || !upiId.includes('@')) {
+      setErrorMsg('Please enter a valid UPI ID (e.g. username@bank).');
+      return;
+    }
+
+    setProcessing(true);
+    setErrorMsg('');
+
+    try {
+      const mockWebhookEvent = {
+        id: `evt_mock_${Date.now()}`,
+        type: 'payment_intent.succeeded',
+        data: {
+          object: {
+            id: transactionId || `upi_mock_${Date.now()}`,
+            amount: Math.round(total * 100),
+            currency: 'usd',
+            metadata: {
+              orderId,
+            },
+          },
+        },
+      };
+
+      const webhookRes = await api.post('/payment/webhook', mockWebhookEvent);
+      
+      if (webhookRes.data && webhookRes.data.received) {
+        setSuccess(true);
+        clearCart();
+        if (chefMood && typeof chefMood.celebrate === 'function') {
+          chefMood.celebrate('order_placed');
+        }
+      } else {
+        throw new Error('Webhook processing handshake failed.');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'UPI Payment handshake failed. Please try again.');
+      setProcessing(false);
+    }
+  };
+
   return (
     <div 
       className="container fade-in pb-20 px-6 text-left min-h-[calc(100vh-160px)] flex justify-center"
@@ -190,9 +261,13 @@ export default function PaymentGateway() {
             <ArrowLeft size={14} className="transition-transform duration-300 group-hover:-translate-x-1" /> Back to Checkout
           </button>
 
-          <h2 className="text-[26px] tracking-tight mb-2">Secure Checkout Gateway</h2>
+          <h2 className="text-[26px] tracking-tight mb-2">
+            {paymentMethod === 'UPI' ? 'UPI Secure Gateway' : 'Secure Checkout Gateway'}
+          </h2>
           <p className="text-[13px] text-text-muted mb-8">
-            All transactions are encrypted with state-of-the-art security layer.
+            {paymentMethod === 'UPI' 
+              ? 'Scan the QR code or enter your VPA ID to verify and complete the transaction.' 
+              : 'All transactions are encrypted with state-of-the-art security layer.'}
           </p>
 
           {errorMsg && (
@@ -201,153 +276,236 @@ export default function PaymentGateway() {
             </div>
           )}
 
-          {/* Gorgeous 3D Flipping Card Simulator */}
-          <div className="[perspective:1000px] w-full max-w-[380px] h-[220px] mx-auto mb-9 relative">
-            <div 
-              className="w-full h-full absolute [transform-style:preserve-3d] transition-transform duration-800 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)]"
-              style={{
-                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-              }}
-            >
-              {/* Card Front */}
-              <div className="absolute w-full h-full [backface-visibility:hidden] bg-gradient-to-br from-[#1d1e22] to-[#303136] border border-primary shadow-[0_15px_35px_rgba(0,0,0,0.4),var(--shadow-glow)] rounded-[16px] p-6 flex flex-col justify-between text-white">
-                <div className="flex justify-between items-center">
-                  <CreditCard size={36} className="text-primary" />
-                  <div className="italic font-extrabold text-[18px] text-text-muted">SAVORÉ</div>
+          {paymentMethod === 'UPI' ? (
+            <div>
+              {/* Dynamic QR Code Interface */}
+              <div className="flex flex-col items-center mb-8 bg-white/[0.02] border border-white/[0.04] p-6 rounded-[16px] text-center relative overflow-hidden">
+                <div className="relative p-3 bg-white rounded-xl shadow-lg mb-4">
+                  {upiTimer <= 0 ? (
+                    <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col justify-center items-center text-white rounded-xl p-4">
+                      <AlertTriangle className="text-[#d9a752] mb-2" size={24} />
+                      <span className="text-[11px] font-bold">QR Code Expired</span>
+                      <button 
+                        type="button"
+                        onClick={() => setUpiTimer(300)}
+                        className="btn btn-primary btn-pill mt-2 py-1 px-3 text-[10px]"
+                      >
+                        Regenerate QR
+                      </button>
+                    </div>
+                  ) : null}
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=165x165&data=upi://pay?pa=${pollingOrder?.restaurant?.upiVpa || 'savore@ybl'}%26am=${total}%26pn=${encodeURIComponent(pollingOrder?.restaurant?.name || 'Savore Kitchen')}%26tr=${transactionId || 'upi_txn'}`}
+                    alt="UPI Payment QR Code"
+                    className="w-[165px] h-[165px] block border border-gray-100"
+                  />
                 </div>
+                
+                <span className="text-[11px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full mb-3 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
+                  Awaiting Scan: {formatUpiTime(upiTimer)}
+                </span>
+                
+                <button 
+                  type="button"
+                  onClick={handleCopyUpi}
+                  className="bg-none border-none text-[11px] text-text-muted cursor-pointer flex items-center gap-1 hover:text-primary transition-all duration-200"
+                >
+                  {copied ? <Check size={12} className="text-[var(--accent)]" /> : <Copy size={12} />}
+                  {copied ? 'Copied UPI Intent String!' : 'Copy UPI Intent String'}
+                </button>
+              </div>
 
-                <div className="text-[20px] tracking-[3px] font-bold font-mono my-5 mt-5 mb-2.5">
-                  {cardNumber || '•••• •••• •••• ••••'}
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-[9px] uppercase text-text-muted tracking-[1px]">Card Holder</div>
-                    <div className="text-[13px] font-semibold tracking-[0.5px]">{cardName.toUpperCase() || 'YOUR NAME'}</div>
+              {/* UPI ID Form */}
+              <form onSubmit={handleUpiSubmit} className="flex flex-col gap-5">
+                <div>
+                  <label className="block text-[12px] font-semibold text-text-secondary mb-2">
+                    Or pay via UPI ID / VPA
+                  </label>
+                  <div className="relative">
+                    <Smartphone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input 
+                      type="text" 
+                      className="glass-input !pl-11" 
+                      placeholder="e.g. username@bank" 
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      disabled={processing || success || upiTimer <= 0}
+                      required
+                    />
                   </div>
-                  <div>
-                    <div className="text-[9px] uppercase text-text-muted tracking-[1px]">Expires</div>
-                    <div className="text-[13px] font-semibold">{expiry || 'MM/YY'}</div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className={`btn btn-primary mt-2 h-12 flex items-center justify-center gap-2.5 ${(processing || success || upiTimer <= 0) ? 'btn-disabled' : ''}`}
+                  disabled={processing || success || upiTimer <= 0}
+                >
+                  {processing ? (
+                    <>
+                      <RefreshCw className="animate-stir" size={18} /> Processing UPI Payment...
+                    </>
+                  ) : success ? (
+                    <>
+                      <CheckCircle size={18} /> Payment Verified
+                    </>
+                  ) : (
+                    `Verify & Pay ${formatPrice(total || 0)}`
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div>
+              {/* Gorgeous 3D Flipping Card Simulator */}
+              <div className="[perspective:1000px] w-full max-w-[380px] h-[220px] mx-auto mb-9 relative">
+                <div 
+                  className="w-full h-full absolute [transform-style:preserve-3d] transition-transform duration-800 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.275)]"
+                  style={{
+                    transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  }}
+                >
+                  {/* Card Front */}
+                  <div className="absolute w-full h-full [backface-visibility:hidden] bg-gradient-to-br from-[#1d1e22] to-[#303136] border border-primary shadow-[0_15px_35px_rgba(0,0,0,0.4),var(--shadow-glow)] rounded-[16px] p-6 flex flex-col justify-between text-white">
+                    <div className="flex justify-between items-center">
+                      <CreditCard size={36} className="text-primary" />
+                      <div className="italic font-extrabold text-[18px] text-text-muted">SAVORÉ</div>
+                    </div>
+
+                    <div className="text-[20px] tracking-[3px] font-bold font-mono my-5 mt-5 mb-2.5">
+                      {cardNumber || '•••• •••• •••• ••••'}
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-[9px] uppercase text-text-muted tracking-[1px]">Card Holder</div>
+                        <div className="text-[13px] font-semibold tracking-[0.5px]">{cardName.toUpperCase() || 'YOUR NAME'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] uppercase text-text-muted tracking-[1px]">Expires</div>
+                        <div className="text-[13px] font-semibold">{expiry || 'MM/YY'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Back */}
+                  <div className="absolute w-full h-full [backface-visibility:hidden] bg-gradient-to-br from-[#303136] to-[#1d1e22] border border-primary shadow-[0_15px_35px_rgba(0,0,0,0.4)] rounded-[16px] [transform:rotateY(180deg)] text-white flex flex-col justify-between py-5">
+                    <div className="bg-black h-10 w-full"></div>
+                    
+                    <div className="px-6">
+                      <div className="flex justify-end items-center">
+                        <div className="bg-white text-black w-[60px] h-[30px] rounded-[4px] flex items-center justify-center font-bold font-mono text-[14px]">
+                          {cvv || '•••'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between px-6 items-center">
+                      <div className="text-[8px] text-text-muted">SECURE AUTHORIZED TRANSACTION ONLY</div>
+                      <Shield size={16} className="text-[var(--accent)]" />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Card Back */}
-              <div className="absolute w-full h-full [backface-visibility:hidden] bg-gradient-to-br from-[#303136] to-[#1d1e22] border border-primary shadow-[0_15px_35px_rgba(0,0,0,0.4)] rounded-[16px] [transform:rotateY(180deg)] text-white flex flex-col justify-between py-5">
-                <div className="bg-black h-10 w-full"></div>
-                
-                <div className="px-6">
-                  <div className="flex justify-end items-center">
-                    <div className="bg-white text-black w-[60px] h-[30px] rounded-[4px] flex items-center justify-center font-bold font-mono text-[14px]">
-                      {cvv || '•••'}
+              {/* Form Inputs */}
+              <form onSubmit={handlePaymentSubmit} className="flex flex-col gap-5">
+                <div>
+                  <label className="block text-[12px] font-semibold text-text-secondary mb-2">
+                    Cardholder Name
+                  </label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input 
+                      type="text" 
+                      className="glass-input !pl-11" 
+                      placeholder="John Cena" 
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      disabled={processing || success}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-semibold text-text-secondary mb-2">
+                    Card Number
+                  </label>
+                  <div className="relative">
+                    <CreditCard size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input 
+                      type="text" 
+                      className="glass-input !pl-11" 
+                      placeholder="4000 1234 5678 9010" 
+                      value={cardNumber}
+                      onChange={handleCardNumberChange}
+                      disabled={processing || success}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-[12px] font-semibold text-text-secondary mb-2">
+                      Expiration Date
+                    </label>
+                    <div className="relative">
+                      <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input 
+                        type="text" 
+                        className="glass-input !pl-11" 
+                        placeholder="MM/YY" 
+                        value={expiry}
+                        onChange={handleExpiryChange}
+                        disabled={processing || success}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-semibold text-text-secondary mb-2">
+                      CVV / CVC
+                    </label>
+                    <div className="relative">
+                      <Key size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input 
+                        type="password" 
+                        className="glass-input !pl-11" 
+                        placeholder="•••" 
+                        value={cvv}
+                        onChange={handleCvvChange}
+                        onFocus={() => setIsFlipped(true)}
+                        onBlur={() => setIsFlipped(false)}
+                        disabled={processing || success}
+                        required
+                      />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between px-6 items-center">
-                  <div className="text-[8px] text-text-muted">SECURE AUTHORIZED TRANSACTION ONLY</div>
-                  <Shield size={16} className="text-[var(--accent)]" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Form Inputs */}
-          <form onSubmit={handlePaymentSubmit} className="flex flex-col gap-5">
-            <div>
-              <label className="block text-[12px] font-semibold text-text-secondary mb-2">
-                Cardholder Name
-              </label>
-              <div className="relative">
-                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input 
-                  type="text" 
-                  className="glass-input !pl-11" 
-                  placeholder="John Cena" 
-                  value={cardName}
-                  onChange={(e) => setCardName(e.target.value)}
+                <button 
+                  type="submit" 
+                  className={`btn btn-primary mt-3 h-12 flex items-center justify-center gap-2.5 ${(processing || success) ? 'btn-disabled' : ''}`}
                   disabled={processing || success}
-                  required
-                />
-              </div>
+                >
+                  {processing ? (
+                    <>
+                      <RefreshCw className="animate-stir" size={18} /> Processing Gateway...
+                    </>
+                  ) : success ? (
+                    <>
+                      <CheckCircle size={18} /> Secure Handshake Verified
+                    </>
+                  ) : (
+                    `Pay ${formatPrice(total || 0)} Now`
+                  )}
+                </button>
+              </form>
             </div>
-
-            <div>
-              <label className="block text-[12px] font-semibold text-text-secondary mb-2">
-                Card Number
-              </label>
-              <div className="relative">
-                <CreditCard size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input 
-                  type="text" 
-                  className="glass-input !pl-11" 
-                  placeholder="4000 1234 5678 9010" 
-                  value={cardNumber}
-                  onChange={handleCardNumberChange}
-                  disabled={processing || success}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <label className="block text-[12px] font-semibold text-text-secondary mb-2">
-                  Expiration Date
-                </label>
-                <div className="relative">
-                  <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input 
-                    type="text" 
-                    className="glass-input !pl-11" 
-                    placeholder="MM/YY" 
-                    value={expiry}
-                    onChange={handleExpiryChange}
-                    disabled={processing || success}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[12px] font-semibold text-text-secondary mb-2">
-                  CVV / CVC
-                </label>
-                <div className="relative">
-                  <Key size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input 
-                    type="password" 
-                    className="glass-input !pl-11" 
-                    placeholder="•••" 
-                    value={cvv}
-                    onChange={handleCvvChange}
-                    onFocus={() => setIsFlipped(true)}
-                    onBlur={() => setIsFlipped(false)}
-                    disabled={processing || success}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              className={`btn btn-primary mt-3 h-12 flex items-center justify-center gap-2.5 ${(processing || success) ? 'btn-disabled' : ''}`}
-              disabled={processing || success}
-            >
-              {processing ? (
-                <>
-                  <RefreshCw className="animate-stir" size={18} /> Processing Gateway...
-                </>
-              ) : success ? (
-                <>
-                  <CheckCircle size={18} /> Secure Handshake Verified
-                </>
-              ) : (
-                `Pay ${formatPrice(total || 0)} Now`
-              )}
-            </button>
-          </form>
+          )}
 
         </div>
 

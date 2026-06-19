@@ -28,8 +28,8 @@ export const OrderProvider = ({ children }) => {
         setOrders((prev) => [newOrder, ...prev]);
         setActiveOrder(newOrder);
         
-        // Clear shopping cart on successful checkout (for CARD, clear it in the payment gateway upon successful payment)
-        if (orderData.paymentMethod !== 'CARD') {
+        // Clear shopping cart on successful checkout (for CARD/UPI, clear it in the payment gateway upon successful payment)
+        if (orderData.paymentMethod !== 'CARD' && orderData.paymentMethod !== 'UPI') {
           clearCart();
         }
         return newOrder;

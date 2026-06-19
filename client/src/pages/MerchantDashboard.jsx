@@ -473,6 +473,7 @@ export default function MerchantDashboard() {
   const [settingsLng, setSettingsLng] = useState('');
   const [settingsDeliveryRadius, setSettingsDeliveryRadius] = useState('');
   const [settingsServiceableZones, setSettingsServiceableZones] = useState('');
+  const [settingsUpiVpa, setSettingsUpiVpa] = useState('');
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState('');
 
@@ -607,6 +608,7 @@ export default function MerchantDashboard() {
         setSettingsLng(rest.coordinates?.coordinates?.[0] || 72.8258);
         setSettingsDeliveryRadius(rest.deliveryRadius || 5);
         setSettingsServiceableZones(rest.serviceableZones?.join(', ') || '');
+        setSettingsUpiVpa(rest.upiVpa || '');
       }
     } catch (err) {
       console.error('Kitchen profile loading failed:', err.message);
@@ -636,8 +638,10 @@ export default function MerchantDashboard() {
       ? import.meta.env.VITE_API_URL.replace('/api', '')
       : 'http://localhost:5000';
 
+    const token = localStorage.getItem('savore_access_token');
     const socket = io(socketUrl, {
       transports: ['websocket'],
+      auth: { token },
     });
 
     socket.on('connect', () => {
@@ -972,7 +976,8 @@ export default function MerchantDashboard() {
           coordinates: [parseFloat(settingsLng) || 72.8258, parseFloat(settingsLat) || 19.0596]
         },
         deliveryRadius: parseFloat(settingsDeliveryRadius) || 5,
-        serviceableZones: settingsServiceableZones.split(',').map(z => z.trim()).filter(Boolean)
+        serviceableZones: settingsServiceableZones.split(',').map(z => z.trim()).filter(Boolean),
+        upiVpa: settingsUpiVpa.trim()
       };
       
       const res = await api.put('/restaurants/owner/details', payload);
@@ -2167,6 +2172,28 @@ export default function MerchantDashboard() {
                             value={settingsServiceableZones}
                             onChange={(e) => setSettingsServiceableZones(e.target.value)}
                           />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payout & UPI Bank Verification */}
+                    <div className="border-t border-border-light/45 pt-5 mt-5">
+                      <h4 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-1.5">
+                        💳 Payout & UPI Bank Verification
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                        <div>
+                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Merchant UPI ID / VPA</label>
+                           <input 
+                             type="text" 
+                             className="glass-input font-bold" 
+                             placeholder="e.g. restaurantname@okhdfcbank"
+                             value={settingsUpiVpa}
+                             onChange={(e) => setSettingsUpiVpa(e.target.value)}
+                           />
+                          <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">
+                            Incoming customer UPI scan payments will be routed directly to this address. Ensure this is a valid VPA.
+                          </p>
                         </div>
                       </div>
                     </div>

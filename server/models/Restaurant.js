@@ -94,6 +94,11 @@ const restaurantSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    upiVpa: {
+      type: String,
+      default: '',
+      trim: true,
+    },
   },
   {
     timestamps: true,

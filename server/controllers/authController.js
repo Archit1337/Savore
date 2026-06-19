@@ -1097,6 +1097,105 @@ const verifyOTP = async (req, res, next) => {
   }
 };
 
+// @desc    Request password reset link
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400);
+      return next(new Error('Please provide an email address'));
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      res.status(404);
+      return next(new Error('No account registered with this email address.'));
+    }
+
+    // Generate secure random reset token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+
+    // Store secure SHA-256 hash in database
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordToken = tokenHash;
+    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    await user.save();
+
+    // Construct frontend reset page URL
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+    try {
+      const { sendResetEmail } = require('../utils/emailService');
+      await sendResetEmail(normalizedEmail, resetUrl);
+      
+      res.json({
+        success: true,
+        message: 'Password reset instructions have been dispatched to your email.',
+      });
+    } catch (err) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+
+      res.status(500);
+      return next(new Error('Email dispatch failed. Please try again.'));
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify reset token and update password
+// @route   POST /api/auth/reset-password/:token
+// @access  Public
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      res.status(400);
+      return next(new Error('Please provide a new password (min. 6 characters).'));
+    }
+
+    // Re-create SHA-256 hash to compare with stored value
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: tokenHash,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select('+refreshTokens');
+
+    if (!user) {
+      res.status(400);
+      return next(new Error('Invalid or expired password reset token.'));
+    }
+
+    // Set new password (pre-save middleware hashes it automatically)
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    
+    // Invalidate existing sessions for security
+    user.refreshTokens = [];
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password successfully updated. You can now log in.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -1122,4 +1221,6 @@ module.exports = {
   rejectPartnershipRequest,
   generateOTP,
   verifyOTP,
+  forgotPassword,
+  resetPassword,
 };

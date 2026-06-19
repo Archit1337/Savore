@@ -25,6 +25,8 @@ const {
   rejectPartnershipRequest,
   generateOTP,
   verifyOTP,
+  forgotPassword,
+  resetPassword,
 } = require('../controllers/authController');
 const { validateRegister, validateLogin } = require('../middleware/validators');
 const { protect, requireRole } = require('../middleware/authMiddleware');
@@ -43,8 +45,22 @@ const otpGenerateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiter for password reset requests to prevent abuse
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // max 5 attempts per window
+  message: {
+    success: false,
+    message: 'Too many password reset requests. Please try again after 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post('/register', validateRegister, register);
 router.post('/login', validateLogin, login);
+router.post('/forgot-password', passwordResetLimiter, forgotPassword);
+router.post('/reset-password/:token', passwordResetLimiter, resetPassword);
 router.post('/otp/generate', otpGenerateLimiter, generateOTP);
 router.post('/otp/verify', verifyOTP);
 router.post('/refresh', refresh);

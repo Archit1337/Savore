@@ -1,6 +1,8 @@
 const stripe = require('../config/stripe');
 const Order = require('../models/Order');
 const Restaurant = require('../models/Restaurant');
+const ProcessedWebhook = require('../models/ProcessedWebhook');
+const mongoose = require('mongoose');
 
 // @desc    Create a Stripe Payment Intent
 // @route   POST /api/payment/create-intent
@@ -84,75 +86,96 @@ const handleWebhook = async (req, res, next) => {
     return res.send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the target payment intent event
-  const eventType = event.type;
-  
-  if (eventType === 'payment_intent.succeeded') {
-    const paymentIntent = event.data.object;
-    const transactionId = paymentIntent.id;
+  // Prevent duplicate execution of webhook events
+  try {
+    const isDuplicate = await ProcessedWebhook.findOne({ eventId: event.id });
+    if (isDuplicate) {
+      console.log(`ℹ️ Webhook Event ${event.id} already processed. Skipping...`);
+      return res.status(200).json({ received: true, message: 'Duplicate event ignored.' });
+    }
+  } catch (err) {
+    console.error('Error checking duplicate webhook events:', err.message);
+  }
 
-    console.log(`💰 Payment intent succeeded: ${transactionId}`);
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    try {
+  try {
+    // Record event as processed immediately within session
+    await ProcessedWebhook.create([{ eventId: event.id }], { session });
+
+    // Handle the target payment intent event
+    const eventType = event.type;
+    
+    if (eventType === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      const transactionId = paymentIntent.id;
+
+      console.log(`💰 Payment intent succeeded: ${transactionId}`);
+
       // Find the associated order using the transactionId
-      const order = await Order.findOne({ transactionId });
+      const order = await Order.findOne({ transactionId }).session(session);
       
       if (order) {
-        // Idempotency check: avoid double-processing if webhook triggers multiple times
         if (order.paymentStatus !== 'paid') {
           order.paymentStatus = 'paid';
           order.status = 'preparing'; // Auto-transition order to preparing state
-          await order.save();
+          await order.save({ session });
 
           // Credit merchant revenues (SaaS metric)
-          const restaurant = await Restaurant.findById(order.restaurant);
+          const restaurant = await Restaurant.findById(order.restaurant).session(session);
           if (restaurant && !order.isTestOrder) {
             restaurant.revenue = parseFloat((restaurant.revenue + order.subtotal).toFixed(2));
-            await restaurant.save();
-
-            // Emit live socket event to the restaurant owner's room
-            const io = req.app.get('io');
-            if (io) {
-              io.to(`merchant_${restaurant.owner.toString()}`).emit('new_order_alert', {
-                orderId: order._id,
-                total: order.total,
-                status: order.status
-              });
-            }
+            await restaurant.save({ session });
           }
 
           console.log(`✅ Order ${order._id} successfully marked as PAID from webhook.`);
-        } else {
-          console.log(`ℹ️ Order ${order._id} was already marked as PAID (idempotent ignore).`);
         }
-      } else {
-        console.error(`❌ Order with transactionId ${transactionId} not found in database.`);
       }
-    } catch (dbError) {
-      console.error(`Error processing webhook database update: ${dbError.message}`);
-      return res.status(500).send(`Database error: ${dbError.message}`);
-    }
-  } else if (eventType === 'payment_intent.payment_failed') {
-    const paymentIntent = event.data.object;
-    const transactionId = paymentIntent.id;
+    } else if (eventType === 'payment_intent.payment_failed') {
+      const paymentIntent = event.data.object;
+      const transactionId = paymentIntent.id;
 
-    console.log(`❌ Payment intent failed: ${transactionId}`);
+      console.log(`❌ Payment intent failed: ${transactionId}`);
 
-    try {
-      const order = await Order.findOne({ transactionId });
+      const order = await Order.findOne({ transactionId }).session(session);
       if (order && order.paymentStatus !== 'paid') {
         order.paymentStatus = 'failed';
         order.status = 'cancelled';
-        await order.save();
+        await order.save({ session });
         console.log(`❌ Order ${order._id} marked as FAILED/CANCELLED from webhook.`);
       }
-    } catch (dbError) {
-      console.error(`Error updating failed payment order: ${dbError.message}`);
     }
-  }
 
-  // Acknowledge event received
-  res.json({ received: true });
+    await session.commitTransaction();
+    session.endSession();
+
+    // Trigger alerts outside transaction block to prevent holding socket lock in DB layer
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      const order = await Order.findOne({ transactionId: paymentIntent.id });
+      if (order) {
+        const restaurant = await Restaurant.findById(order.restaurant);
+        if (restaurant) {
+          const io = req.app.get('io');
+          if (io) {
+            io.to(`merchant_${restaurant.owner.toString()}`).emit('new_order_alert', {
+              orderId: order._id,
+              total: order.total,
+              status: order.status
+            });
+          }
+        }
+      }
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error(`Error processing webhook transaction: ${error.message}`);
+    res.status(500).send(`Database transaction error: ${error.message}`);
+  }
 };
 
 module.exports = {

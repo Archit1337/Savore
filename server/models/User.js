@@ -97,6 +97,14 @@ const userSchema = new mongoose.Schema(
         ref: 'FoodItem',
       },
     ],
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
     refreshTokens: {
       type: [String],
       default: [],
