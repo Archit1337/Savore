@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue, animate } from 'framer-motion';
-import { Search, Flame, Sparkles, Film, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Search, Flame, Sparkles, Film, Navigation, Clock, Star, Play, Compass, MapPin, ChevronDown, ChevronUp, X, Home as HomeIcon, Briefcase, Building, AlertTriangle, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
 import MascotChef from '../components/MascotChef';
 import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
@@ -613,6 +613,151 @@ const WEATHER_POOLS = {
   }
 };
 
+// Dynamic, hardware-accelerated weather animations that overlay the search input
+function SearchBarWeatherAnimation({ climate, isVisible }) {
+  const animOpacityClass = isVisible ? 'opacity-100' : 'opacity-0';
+
+  switch (climate) {
+    case 'sunny':
+      return (
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+          <style>{`
+            @keyframes sunRayDrift {
+              0% { transform: translateX(-40px) scale(0.9); opacity: 0.08; }
+              50% { opacity: 0.18; }
+              100% { transform: translateX(40px) scale(1.1); opacity: 0.08; }
+            }
+            .sun-ray {
+              background: radial-gradient(circle, rgba(255,106,77,0.15) 0%, transparent 70%);
+              animation: sunRayDrift 8s ease-in-out infinite alternate;
+            }
+          `}</style>
+          <div className="absolute top-1/2 -translate-y-1/2 left-[15%] w-32 h-12 sun-ray" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-[55%] w-40 h-14 sun-ray" style={{ animationDelay: '-4s' }} />
+        </div>
+      );
+    case 'rainy':
+      return (
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+          <svg className="w-full h-full opacity-15" xmlns="http://www.w3.org/2000/svg">
+            <style>{`
+              @keyframes rainFall {
+                0% { transform: translate(0, -20px); opacity: 0; }
+                50% { opacity: 0.6; }
+                100% { transform: translate(-10px, 40px); opacity: 0; }
+              }
+              .rain-drop-line {
+                stroke: var(--primary);
+                stroke-width: 1;
+                animation: rainFall 1s linear infinite;
+              }
+            `}</style>
+            <line x1="10%" y1="0" x2="10%" y2="12" className="rain-drop-line" style={{ animationDelay: '0s', animationDuration: '0.8s' }} />
+            <line x1="30%" y1="0" x2="30%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.2s', animationDuration: '0.9s' }} />
+            <line x1="50%" y1="0" x2="50%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.4s', animationDuration: '0.7s' }} />
+            <line x1="70%" y1="0" x2="70%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.1s', animationDuration: '0.85s' }} />
+            <line x1="90%" y1="0" x2="90%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.3s', animationDuration: '0.75s' }} />
+          </svg>
+        </div>
+      );
+    case 'stormy':
+      return (
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+          <style>{`
+            @keyframes rainFallStorm {
+              0% { transform: translate(0, -20px); opacity: 0; }
+              50% { opacity: 0.7; }
+              100% { transform: translate(-15px, 40px); opacity: 0; }
+            }
+            @keyframes lightningFlash {
+              0%, 94%, 96%, 98%, 100% { opacity: 0; }
+              95%, 97% { opacity: 1; }
+            }
+            .storm-drop-line {
+              stroke: var(--primary);
+              stroke-width: 1.2;
+              animation: rainFallStorm 0.7s linear infinite;
+            }
+            .lightning-flash-overlay {
+              background: rgba(255, 90, 60, 0.06);
+              animation: lightningFlash 6s infinite;
+            }
+          `}</style>
+          <div className="absolute inset-0 lightning-flash-overlay w-full h-full rounded-[20px] pointer-events-none" />
+          <svg className="w-full h-full absolute inset-0 opacity-20" xmlns="http://www.w3.org/2000/svg">
+            <line x1="15%" y1="0" x2="15%" y2="14" className="storm-drop-line" style={{ animationDelay: '0s' }} />
+            <line x1="35%" y1="0" x2="35%" y2="14" className="storm-drop-line" style={{ animationDelay: '0.15s' }} />
+            <line x1="55%" y1="0" x2="55%" y2="14" className="storm-drop-line" style={{ animationDelay: '0.3s' }} />
+            <line x1="75%" y1="0" x2="75%" y2="14" className="storm-drop-line" style={{ animationDelay: '0.08s' }} />
+            <line x1="95%" y1="0" x2="95%" y2="14" className="storm-drop-line" style={{ animationDelay: '0.22s' }} />
+          </svg>
+        </div>
+      );
+    case 'starry':
+      return (
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+          <svg className="w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+            <style>{`
+              @keyframes starTwinkle {
+                0%, 100% { opacity: 0.15; transform: scale(0.8); }
+                50% { opacity: 0.95; transform: scale(1.2); }
+              }
+              .star-point {
+                fill: #ffd166;
+                animation: starTwinkle 2.5s infinite ease-in-out;
+                transform-origin: center;
+              }
+            `}</style>
+            <circle cx="20%" cy="30%" r="1" className="star-point" style={{ animationDelay: '0s' }} />
+            <circle cx="45%" cy="70%" r="1.2" className="star-point" style={{ animationDelay: '0.5s' }} />
+            <circle cx="65%" cy="40%" r="1.1" className="star-point" style={{ animationDelay: '1.2s' }} />
+            <circle cx="85%" cy="60%" r="1.4" className="star-point" style={{ animationDelay: '0.8s' }} />
+          </svg>
+        </div>
+      );
+    case 'snowy':
+      return (
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+          <svg className="w-full h-full opacity-15" xmlns="http://www.w3.org/2000/svg">
+            <style>{`
+              @keyframes snowDrift {
+                0% { transform: translate(0, -10px); opacity: 0; }
+                50% { opacity: 0.8; }
+                100% { transform: translate(5px, 35px); opacity: 0; }
+              }
+              .snow-flake {
+                fill: #ffffff;
+                animation: snowDrift 2.5s linear infinite;
+              }
+            `}</style>
+            <circle cx="15%" cy="0" r="1.5" className="snow-flake" style={{ animationDelay: '0s', animationDuration: '2s' }} />
+            <circle cx="35%" cy="0" r="2" className="snow-flake" style={{ animationDelay: '0.6s', animationDuration: '2.4s' }} />
+            <circle cx="55%" cy="0" r="1.5" className="snow-flake" style={{ animationDelay: '1.2s', animationDuration: '2.1s' }} />
+            <circle cx="75%" cy="0" r="2.5" className="snow-flake" style={{ animationDelay: '0.3s', animationDuration: '2.6s' }} />
+            <circle cx="95%" cy="0" r="1.5" className="snow-flake" style={{ animationDelay: '0.9s', animationDuration: '2.2s' }} />
+          </svg>
+        </div>
+      );
+    case 'cloudy':
+    default:
+      return (
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] opacity-10 transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+          <style>{`
+            @keyframes mistDrift {
+              0% { transform: translateX(-8%); }
+              100% { transform: translateX(8%); }
+            }
+            .mist-layer {
+              background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+              animation: mistDrift 10s linear infinite alternate;
+            }
+          `}</style>
+          <div className="absolute inset-0 mist-layer w-[116%] h-full" />
+        </div>
+      );
+  }
+}
+
 export default function Home() {
   const { user, isAuthenticated } = useContext(AuthContext);
   const {
@@ -753,6 +898,38 @@ export default function Home() {
       loading: true
     };
   });
+
+  const [showFloatingLocation, setShowFloatingLocation] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchHovered, setSearchHovered] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 120) {
+        setShowFloatingLocation(true);
+      } else {
+        setShowFloatingLocation(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const getSearchPlaceholder = () => {
+    switch (weatherData.climate) {
+      case 'sunny':
+        return "Search cold brews, fresh salads, sashimi...";
+      case 'rainy':
+      case 'stormy':
+        return "Search spicy ramen, hotpots, warm curries...";
+      case 'snowy':
+      case 'chilly':
+        return "Search truffle risottos, baked soufflés, hot soups...";
+      case 'starry':
+      default:
+        return "Search fine wine, gourmet truffles, signature steaks...";
+    }
+  };
 
   const { setBubbleText, setCurrentMood, setCommentType } = useChefMood();
 
@@ -1273,64 +1450,8 @@ export default function Home() {
             <div className="absolute -inset-6 md:-inset-10 z-0 pointer-events-none bg-[radial-gradient(circle_at_left_30%,_rgba(246,243,238,0.72)_0%,_transparent_60%)] dark:bg-[radial-gradient(circle_at_left_30%,_rgba(11,15,20,0.72)_0%,_transparent_60%)] rounded-[32px] blur-sm" />
             
             <div className="relative z-10">
-              {/* Weather & Location Concierge Live Capsule Section */}
-              <motion.div style={{ x: driftX1, y: driftY1, scale: driftScale1, opacity: driftOpacity1, rotate: driftRot1, rotateY: driftRotY1, perspective: 1000 }}>
-                <motion.div 
-                  variants={conciergeRevealVariant}
-                  initial="hidden"
-                  animate={isPageReady ? "visible" : "hidden"}
-                  className="flex flex-col items-start mb-6"
-                >
-                  <div className="flex flex-wrap items-center gap-3 mb-2">
-                    {/* Weather Concierge Live Capsule */}
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-                      className="weather-concierge-badge inline-flex items-center gap-2 select-none !mb-0"
-                    >
-                      {renderWeatherIcon(weatherData.climate)}
-                      <span className="flex items-center gap-1.5 font-bold tracking-[0.06em]">
-                        <span className="text-[var(--primary)]">{weatherData.temp}</span>
-                        <span className="text-[var(--text-muted)] opacity-50">•</span>
-                        <span className="text-[var(--text-primary)] font-semibold text-[12px] capitalize">
-                          {weatherData.climate} Vibe
-                        </span>
-                      </span>
-                      <span className="weather-pulse-dot" />
-                    </motion.div>
-
-                    {/* Glassmorphic Indian Location Indicator Picker */}
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-                      onClick={() => setLocationModalOpen(true)}
-                      className="weather-concierge-badge cursor-pointer inline-flex items-center gap-2 select-none transition-all !mb-0"
-                      title="Switch your Indian delivery region"
-                    >
-                      <MapPin size={13} className="text-primary" />
-                      <span className="flex items-center gap-1 font-bold tracking-[0.06em] text-[12px] uppercase">
-                        <span className="text-[var(--text-muted)]">Delivering to:</span>
-                        <strong className="text-[var(--text-primary)] font-bold tracking-normal lowercase">{activeLocality}, {activeCity}</strong>
-                      </span>
-                      <ChevronDown size={11} className="text-text-muted transition-transform" />
-                    </motion.div>
-                  </div>
-
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={weatherData.line}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.25 }}
-                      className="weather-classic-line pl-1 select-none pointer-events-none"
-                    >
-                      {weatherData.line}
-                    </motion.div>
-                  </AnimatePresence>
-                </motion.div>
-              </motion.div>
+              {/* Spacing spacer to replace the weather capsule block and keep typography clean */}
+              <div className="h-6" />
 
               {/* Nunito Bold Hero Headline */}
               <motion.div style={{ x: driftX2, y: driftY2, scale: driftScale2, opacity: driftOpacity2, rotate: driftRot2, rotateY: driftRotY2, perspective: 1000 }}>
@@ -1617,21 +1738,44 @@ export default function Home() {
                   variants={searchRevealVariant}
                   initial="hidden"
                   animate={isPageReady ? "visible" : "hidden"}
+                  onMouseEnter={() => setSearchHovered(true)}
+                  onMouseLeave={() => setSearchHovered(false)}
                   onSubmit={handleSearchSubmit} 
                   className="flex gap-3.5 max-w-[520px] relative z-10"
                 >
                   <div className="relative flex-1">
                     <Search 
                       size={20} 
-                      className="absolute left-[18px] top-1/2 -translate-y-1/2 text-[var(--text-muted)]" 
+                      className="absolute left-[18px] top-1/2 -translate-y-1/2 text-[var(--text-muted)] z-20" 
                     />
                     <input 
                       type="text" 
-                      className="glass-input !pl-[50px] !pr-[44px] rounded-[20px] h-[56px] text-[15px]" 
-                      placeholder="Search premium truffles, sushi, steaks..."
+                      className="glass-input !pl-[50px] !pr-[48px] rounded-[20px] h-[56px] text-[15px] relative z-10 bg-transparent" 
+                      placeholder={getSearchPlaceholder()}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setSearchFocused(false)}
                     />
+                    
+                    {/* Subtle Search Bar Weather Animation Layer */}
+                    {!weatherData.loading && (
+                      <SearchBarWeatherAnimation 
+                        climate={weatherData.climate} 
+                        isVisible={!searchFocused && !searchHovered} 
+                      />
+                    )}
+                    
+                    {/* Clean Inline Weather HUD SVG (Display Only) */}
+                    {!weatherData.loading && (
+                      <div 
+                        className={`absolute right-5 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-20 text-primary transition-all duration-300 ease-out ${
+                          (!searchFocused && !searchHovered) ? 'opacity-90 scale-100' : 'opacity-0 scale-75'
+                        }`}
+                      >
+                        {renderWeatherIcon(weatherData.climate)}
+                      </div>
+                    )}
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
                       <AnimatePresence>
                         {searchQuery && (
@@ -2203,6 +2347,39 @@ export default function Home() {
         </AnimatePresence>,
         document.body
       )}
+
+      {/* Floating Location Selector FAB */}
+      <AnimatePresence>
+        {showFloatingLocation && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 30 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="fixed bottom-6 right-6 z-[90] pointer-events-auto"
+          >
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setLocationModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-3 rounded-full bg-surface-bright/85 backdrop-blur-md border border-[var(--border-light)] text-[12.5px] font-bold text-text-primary shadow-2xl hover:border-primary/45 transition-all select-none group cursor-pointer"
+            >
+              <div className="relative flex items-center justify-center">
+                <MapPin size={15} className="text-primary z-10 animate-pulse" />
+                <div className="absolute -inset-1.5 bg-primary/20 rounded-full blur-sm scale-75 group-hover:scale-110 transition-transform" />
+              </div>
+              <div className="flex flex-col items-start leading-tight pr-1">
+                <span className="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Delivering to</span>
+                <span className="text-[12px] font-bold text-text-primary capitalize group-hover:text-primary transition-colors">{activeLocality || activeCity || 'Select Location'}</span>
+              </div>
+              <ChevronUp size={12} className="text-text-muted group-hover:text-primary transition-colors" />
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+
     </div>
   );
 }

@@ -172,7 +172,7 @@ export default function Login() {
           Welcome back
         </h2>
         <p className="text-text-secondary mb-6 text-[15px]">
-          Log in to savor elite food delivery & social dining reels feed.
+          Log in to savor food delivery & social dining reels feed.
         </p>
 
         {/* Double-Tab Glassmorphic Mode Switcher */}

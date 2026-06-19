@@ -88,7 +88,7 @@ export default function Register() {
           Create your account
         </h2>
         <p className="text-text-secondary mb-8 text-[15px]">
-          Sign up to experience premium culinary dining.
+          Where food discovery meets cinematic storytelling. Sign up to begin.
         </p>
 
         {/* Error Notification */}
@@ -99,7 +99,7 @@ export default function Register() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4.5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {/* Username */}
           <div>
             <label className="block text-[13px] font-semibold text-text-secondary mb-2">
