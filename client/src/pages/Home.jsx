@@ -976,12 +976,23 @@ export default function Home() {
   });
 
   const [showFloatingLocation, setShowFloatingLocation] = useState(false);
+  const [isPillHovered, setIsPillHovered] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchHovered, setSearchHovered] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 120) {
+      const isPastThreshold = window.scrollY > 120;
+      
+      const docHeight = document.documentElement.scrollHeight;
+      const windowHeight = window.innerHeight;
+      const scrollPos = window.scrollY;
+      const distanceToBottom = docHeight - windowHeight - scrollPos;
+      
+      // Hide location selector when within 380px of page bottom to avoid overlapping footer
+      const isCloseToFooter = distanceToBottom < 380;
+      
+      if (isPastThreshold && !isCloseToFooter) {
         setShowFloatingLocation(true);
       } else {
         setShowFloatingLocation(false);
@@ -994,16 +1005,16 @@ export default function Home() {
   const getSearchPlaceholder = () => {
     switch (weatherData.climate) {
       case 'sunny':
-        return "Search cold brews, fresh salads, sashimi...";
+        return "Search Mango Lassi, Kulfi, Dahi Puri...";
       case 'rainy':
       case 'stormy':
-        return "Search spicy ramen, hotpots, warm curries...";
+        return "Search Masala Chai, Samosas, Pakoras...";
       case 'snowy':
       case 'chilly':
-        return "Search truffle risottos, baked soufflés, hot soups...";
+        return "Search Gajar Halwa, hot Jalebi, Nihari...";
       case 'starry':
       default:
-        return "Search fine wine, gourmet truffles, signature steaks...";
+        return "Search Dum Biryani, Butter Chicken...";
     }
   };
 
@@ -2469,23 +2480,41 @@ export default function Home() {
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             className="fixed bottom-6 right-6 z-[90] pointer-events-auto"
           >
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setLocationModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-3 rounded-full bg-surface-bright/85 backdrop-blur-md border border-[var(--border-light)] text-[12.5px] font-bold text-text-primary shadow-2xl hover:border-primary/45 transition-all select-none group cursor-pointer"
+            <div
+              onMouseEnter={() => setIsPillHovered(true)}
+              onMouseLeave={() => setIsPillHovered(false)}
+              className="relative w-[210px] h-12 flex items-center justify-end select-none"
             >
-              <div className="relative flex items-center justify-center">
-                <MapPin size={15} className="text-primary z-10 animate-pulse" />
-                <div className="absolute -inset-1.5 bg-primary/20 rounded-full blur-sm scale-75 group-hover:scale-110 transition-transform" />
-              </div>
-              <div className="flex flex-col items-start leading-tight pr-1">
-                <span className="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Delivering to</span>
-                <span className="text-[12px] font-bold text-text-primary capitalize group-hover:text-primary transition-colors">{activeLocality || activeCity || 'Select Location'}</span>
-              </div>
-              <ChevronUp size={12} className="text-text-muted group-hover:text-primary transition-colors" />
-            </motion.button>
+              <button
+                type="button"
+                onClick={() => setLocationModalOpen(true)}
+                className="relative flex items-center justify-start rounded-full bg-surface-bright/85 backdrop-blur-md border border-[var(--border-light)] text-[12.5px] font-bold text-text-primary shadow-2xl hover:border-primary/45 select-none group cursor-pointer h-12 pl-[16.5px] transition-[width,transform,background-color,border-color] duration-220 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.02] hover:-translate-y-[1px] active:scale-[0.98] will-change-[width,transform]"
+                style={{
+                  width: isPillHovered ? '200px' : '48px',
+                }}
+              >
+                <div className="relative flex items-center justify-center flex-shrink-0">
+                  <MapPin size={15} className="text-primary z-10 animate-pulse" />
+                  <div className="absolute -inset-1.5 bg-primary/20 rounded-full blur-sm scale-75 group-hover:scale-110 transition-transform" />
+                </div>
+                
+                <div
+                  className="absolute left-11 flex items-center gap-1.5 whitespace-nowrap overflow-hidden pointer-events-none transition-opacity duration-220 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[opacity]"
+                  style={{
+                    width: '144px',
+                    opacity: isPillHovered ? 1 : 0,
+                  }}
+                >
+                  <div className="flex flex-col items-start leading-tight pr-1 flex-shrink-0">
+                    <span className="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Delivering to</span>
+                    <span className="text-[12px] font-bold text-text-primary capitalize group-hover:text-primary transition-colors max-w-[105px] truncate">
+                      {activeLocality || activeCity || 'Select Location'}
+                    </span>
+                  </div>
+                  <ChevronUp size={12} className="text-text-muted group-hover:text-primary transition-colors flex-shrink-0" />
+                </div>
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
