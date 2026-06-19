@@ -615,37 +615,63 @@ const WEATHER_POOLS = {
 
 // Dynamic, hardware-accelerated weather animations that overlay the search input
 function SearchBarWeatherAnimation({ climate, isVisible }) {
+  const { isDark } = useContext(ThemeContext);
   const animOpacityClass = isVisible ? 'opacity-100' : 'opacity-0';
 
   switch (climate) {
-    case 'sunny':
+    case 'sunny': {
+      const rayColor1 = isDark ? 'rgba(255, 200, 120, 0.08)' : 'rgba(245, 158, 11, 0.16)';
+      const rayColor2 = isDark ? 'rgba(255, 225, 160, 0.14)' : 'rgba(251, 191, 36, 0.24)';
+      const warmthColor = isDark ? 'rgba(255, 225, 170, 0.05)' : 'rgba(251, 191, 36, 0.10)';
+      const spot1Color = isDark ? 'rgba(255, 235, 180, 0.16)' : 'rgba(245, 158, 11, 0.22)';
+      const spot2Color = isDark ? 'rgba(255, 210, 130, 0.12)' : 'rgba(217, 119, 6, 0.18)';
+      
       return (
         <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
           <style>{`
             @keyframes sunRaySweep {
-              0% { transform: translateX(-30%) rotate(-8deg); opacity: 0.35; }
-              50% { opacity: 0.7; }
-              100% { transform: translateX(30%) rotate(8deg); opacity: 0.35; }
+              0% { transform: translateX(-35%) rotate(-6deg); opacity: 0.35; }
+              50% { opacity: 0.65; }
+              100% { transform: translateX(35%) rotate(6deg); opacity: 0.35; }
+            }
+            @keyframes sunSpotPulse1 {
+              0%, 100% { opacity: 0.1; transform: translate(0, 0) scale(0.9); }
+              50% { opacity: 0.35; transform: translate(15px, -4px) scale(1.1); }
+            }
+            @keyframes sunSpotPulse2 {
+              0%, 100% { opacity: 0.3; transform: translate(0, 0) scale(1.05); }
+              50% { opacity: 0.1; transform: translate(-10px, 3px) scale(0.9); }
             }
             .sunny-ray-glow {
               background: linear-gradient(135deg, 
-                transparent 30%, 
-                rgba(255, 195, 110, 0.08) 45%, 
-                rgba(255, 220, 150, 0.12) 50%, 
-                rgba(255, 195, 110, 0.08) 55%, 
-                transparent 70%
+                transparent 35%, 
+                ${rayColor1} 46%, 
+                ${rayColor2} 50%, 
+                ${rayColor1} 54%, 
+                transparent 65%
               );
-              animation: sunRaySweep 12s ease-in-out infinite alternate;
+              animation: sunRaySweep 14s ease-in-out infinite alternate;
               filter: blur(8px);
             }
             .sunny-warmth {
-              background: radial-gradient(circle at 20% 30%, rgba(255, 230, 180, 0.04) 0%, transparent 60%);
+              background: radial-gradient(circle at 15% 30%, ${warmthColor} 0%, transparent 65%);
+            }
+            .sunny-spot-1 {
+              background: radial-gradient(circle, ${spot1Color} 0%, transparent 70%);
+              animation: sunSpotPulse1 8s ease-in-out infinite alternate;
+            }
+            .sunny-spot-2 {
+              background: radial-gradient(circle, ${spot2Color} 0%, transparent 70%);
+              animation: sunSpotPulse2 10s ease-in-out infinite alternate;
             }
           `}</style>
           <div className="absolute inset-0 sunny-warmth" />
           <div className="absolute -inset-x-[40%] -inset-y-12 sunny-ray-glow" />
+          <div className="absolute top-[10%] left-[25%] w-24 h-10 sunny-spot-1" />
+          <div className="absolute bottom-[10%] right-[30%] w-32 h-12 sunny-spot-2" />
         </div>
       );
+    }
     case 'rainy':
       return (
         <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
@@ -725,18 +751,19 @@ function SearchBarWeatherAnimation({ climate, isVisible }) {
           </svg>
         </div>
       );
-    case 'snowy':
+    case 'snowy': {
+      const snowflakeColor = isDark ? '#ffffff' : '#708090';
       return (
         <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
-          <svg className="w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-full h-full opacity-25" xmlns="http://www.w3.org/2000/svg">
             <style>{`
               @keyframes snowDrift {
                 0% { transform: translate(0, -10px); opacity: 0; }
-                50% { opacity: 0.7; }
+                50% { opacity: 0.75; }
                 100% { transform: translate(5px, 35px); opacity: 0; }
               }
               .snow-flake {
-                fill: #ffffff;
+                fill: ${snowflakeColor};
                 animation: snowDrift 3s linear infinite;
               }
             `}</style>
@@ -748,41 +775,62 @@ function SearchBarWeatherAnimation({ climate, isVisible }) {
           </svg>
         </div>
       );
+    }
     case 'cloudy':
-    default:
+    default: {
+      const svgOpacityClass = isDark ? 'opacity-35' : 'opacity-45';
+      const windLineColor = isDark ? 'rgba(255, 255, 255, 0.42)' : 'rgba(50, 65, 90, 0.48)';
+      const cloudColor = isDark ? 'rgba(255, 255, 255, 0.40)' : 'rgba(80, 95, 120, 0.46)';
+      const peakWindOpacity = isDark ? 0.35 : 0.50;
+      const peakCloudOpacity = isDark ? 0.40 : 0.55;
+
       return (
-        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] opacity-25 transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
-          <style>{`
-            @keyframes mistDriftLeft {
-              0% { transform: translateX(-15%); }
-              100% { transform: translateX(5%); }
-            }
-            @keyframes mistDriftRight {
-              0% { transform: translateX(5%); }
-              100% { transform: translateX(-15%); }
-            }
-            @keyframes cloudyPulse {
-              0%, 100% { opacity: 0.4; }
-              50% { opacity: 0.8; }
-            }
-            .mist-layer-1 {
-              background: linear-gradient(90deg, transparent, rgba(230, 240, 255, 0.05), transparent);
-              animation: mistDriftLeft 14s linear infinite alternate;
-            }
-            .mist-layer-2 {
-              background: linear-gradient(90deg, transparent, rgba(210, 220, 235, 0.06), transparent);
-              animation: mistDriftRight 18s linear infinite alternate;
-            }
-            .cloudy-ambient {
-              background: rgba(240, 245, 255, 0.015);
-              animation: cloudyPulse 8s ease-in-out infinite alternate;
-            }
-          `}</style>
-          <div className="absolute inset-0 cloudy-ambient" />
-          <div className="absolute inset-y-0 -left-[15%] w-[130%] mist-layer-1" />
-          <div className="absolute inset-y-0 -right-[15%] w-[130%] mist-layer-2" />
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+          <svg className={`w-full h-full ${svgOpacityClass}`} xmlns="http://www.w3.org/2000/svg">
+            <style>{`
+              @keyframes windLineBlow {
+                0% { transform: translateX(-60px); opacity: 0; }
+                10% { opacity: ${peakWindOpacity}; }
+                90% { opacity: ${peakWindOpacity}; }
+                100% { transform: translateX(540px); opacity: 0; }
+              }
+              @keyframes cloudDrift {
+                0% { transform: translateX(-40px); opacity: 0; }
+                10% { opacity: ${peakCloudOpacity}; }
+                90% { opacity: ${peakCloudOpacity}; }
+                100% { transform: translateX(540px); opacity: 0; }
+              }
+              .wind-line {
+                stroke: ${windLineColor};
+                stroke-width: 1;
+                stroke-dasharray: 6, 10;
+                animation: windLineBlow 6s linear infinite;
+              }
+              .vector-cloud {
+                fill: ${cloudColor};
+                animation: cloudDrift 20s linear infinite;
+              }
+            `}</style>
+            
+            {/* Wind blowing line vectors */}
+            <line x1="0" y1="35%" x2="35" y2="35%" className="wind-line" style={{ animationDelay: '0s', animationDuration: '5.5s' }} />
+            <line x1="0" y1="65%" x2="45" y2="65%" className="wind-line" style={{ animationDelay: '2.2s', animationDuration: '6s' }} />
+            <line x1="0" y1="50%" x2="30" y2="50%" className="wind-line" style={{ animationDelay: '1.1s', animationDuration: '7s' }} />
+
+            {/* Faint vector clouds drifting */}
+            <g className="vector-cloud" style={{ animationDelay: '0s', animationDuration: '22s' }}>
+              <path d="M 0,25 Q 5,16 12,18 Q 18,12 25,18 Q 30,16 34,22 C 37,23 37,27 34,28 Q 32,29 20,29 C 10,29 0,29 0,25 Z" transform="scale(0.8) translate(10, 5)" />
+            </g>
+            <g className="vector-cloud" style={{ animationDelay: '7s', animationDuration: '18s' }}>
+              <path d="M 0,25 Q 5,16 12,18 Q 18,12 25,18 Q 30,16 34,22 C 37,23 37,27 34,28 Q 32,29 20,29 C 10,29 0,29 0,25 Z" transform="scale(0.65) translate(100, 16)" />
+            </g>
+            <g className="vector-cloud" style={{ animationDelay: '13s', animationDuration: '26s' }}>
+              <path d="M 0,25 Q 5,16 12,18 Q 18,12 25,18 Q 30,16 34,22 C 37,23 37,27 34,28 Q 32,29 20,29 C 10,29 0,29 0,25 Z" transform="scale(0.7) translate(70, -2)" />
+            </g>
+          </svg>
         </div>
       );
+    }
   }
 }
 
