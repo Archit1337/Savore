@@ -158,32 +158,11 @@ export default function PaymentGateway() {
     setErrorMsg('');
 
     try {
-      // 1. Try to call the create-intent route just to demonstrate standard API integration
-      await api.post('/payment/create-intent', {
-        amount: total,
-        currency: 'usd',
-        orderId,
-      });
+      // 1. Call the create-intent route securely (database-driven lookup, IDOR protected)
+      await api.post('/payment/create-intent', { orderId });
 
-      // 2. Trigger Stripe webhook bypass event directly to backend.
-      // This replicates Stripe servers notifying our backend webhook of successful charges
-      const mockStripeEvent = {
-        id: `evt_mock_${Date.now()}`,
-        type: 'payment_intent.succeeded',
-        data: {
-          object: {
-            id: transactionId || `pi_mock_${Date.now()}`,
-            amount: Math.round(total * 100),
-            currency: 'usd',
-            metadata: {
-              orderId,
-            },
-          },
-        },
-      };
-
-      // Call our public webhook endpoint
-      const webhookRes = await api.post('/payment/webhook', mockStripeEvent);
+      // 2. Call our secure payment simulation endpoint instead of the public unauthenticated webhook
+      const webhookRes = await api.post('/payment/simulate-payment', { orderId });
       
       if (webhookRes.data && webhookRes.data.received) {
         setSuccess(true);
@@ -211,22 +190,8 @@ export default function PaymentGateway() {
     setErrorMsg('');
 
     try {
-      const mockWebhookEvent = {
-        id: `evt_mock_${Date.now()}`,
-        type: 'payment_intent.succeeded',
-        data: {
-          object: {
-            id: transactionId || `upi_mock_${Date.now()}`,
-            amount: Math.round(total * 100),
-            currency: 'usd',
-            metadata: {
-              orderId,
-            },
-          },
-        },
-      };
-
-      const webhookRes = await api.post('/payment/webhook', mockWebhookEvent);
+      // Call our secure payment simulation endpoint instead of the public unauthenticated webhook
+      const webhookRes = await api.post('/payment/simulate-payment', { orderId });
       
       if (webhookRes.data && webhookRes.data.received) {
         setSuccess(true);

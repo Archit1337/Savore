@@ -146,6 +146,25 @@ const placeOrder = async (req, res, next) => {
     const tax = parseFloat((subtotal * 0.1).toFixed(2)); // 10% tax
     const total = parseFloat((subtotal + deliveryFee + tax).toFixed(2));
 
+    // Time-Window Idempotency: Prevent duplicate submissions (e.g. COD double-submit)
+    const cutoffTime = new Date(Date.now() - 30 * 1000); // 30 seconds
+    const possibleDuplicate = await Order.findOne({
+      user: req.user.id,
+      restaurant: restaurant._id,
+      total: total,
+      createdAt: { $gte: cutoffTime }
+    }).session(session);
+
+    if (possibleDuplicate) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(200).json({
+        success: true,
+        data: possibleDuplicate,
+        message: 'Duplicate order detected within 30 seconds time window. Order already processed.',
+      });
+    }
+
     // Handle payment status based on method
     let paymentStatus = 'pending';
     if (isTestOrder) {
