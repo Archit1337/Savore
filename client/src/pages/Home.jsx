@@ -622,24 +622,34 @@ function SearchBarWeatherAnimation({ climate, isVisible }) {
       return (
         <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
           <style>{`
-            @keyframes sunRayDrift {
-              0% { transform: translateX(-40px) scale(0.9); opacity: 0.08; }
-              50% { opacity: 0.18; }
-              100% { transform: translateX(40px) scale(1.1); opacity: 0.08; }
+            @keyframes sunRaySweep {
+              0% { transform: translateX(-30%) rotate(-8deg); opacity: 0.35; }
+              50% { opacity: 0.7; }
+              100% { transform: translateX(30%) rotate(8deg); opacity: 0.35; }
             }
-            .sun-ray {
-              background: radial-gradient(circle, rgba(255,106,77,0.15) 0%, transparent 70%);
-              animation: sunRayDrift 8s ease-in-out infinite alternate;
+            .sunny-ray-glow {
+              background: linear-gradient(135deg, 
+                transparent 30%, 
+                rgba(255, 195, 110, 0.08) 45%, 
+                rgba(255, 220, 150, 0.12) 50%, 
+                rgba(255, 195, 110, 0.08) 55%, 
+                transparent 70%
+              );
+              animation: sunRaySweep 12s ease-in-out infinite alternate;
+              filter: blur(8px);
+            }
+            .sunny-warmth {
+              background: radial-gradient(circle at 20% 30%, rgba(255, 230, 180, 0.04) 0%, transparent 60%);
             }
           `}</style>
-          <div className="absolute top-1/2 -translate-y-1/2 left-[15%] w-32 h-12 sun-ray" />
-          <div className="absolute top-1/2 -translate-y-1/2 left-[55%] w-40 h-14 sun-ray" style={{ animationDelay: '-4s' }} />
+          <div className="absolute inset-0 sunny-warmth" />
+          <div className="absolute -inset-x-[40%] -inset-y-12 sunny-ray-glow" />
         </div>
       );
     case 'rainy':
       return (
         <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
-          <svg className="w-full h-full opacity-15" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-full h-full opacity-22" xmlns="http://www.w3.org/2000/svg">
             <style>{`
               @keyframes rainFall {
                 0% { transform: translate(0, -20px); opacity: 0; }
@@ -649,14 +659,14 @@ function SearchBarWeatherAnimation({ climate, isVisible }) {
               .rain-drop-line {
                 stroke: var(--primary);
                 stroke-width: 1;
-                animation: rainFall 1s linear infinite;
+                animation: rainFall 1.2s linear infinite;
               }
             `}</style>
-            <line x1="10%" y1="0" x2="10%" y2="12" className="rain-drop-line" style={{ animationDelay: '0s', animationDuration: '0.8s' }} />
-            <line x1="30%" y1="0" x2="30%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.2s', animationDuration: '0.9s' }} />
-            <line x1="50%" y1="0" x2="50%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.4s', animationDuration: '0.7s' }} />
-            <line x1="70%" y1="0" x2="70%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.1s', animationDuration: '0.85s' }} />
-            <line x1="90%" y1="0" x2="90%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.3s', animationDuration: '0.75s' }} />
+            <line x1="10%" y1="0" x2="10%" y2="12" className="rain-drop-line" style={{ animationDelay: '0s', animationDuration: '1s' }} />
+            <line x1="30%" y1="0" x2="30%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.2s', animationDuration: '1.1s' }} />
+            <line x1="50%" y1="0" x2="50%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.4s', animationDuration: '0.9s' }} />
+            <line x1="70%" y1="0" x2="70%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.1s', animationDuration: '1.05s' }} />
+            <line x1="90%" y1="0" x2="90%" y2="12" className="rain-drop-line" style={{ animationDelay: '0.3s', animationDuration: '0.95s' }} />
           </svg>
         </div>
       );
@@ -671,20 +681,20 @@ function SearchBarWeatherAnimation({ climate, isVisible }) {
             }
             @keyframes lightningFlash {
               0%, 94%, 96%, 98%, 100% { opacity: 0; }
-              95%, 97% { opacity: 1; }
+              95%, 97% { opacity: 0.6; }
             }
             .storm-drop-line {
               stroke: var(--primary);
-              stroke-width: 1.2;
-              animation: rainFallStorm 0.7s linear infinite;
+              stroke-width: 1.1;
+              animation: rainFallStorm 0.8s linear infinite;
             }
             .lightning-flash-overlay {
-              background: rgba(255, 90, 60, 0.06);
-              animation: lightningFlash 6s infinite;
+              background: rgba(255, 90, 60, 0.05);
+              animation: lightningFlash 7s infinite;
             }
           `}</style>
           <div className="absolute inset-0 lightning-flash-overlay w-full h-full rounded-[20px] pointer-events-none" />
-          <svg className="w-full h-full absolute inset-0 opacity-20" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-full h-full absolute inset-0 opacity-25" xmlns="http://www.w3.org/2000/svg">
             <line x1="15%" y1="0" x2="15%" y2="14" className="storm-drop-line" style={{ animationDelay: '0s' }} />
             <line x1="35%" y1="0" x2="35%" y2="14" className="storm-drop-line" style={{ animationDelay: '0.15s' }} />
             <line x1="55%" y1="0" x2="55%" y2="14" className="storm-drop-line" style={{ animationDelay: '0.3s' }} />
@@ -696,63 +706,81 @@ function SearchBarWeatherAnimation({ climate, isVisible }) {
     case 'starry':
       return (
         <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
-          <svg className="w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-full h-full opacity-25" xmlns="http://www.w3.org/2000/svg">
             <style>{`
               @keyframes starTwinkle {
-                0%, 100% { opacity: 0.15; transform: scale(0.8); }
-                50% { opacity: 0.95; transform: scale(1.2); }
+                0%, 100% { opacity: 0.1; transform: scale(0.8); }
+                50% { opacity: 0.75; transform: scale(1.1); }
               }
               .star-point {
                 fill: #ffd166;
-                animation: starTwinkle 2.5s infinite ease-in-out;
+                animation: starTwinkle 3s infinite ease-in-out;
                 transform-origin: center;
               }
             `}</style>
             <circle cx="20%" cy="30%" r="1" className="star-point" style={{ animationDelay: '0s' }} />
             <circle cx="45%" cy="70%" r="1.2" className="star-point" style={{ animationDelay: '0.5s' }} />
-            <circle cx="65%" cy="40%" r="1.1" className="star-point" style={{ animationDelay: '1.2s' }} />
-            <circle cx="85%" cy="60%" r="1.4" className="star-point" style={{ animationDelay: '0.8s' }} />
+            <circle cx="65%" cy="40%" r="1" className="star-point" style={{ animationDelay: '1.4s' }} />
+            <circle cx="85%" cy="60%" r="1.3" className="star-point" style={{ animationDelay: '0.9s' }} />
           </svg>
         </div>
       );
     case 'snowy':
       return (
         <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
-          <svg className="w-full h-full opacity-15" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
             <style>{`
               @keyframes snowDrift {
                 0% { transform: translate(0, -10px); opacity: 0; }
-                50% { opacity: 0.8; }
+                50% { opacity: 0.7; }
                 100% { transform: translate(5px, 35px); opacity: 0; }
               }
               .snow-flake {
                 fill: #ffffff;
-                animation: snowDrift 2.5s linear infinite;
+                animation: snowDrift 3s linear infinite;
               }
             `}</style>
-            <circle cx="15%" cy="0" r="1.5" className="snow-flake" style={{ animationDelay: '0s', animationDuration: '2s' }} />
-            <circle cx="35%" cy="0" r="2" className="snow-flake" style={{ animationDelay: '0.6s', animationDuration: '2.4s' }} />
-            <circle cx="55%" cy="0" r="1.5" className="snow-flake" style={{ animationDelay: '1.2s', animationDuration: '2.1s' }} />
-            <circle cx="75%" cy="0" r="2.5" className="snow-flake" style={{ animationDelay: '0.3s', animationDuration: '2.6s' }} />
-            <circle cx="95%" cy="0" r="1.5" className="snow-flake" style={{ animationDelay: '0.9s', animationDuration: '2.2s' }} />
+            <circle cx="15%" cy="0" r="1.2" className="snow-flake" style={{ animationDelay: '0s', animationDuration: '2.5s' }} />
+            <circle cx="35%" cy="0" r="1.6" className="snow-flake" style={{ animationDelay: '0.8s', animationDuration: '3s' }} />
+            <circle cx="55%" cy="0" r="1.2" className="snow-flake" style={{ animationDelay: '1.5s', animationDuration: '2.7s' }} />
+            <circle cx="75%" cy="0" r="2.2" className="snow-flake" style={{ animationDelay: '0.4s', animationDuration: '3.2s' }} />
+            <circle cx="95%" cy="0" r="1.5" className="snow-flake" style={{ animationDelay: '1s', animationDuration: '2.8s' }} />
           </svg>
         </div>
       );
     case 'cloudy':
     default:
       return (
-        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] opacity-10 transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
+        <div className={`absolute inset-0 pointer-events-none overflow-hidden rounded-[20px] opacity-25 transition-opacity duration-500 ease-out z-20 ${animOpacityClass}`}>
           <style>{`
-            @keyframes mistDrift {
-              0% { transform: translateX(-8%); }
-              100% { transform: translateX(8%); }
+            @keyframes mistDriftLeft {
+              0% { transform: translateX(-15%); }
+              100% { transform: translateX(5%); }
             }
-            .mist-layer {
-              background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-              animation: mistDrift 10s linear infinite alternate;
+            @keyframes mistDriftRight {
+              0% { transform: translateX(5%); }
+              100% { transform: translateX(-15%); }
+            }
+            @keyframes cloudyPulse {
+              0%, 100% { opacity: 0.4; }
+              50% { opacity: 0.8; }
+            }
+            .mist-layer-1 {
+              background: linear-gradient(90deg, transparent, rgba(230, 240, 255, 0.05), transparent);
+              animation: mistDriftLeft 14s linear infinite alternate;
+            }
+            .mist-layer-2 {
+              background: linear-gradient(90deg, transparent, rgba(210, 220, 235, 0.06), transparent);
+              animation: mistDriftRight 18s linear infinite alternate;
+            }
+            .cloudy-ambient {
+              background: rgba(240, 245, 255, 0.015);
+              animation: cloudyPulse 8s ease-in-out infinite alternate;
             }
           `}</style>
-          <div className="absolute inset-0 mist-layer w-[116%] h-full" />
+          <div className="absolute inset-0 cloudy-ambient" />
+          <div className="absolute inset-y-0 -left-[15%] w-[130%] mist-layer-1" />
+          <div className="absolute inset-y-0 -right-[15%] w-[130%] mist-layer-2" />
         </div>
       );
   }
@@ -1751,12 +1779,47 @@ export default function Home() {
                     <input 
                       type="text" 
                       className="glass-input !pl-[50px] !pr-[48px] rounded-[20px] h-[56px] text-[15px] relative z-10 bg-transparent" 
-                      placeholder={getSearchPlaceholder()}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onFocus={() => setSearchFocused(true)}
                       onBlur={() => setSearchFocused(false)}
                     />
+                    
+                    {/* Premium Animated Placeholder Overlay */}
+                    {!searchQuery && (
+                      <div className="absolute left-[50px] right-[48px] top-1/2 -translate-y-1/2 overflow-hidden pointer-events-none select-none z-10 h-6 flex items-center">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={searchHovered || searchFocused ? 'weather' : 'food'}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 0.75, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            transition={{ duration: 0.20, ease: "easeInOut" }}
+                            className="text-[var(--text-secondary)] text-[14px] whitespace-nowrap w-full"
+                          >
+                            {!(searchHovered || searchFocused) ? (
+                              <motion.span
+                                animate={{ x: [0, -50, 0] }}
+                                transition={{ 
+                                  repeat: Infinity, 
+                                  repeatType: "reverse", 
+                                  duration: 7, 
+                                  ease: "easeInOut",
+                                  delay: 1.5
+                                }}
+                                className="inline-block"
+                              >
+                                {getSearchPlaceholder()}
+                              </motion.span>
+                            ) : (
+                              <span className="text-primary/95 font-medium tracking-wide">
+                                {`Today: ${weatherData.climate ? weatherData.climate.charAt(0).toUpperCase() + weatherData.climate.slice(1) : 'Sunny'} • ${weatherData.temp || '74°F'} — Search your craving...`}
+                              </span>
+                            )}
+                          </motion.div>
+                        </AnimatePresence>
+                      </div>
+                    )}
                     
                     {/* Subtle Search Bar Weather Animation Layer */}
                     {!weatherData.loading && (
