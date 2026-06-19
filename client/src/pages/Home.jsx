@@ -2499,7 +2499,7 @@ export default function Home() {
                 </div>
                 
                 <div
-                  className="absolute left-11 flex items-center gap-1.5 whitespace-nowrap overflow-hidden pointer-events-none transition-opacity duration-220 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[opacity]"
+                  className="absolute left-11 flex items-center justify-between whitespace-nowrap overflow-hidden pointer-events-none transition-opacity duration-220 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[opacity]"
                   style={{
                     width: '144px',
                     opacity: isPillHovered ? 1 : 0,
@@ -2507,7 +2507,7 @@ export default function Home() {
                 >
                   <div className="flex flex-col items-start leading-tight pr-1 flex-shrink-0">
                     <span className="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Delivering to</span>
-                    <span className="text-[12px] font-bold text-text-primary capitalize group-hover:text-primary transition-colors max-w-[105px] truncate">
+                    <span className="text-[12px] font-bold text-text-primary capitalize group-hover:text-primary transition-colors max-w-[120px] truncate">
                       {activeLocality || activeCity || 'Select Location'}
                     </span>
                   </div>
