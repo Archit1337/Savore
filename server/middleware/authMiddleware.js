@@ -24,6 +24,11 @@ const protect = async (req, res, next) => {
         return next(new Error('Authorized user not found in database.'));
       }
 
+      if (req.user.isSuspended) {
+        res.status(403);
+        return next(new Error('Access Forbidden: Your account has been suspended by administration.'));
+      }
+
       next();
     } catch (error) {
       console.error(error);

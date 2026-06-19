@@ -348,6 +348,35 @@ const trackReelOrderClick = async (req, res, next) => {
   }
 };
 
+// @desc    Track generic engagements / clicks for a vertical video reel
+// @route   POST /api/reels/:id/click
+// @access  Public
+const trackReelClick = async (req, res, next) => {
+  try {
+    if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(404);
+      return next(new Error('Reel not found'));
+    }
+    const reel = await Reel.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { clicks: 1 } },
+      { new: true }
+    );
+
+    if (!reel) {
+      res.status(404);
+      return next(new Error('Reel not found'));
+    }
+
+    res.json({
+      success: true,
+      clicks: reel.clicks,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get all reels posted by owner's restaurant
 // @route   GET /api/reels/owner
 // @access  Private (Restaurant Owner)
@@ -481,30 +510,55 @@ const trackReelImpression = async (req, res, next) => {
   }
 };
 
-// @desc    Track clicks on a vertical video reel
-// @route   POST /api/reels/:id/click
-// @access  Public
-const trackReelClick = async (req, res, next) => {
+// @desc    Report/Flag a vertical video reel for content moderation
+// @route   POST /api/reels/:id/report
+// @access  Private (Regular Customer Users only)
+const reportReel = async (req, res, next) => {
   try {
+    // Only allow customer users to report, block restaurant owners and admins
+    if (req.user.role !== 'customer') {
+      res.status(403);
+      return next(new Error('Access Denied: Only customers can report video reels.'));
+    }
+
     if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
       res.status(404);
       return next(new Error('Reel not found'));
     }
-    const reel = await Reel.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { clicks: 1, orderNowClicks: 1 } },
-      { new: true }
-    );
 
+    const reel = await Reel.findById(req.params.id);
     if (!reel) {
       res.status(404);
       return next(new Error('Reel not found'));
     }
 
+    const userId = req.user.id;
+    const { reason, description } = req.body;
+
+    // Use atomic update to prevent duplicate report spamming and race conditions
+    const updatedReel = await Reel.findOneAndUpdate(
+      { _id: req.params.id, 'reports.user': { $ne: userId } },
+      { 
+        $push: { 
+          reports: { 
+            user: userId, 
+            reason: reason || 'Other', 
+            description: description || '' 
+          } 
+        },
+        $set: { isFlagged: true }
+      },
+      { new: true }
+    );
+
+    if (!updatedReel) {
+      res.status(400);
+      return next(new Error('You have already submitted a report for this reel.'));
+    }
+
     res.json({
       success: true,
-      clicks: reel.clicks,
-      orderNowClicks: reel.orderNowClicks,
+      message: 'Reel reported successfully. Thank you for keeping Savoré safe!',
     });
   } catch (error) {
     next(error);
@@ -523,4 +577,5 @@ module.exports = {
   getOwnerReels,
   updateReel,
   deleteReel,
+  reportReel,
 };

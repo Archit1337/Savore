@@ -99,6 +99,10 @@ const restaurantSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    isSuspended: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -106,5 +110,6 @@ const restaurantSchema = new mongoose.Schema(
 );
 
 restaurantSchema.index({ coordinates: '2dsphere' });
+restaurantSchema.index({ isSuspended: 1, city: 1 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);

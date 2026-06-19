@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, Users, Play, ShoppingBag, Plus, 
   Upload, Film, Settings, RefreshCw, CheckCircle, 
-  IndianRupee, Check, X, ShieldAlert, AlertCircle, 
+  IndianRupee, Check, X, ShieldAlert, AlertCircle, AlertTriangle, 
   FileText, Trash2, Edit3, Eye, Heart, MessageSquare, 
   Clock, Utensils, ToggleLeft, ToggleRight, DollarSign, 
   Calendar, BarChart3, ChevronRight, Layers, Award, Sparkles, Image, Lock
@@ -1746,6 +1746,13 @@ export default function MerchantDashboard() {
                                 </div>
                               </div>
 
+                              {reel.isFlagged && (
+                                <div className="absolute top-3 left-3 bg-red-500/90 text-white flex items-center gap-1 rounded-lg text-[9px] px-2 py-0.5 font-extrabold uppercase tracking-[0.05em] backdrop-blur-sm z-20 border border-red-400/20 shadow-lg shadow-red-500/20">
+                                  <AlertTriangle size={10} />
+                                  <span>Flagged</span>
+                                </div>
+                              )}
+
                               <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm z-20">
                                 Views: {reel.views || 0}
                               </span>
@@ -1762,6 +1769,23 @@ export default function MerchantDashboard() {
                                     {reel.tags.map(tag => (
                                       <span key={tag} className="text-[10px] text-primary font-bold">#{tag}</span>
                                     ))}
+                                  </div>
+                                )}
+
+                                {reel.isFlagged && reel.reports && reel.reports.length > 0 && (
+                                  <div className="mt-3.5 p-3 rounded-xl bg-red-500/5 dark:bg-red-500/10 border border-red-500/10 text-xs">
+                                    <div className="flex items-center gap-1.5 font-bold text-red-500 mb-1">
+                                      <AlertTriangle size={12} className="shrink-0" />
+                                      <span>Flagged by Community ({reel.reports.length})</span>
+                                    </div>
+                                    <div className="text-[11px] text-text-secondary leading-relaxed">
+                                      <span className="font-semibold">Reason:</span> {reel.reports[reel.reports.length - 1].reason}
+                                      {reel.reports[reel.reports.length - 1].description && (
+                                        <p className="italic mt-1.5 text-text-muted bg-neutral-100 dark:bg-neutral-900/60 p-2 rounded-lg border border-neutral-200/50 dark:border-neutral-800/50 leading-normal">
+                                          "{reel.reports[reel.reports.length - 1].description}"
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>

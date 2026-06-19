@@ -391,6 +391,32 @@ export const ReelsProvider = ({ children }) => {
     }
   };
 
+  const reportReel = async (reelId, reason = 'Other', description = '') => {
+    const cleanId = getBaseReelId(reelId);
+    try {
+      const res = await api.post(`/reels/${cleanId}/report`, { reason, description });
+      if (res.data && res.data.success) {
+        rawSetReelsState((prev) =>
+          prev.map((r) => {
+            if (getBaseReelId(r._id) === cleanId) {
+              const currentReports = r.reports || [];
+              return {
+                ...r,
+                isFlagged: true,
+                reports: [...currentReports, { user: 'current-user-temp-id', reason, description, reportedAt: new Date().toISOString() }]
+              };
+            }
+            return r;
+          })
+        );
+        return res.data;
+      }
+    } catch (err) {
+      console.error('Failed to submit reel report:', err.message);
+      throw err;
+    }
+  };
+
   const value = {
     reels,
     feeds,
@@ -405,6 +431,7 @@ export const ReelsProvider = ({ children }) => {
     commentOnReel,
     logReelView,
     logReelOrderClick,
+    reportReel,
     setReels,
   };
 

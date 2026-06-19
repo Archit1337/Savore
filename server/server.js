@@ -17,6 +17,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const reelRoutes = require('./routes/reelRoutes');
 const chefRoutes = require('./routes/chefRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 
 // Initialize DB Connection
@@ -100,6 +101,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/reels', reelRoutes);
 app.use('/api/chef', chefRoutes);
+app.use('/api/admin', adminRoutes);
 
 
 // Global express error handler middleware (JSON conforming)

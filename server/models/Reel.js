@@ -86,6 +86,32 @@ const reelSchema = new mongoose.Schema(
       type: Number,
       default: 0, // Analytical metric for tracking checkout conversions
     },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+    },
+    reports: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        reason: {
+          type: String,
+          required: [true, 'Please specify a reason for reporting'],
+          default: 'Other',
+        },
+        description: {
+          type: String,
+          default: '',
+        },
+        reportedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -104,5 +130,6 @@ reelSchema.virtual('trendingScore').get(function () {
 // Compound indexes for high-speed, scalable regional discovery queries
 reelSchema.index({ city: 1, state: 1, region: 1 });
 reelSchema.index({ cuisineType: 1, city: 1 });
+reelSchema.index({ isFlagged: 1 });
 
 module.exports = mongoose.model('Reel', reelSchema);

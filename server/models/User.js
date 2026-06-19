@@ -110,11 +110,17 @@ const userSchema = new mongoose.Schema(
       default: [],
       select: false,
     },
+    isSuspended: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+userSchema.index({ isSuspended: 1, role: 1 });
 
 // Encrypt password before saving
 userSchema.pre('save', async function (next) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageSquare, Volume2, VolumeX, Send, ArrowLeft, ArrowUp, ArrowDown, ShoppingBag, AlertTriangle, RefreshCw, Check, Sparkles, Search, X } from 'lucide-react';
+import { Heart, MessageSquare, Volume2, VolumeX, Send, ArrowLeft, ArrowUp, ArrowDown, ShoppingBag, AlertTriangle, RefreshCw, Check, Sparkles, Search, X, ChevronDown, ShieldAlert, EyeOff, UserX, Copyright, HelpCircle } from 'lucide-react';
 import { ReelsContext } from '../context/ReelsContext';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
@@ -30,7 +30,8 @@ export default function ReelsFeed() {
     toggleLikeReel, 
     commentOnReel, 
     logReelView, 
-    logReelOrderClick 
+    logReelOrderClick,
+    reportReel
   } = useContext(ReelsContext);
   const { addToCart } = useContext(CartContext);
   const { user, isAuthenticated } = useContext(AuthContext);
@@ -75,8 +76,22 @@ export default function ReelsFeed() {
       setIsMobile(window.innerWidth <= 768);
     };
     window.addEventListener('resize', handleResize, { passive: true });
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('Spam');
+  const [isReasonDropdownOpen, setIsReasonDropdownOpen] = useState(false);
+  const [reportDescription, setReportDescription] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportedReelsList, setReportedReelsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savore_reported_reels');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   
   const failedVideoIds = useRef(new Set());
   const videoRefs = useRef([]);
@@ -107,6 +122,55 @@ export default function ReelsFeed() {
   const activeDishObj = activeReel?.featuredDish && typeof activeReel.featuredDish === 'object' && activeReel?.restaurantDetails
     ? { dish: activeReel.featuredDish, restaurant: activeReel.restaurantDetails }
     : linkedDishes[activeReel?._id] || null;
+
+  // Calculate if the active video has already been flagged (by current customer user session)
+  const isReelReported = activeReel && (
+    reportedReelsList.includes(activeReel._id) ||
+    (isAuthenticated && (
+      (user?._id && activeReel.reports?.some(r => r && r.user && r.user.toString() === user._id.toString()))
+    ))
+  );
+
+  const handleReportSubmit = async () => {
+    if (!activeReel) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    // Safety role checks: Owners and admins cannot report reels
+    if (user && user.role !== 'customer') {
+      showToast("Access Denied: Administrative accounts cannot report content.");
+      setShowReportModal(false);
+      setIsReasonDropdownOpen(false);
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      await reportReel(activeReel._id, reportReason, reportDescription);
+      
+      // Update local storage and state to prevent spamming
+      const updatedList = [...reportedReelsList, activeReel._id];
+      setReportedReelsList(updatedList);
+      localStorage.setItem('savore_reported_reels', JSON.stringify(updatedList));
+      
+      showToast("Report submitted. Thank you!");
+      if (chefMood && chefMood.celebrate) {
+        chefMood.celebrate('reel_flagged');
+      }
+
+      // Reset fields
+      setReportReason('Spam');
+      setReportDescription('');
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || "Failed to submit report.");
+    } finally {
+      setIsSubmittingReport(false);
+      setShowReportModal(false);
+      setIsReasonDropdownOpen(false);
+    }
+  };
 
   // Auto-scroll to selected initial reel from location state
   useEffect(() => {
@@ -384,6 +448,16 @@ export default function ReelsFeed() {
       </div>
     );
   }
+  const reportReasonsList = [
+    { value: 'Spam', label: 'Spam or Scam', icon: ShieldAlert, desc: 'Unwanted promotional posts or fraudulent offers' },
+    { value: 'Inappropriate', label: 'Inappropriate Content', icon: EyeOff, desc: 'Sensitive, explicit, or offensive cooking streams' },
+    { value: 'Harassment', label: 'Harassment or Hate Speech', icon: UserX, desc: 'Hostile interactions or offensive commentary' },
+    { value: 'Copyright', label: 'Intellectual Property Violation', icon: Copyright, desc: 'Stolen recipe clips or unlicensed media use' },
+    { value: 'Other', label: 'Other Reason', icon: HelpCircle, desc: 'Any other violation not listed above' }
+  ];
+
+  const selectedReasonObj = reportReasonsList.find(r => r.value === reportReason) || reportReasonsList[0];
+  const SelectedIcon = selectedReasonObj.icon;
 
   const isLiked = activeReel?.likes?.includes(user?._id);
 
@@ -883,6 +957,37 @@ export default function ReelsFeed() {
                     {activeReel.comments?.length || 0}
                   </span>
                 </div>
+     
+                {/* Report Content Trigger (Only visible to customers or guests) */}
+                {(!user || user.role === 'customer') && (
+                  <div className="text-center flex flex-col items-center">
+                    <motion.button 
+                      whileHover={isReelReported ? {} : { scale: 1.08 }}
+                      whileTap={isReelReported ? {} : { scale: 0.92 }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (isReelReported) return;
+                        if (!isAuthenticated) {
+                          navigate('/login');
+                          return;
+                        }
+                        setShowReportModal(true); 
+                      }}
+                      className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all duration-300 border cursor-pointer ${
+                        isReelReported 
+                          ? 'bg-amber-500/25 border-amber-500/40 text-amber-500 cursor-not-allowed'
+                          : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
+                      }`}
+                      title={isReelReported ? "You reported this reel" : "Report inappropriate content"}
+                      disabled={isReelReported}
+                    >
+                      <AlertTriangle size={16} className={isReelReported ? "text-amber-500 animate-pulse" : ""} />
+                    </motion.button>
+                    <span className="text-[9.5px] font-semibold mt-1 text-white/80">
+                      {isReelReported ? "Reported" : "Report"}
+                    </span>
+                  </div>
+                )}
 
                 {/* Scroll/Swipe indicators */}
                 <div 
@@ -1053,6 +1158,169 @@ export default function ReelsFeed() {
                   <Send size={14} />
                 </button>
               </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 🚨 PREMIUM GLASSMORPHIC CONTENT REPORT MODAL */}
+        <AnimatePresence>
+          {showReportModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[50] flex items-center justify-center p-4 bg-black/65 backdrop-blur-[12px] pointer-events-auto"
+            >
+              <motion.div
+                initial={{ scale: 0.94, opacity: 0, y: 15 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.94, opacity: 0, y: 15 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+                className="w-full max-w-[380px] glass-panel p-6 rounded-[28px] text-center text-text-primary border border-white/10 relative bg-white/70 dark:bg-[#0c0c12]/80 shadow-[0_20px_50px_rgba(0,0,0,0.3)]"
+              >
+                <div className="noise-overlay rounded-[28px]" />
+                
+                {/* Warning Shield Header */}
+                <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle size={24} />
+                </div>
+
+                <h3 className="text-base font-extrabold mb-2 text-text-primary tracking-tight">
+                  Report Culinary Stream?
+                </h3>
+                
+                <p className="text-xs text-text-secondary leading-relaxed mb-4 px-1">
+                  Help us keep the Savoré community safe and exquisite. Reporting this reel sends it directly to our moderation queue for review.
+                </p>
+
+                {/* Dropdown for Reason */}
+                <div className="text-left mb-4 relative">
+                  <label className="block text-[10px] font-bold text-text-secondary mb-1.5 uppercase tracking-wider">
+                    Reason for Reporting
+                  </label>
+                  
+                  {/* Premium Dropdown Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => setIsReasonDropdownOpen(!isReasonDropdownOpen)}
+                    className="w-full flex items-center justify-between bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-primary/40 dark:hover:border-primary/45 rounded-xl px-3.5 py-3 text-xs text-text-primary transition-all duration-200 outline-none focus:outline-none focus:border-primary/50 cursor-pointer group active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-lg bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <SelectedIcon size={14} className="stroke-[2.5]" />
+                      </div>
+                      <span className="font-bold tracking-tight text-left">{selectedReasonObj.label}</span>
+                    </div>
+                    <ChevronDown 
+                      size={14} 
+                      className={`text-text-secondary group-hover:text-text-primary transition-transform duration-300 ${isReasonDropdownOpen ? 'rotate-180' : ''}`} 
+                    />
+                  </button>
+
+                  {/* Dropdown List Popover */}
+                  <AnimatePresence>
+                    {isReasonDropdownOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-30 cursor-default" 
+                          onClick={() => setIsReasonDropdownOpen(false)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                          transition={{ duration: 0.15, ease: 'easeOut' }}
+                          className="absolute left-0 right-0 mt-1.5 z-40 bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.25)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.5)] max-h-[260px] overflow-y-auto py-1.5 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800"
+                        >
+                          {reportReasonsList.map((reason) => {
+                            const ReasonIcon = reason.icon;
+                            const isSelected = reason.value === reportReason;
+                            return (
+                              <button
+                                key={reason.value}
+                                type="button"
+                                onClick={() => {
+                                  setReportReason(reason.value);
+                                  setIsReasonDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-start gap-3 px-3.5 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left cursor-pointer ${
+                                  isSelected ? 'bg-primary/5 dark:bg-primary/10' : ''
+                                }`}
+                              >
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${
+                                  isSelected 
+                                    ? 'bg-primary/20 text-primary' 
+                                    : 'bg-neutral-100 dark:bg-neutral-800 text-text-secondary'
+                                }`}>
+                                  <ReasonIcon size={14} className="stroke-[2.5]" />
+                                </div>
+                                <div className="flex-1 min-w-0 pr-2">
+                                  <div className={`text-xs font-bold ${
+                                    isSelected ? 'text-primary' : 'text-text-primary'
+                                  }`}>
+                                    {reason.label}
+                                  </div>
+                                  <div className="text-[10px] text-text-muted mt-0.5 leading-normal">
+                                    {reason.desc}
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <div className="self-center text-primary flex items-center justify-center pr-1">
+                                    <Check size={14} className="stroke-[3]" />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Description Input */}
+                <div className="text-left mb-6">
+                  <label className="block text-[10px] font-bold text-text-secondary mb-1.5 uppercase tracking-wider flex justify-between">
+                    <span>Description Details</span>
+                    <span className="text-[9px] text-text-muted font-normal">{reportDescription.length}/300</span>
+                  </label>
+                  <textarea
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                    placeholder="Provide context on why this content is being flagged..."
+                    rows={3}
+                    maxLength={300}
+                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-text-primary focus:outline-none focus:border-primary/50 transition-all resize-none placeholder-text-muted"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowReportModal(false);
+                      setIsReasonDropdownOpen(false);
+                    }}
+                    disabled={isSubmittingReport}
+                    className="flex-1 py-3 px-4 rounded-xl text-xs font-bold border border-neutral-200 dark:border-neutral-800 bg-transparent text-text-secondary hover:text-text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReportSubmit}
+                    disabled={isSubmittingReport}
+                    className="flex-1 py-3 px-4 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 disabled:bg-red-400 disabled:cursor-not-allowed text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 border-none shadow-md shadow-red-500/10"
+                  >
+                    {isSubmittingReport ? (
+                      <>
+                        <RefreshCw size={12} className="animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <span>File Report</span>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

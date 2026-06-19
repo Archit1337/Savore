@@ -12,6 +12,7 @@ const {
   getOwnerReels,
   updateReel,
   deleteReel,
+  reportReel,
 } = require('../controllers/reelController');
 const { protect, requireRole } = require('../middleware/authMiddleware');
 const { uploadVideo } = require('../middleware/uploadMiddleware');
@@ -36,6 +37,9 @@ router.post('/:id/like', protect, toggleLikeReel);
 
 // Add comment to reel
 router.post('/:id/comments', protect, addCommentToReel);
+
+// Report/Flag reel for content moderation
+router.post('/:id/report', protect, reportReel);
 
 // Track analytic clicks and views (Public)
 router.post('/:id/view', trackReelView);

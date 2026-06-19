@@ -10,6 +10,7 @@ const OTP = require('../models/OTP');
 const { sendOTPEmail } = require('../utils/emailService');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { logAdminActivity } = require('./adminController');
 
 
 const generateAccessToken = (id) => {
@@ -92,6 +93,12 @@ const login = async (req, res, next) => {
       console.error(`[AUTH DIAGNOSTICS] LOGIN FAILURE: No user found in MongoDB with email: ${email}`);
       res.status(401);
       return next(new Error('Invalid email or password'));
+    }
+
+    if (user.isSuspended) {
+      console.error(`[AUTH DIAGNOSTICS] LOGIN FAILURE: Suspended account login attempt: ${email}`);
+      res.status(403);
+      return next(new Error('Your account has been suspended by administration. Please contact support.'));
     }
 
     console.log(`[AUTH DIAGNOSTICS] User lookup successful. Role: ${user.role}`);
@@ -925,6 +932,13 @@ const approvePartnershipRequest = async (req, res, next) => {
     if (adminNotes !== undefined) request.adminNotes = adminNotes;
     await request.save();
 
+    await logAdminActivity(
+      req.user.id,
+      'APPROVE_PARTNERSHIP',
+      `Approved partnership application for "${request.restaurantName}" (owner: ${applicant.username})`,
+      req.ip
+    );
+
     res.json({
       success: true,
       data: request,
@@ -958,6 +972,13 @@ const rejectPartnershipRequest = async (req, res, next) => {
     request.status = 'rejected';
     request.adminNotes = adminNotes || 'Application does not meet our active operational requirements.';
     await request.save();
+
+    await logAdminActivity(
+      req.user.id,
+      'REJECT_PARTNERSHIP',
+      `Rejected partnership application for "${request.restaurantName}"`,
+      req.ip
+    );
 
     res.json({
       success: true,
