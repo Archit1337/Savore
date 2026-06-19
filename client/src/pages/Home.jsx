@@ -1005,16 +1005,16 @@ export default function Home() {
   const getSearchPlaceholder = () => {
     switch (weatherData.climate) {
       case 'sunny':
-        return "Search Mango Lassi, Kulfi, Dahi Puri...";
+        return "Search Gelato, Mango Lassi, Sushi...";
       case 'rainy':
       case 'stormy':
-        return "Search Masala Chai, Samosas, Pakoras...";
+        return "Search Ramen, Masala Chai, Samosas...";
       case 'snowy':
       case 'chilly':
-        return "Search Gajar Halwa, hot Jalebi, Nihari...";
+        return "Search Hot Pot, Gajar Halwa, Jalebi...";
       case 'starry':
       default:
-        return "Search Dum Biryani, Butter Chicken...";
+        return "Search Pizza, Sushi, Biryani...";
     }
   };
 
