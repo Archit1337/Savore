@@ -7,7 +7,7 @@ import {
   IndianRupee, Check, X, ShieldAlert, AlertCircle, AlertTriangle, 
   FileText, Trash2, Edit3, Eye, Heart, MessageSquare, 
   Clock, Utensils, ToggleLeft, ToggleRight, DollarSign, 
-  Calendar, BarChart3, ChevronRight, Layers, Award, Sparkles, Image, Lock
+  Calendar, BarChart3, ChevronRight, Layers, Award, Sparkles, Image, Lock, Search, MapPin, Bike
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { OrderContext } from '../context/OrderContext';
@@ -50,9 +50,9 @@ function AnalyticsCharts({ analytics, menuLength, reelsCount }) {
       ];
 
   const lineX = (index) => 45 + index * 80;
+  const maxRevenue = Math.max(...monthlyRevenue.map(m => m.val), 1);
   const lineY = (value) => {
-    if (R === 0) return 140;
-    const ratio = value / R;
+    const ratio = value / maxRevenue;
     return 140 - ratio * 105; // range between 35 (top) and 140 (bottom)
   };
 
@@ -421,6 +421,12 @@ export default function MerchantDashboard() {
 
   // Menu Category Filter states
   const [menuFilter, setMenuFilter] = useState('All');
+  const [menuSearch, setMenuSearch] = useState('');
+
+  // Order Archive search, filter, and detail modal states
+  const [archiveSearch, setArchiveSearch] = useState('');
+  const [archiveFilter, setArchiveFilter] = useState('all');
+  const [selectedArchiveOrder, setSelectedArchiveOrder] = useState(null);
 
   // Drawers and Forms states
   const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
@@ -477,6 +483,29 @@ export default function MerchantDashboard() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState('');
 
+  // Kitchen Open/Closed operational state
+  const [isOpenStatus, setIsOpenStatus] = useState(true);
+  const [statusToggling, setStatusToggling] = useState(false);
+
+  const handleToggleOpenStatus = async () => {
+    soundController?.playClick();
+    setStatusToggling(true);
+    setErrorMsg('');
+    try {
+      const nextState = !isOpenStatus;
+      const res = await api.put('/restaurants/owner/details', { isOpen: nextState });
+      if (res.data && res.data.success) {
+        setIsOpenStatus(nextState);
+        fetchDashboardData();
+      }
+    } catch (err) {
+      console.error('Failed to toggle operational status:', err);
+      setErrorMsg(err.response?.data?.message || err.message || 'Failed to toggle kitchen operational status.');
+    } finally {
+      setStatusToggling(false);
+    }
+  };
+
   // Core background handshakes
   const fetchDashboardData = async () => {
     if (!isAuthenticated || !isOwner) return;
@@ -486,6 +515,7 @@ export default function MerchantDashboard() {
       const res = await api.get('/restaurants/owner/analytics');
       if (res.data && res.data.success) {
         setAnalytics(res.data.data);
+        setIsOpenStatus(res.data.data.isOpen !== false);
         setHasRestaurant(true);
         
         // Populate menu in background for total counts
@@ -573,12 +603,18 @@ export default function MerchantDashboard() {
     if (!hasRestaurant) return;
     setCommentsLoading(true);
     try {
-      const res = await api.get('/restaurants/owner/comments');
-      if (res.data && res.data.success) {
-        setComments(res.data.data || []);
+      const [commentsRes, reelsRes] = await Promise.all([
+        api.get('/restaurants/owner/comments'),
+        api.get('/reels/owner')
+      ]);
+      if (commentsRes.data && commentsRes.data.success) {
+        setComments(commentsRes.data.data || []);
+      }
+      if (reelsRes.data && reelsRes.data.success) {
+        setRestaurantReels(reelsRes.data.data || []);
       }
     } catch (err) {
-      console.error('Failed to retrieve client comments feed:', err.message);
+      console.error('Failed to retrieve client comments or reels feed:', err.message);
     } finally {
       setCommentsLoading(false);
     }
@@ -593,6 +629,7 @@ export default function MerchantDashboard() {
       if (res.data && res.data.success) {
         const rest = res.data.data;
         setRestaurantDetails(rest);
+        setIsOpenStatus(rest.isOpen !== false);
         setSettingsName(rest.name || '');
         setSettingsDesc(rest.description || '');
         setSettingsCover(rest.coverImage || '');
@@ -1236,70 +1273,122 @@ export default function MerchantDashboard() {
             </div>
           </div>
 
-          <div className="flex gap-2 p-1.5 bg-white/[0.02] rounded-xl select-none max-w-full overflow-x-auto shrink-0">
-            {orders.some(o => o.status === 'pending') && (
-              <span className="animate-pulse bg-primary text-white rounded-lg text-[10px] font-extrabold px-2.5 py-1.5 flex items-center gap-1">
-                <AlertCircle size={10} /> Live Pending Orders
-              </span>
+          <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0 self-center md:self-end z-20">
+            {/* 1. Kitchen Operational Toggle */}
+            {hasRestaurant && (
+              <button
+                onClick={handleToggleOpenStatus}
+                disabled={statusToggling}
+                className={`px-3.5 py-2.5 rounded-xl border flex items-center gap-2 transition-all select-none cursor-pointer text-xs font-bold ${
+                  isOpenStatus
+                    ? 'bg-green-500/10 border-green-500/25 text-green-400 hover:bg-green-500/15 shadow-[0_0_12px_rgba(34,197,94,0.06)]'
+                    : 'bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/15'
+                }`}
+                title={isOpenStatus ? "Pause live orders (Customers will see kitchen as closed)" : "Open kitchen for live orders"}
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${isOpenStatus ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`} />
+                <span>{isOpenStatus ? 'Kitchen Active' : 'Kitchen Closed'}</span>
+              </button>
             )}
-            {isSocketConnected ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-[11px] font-extrabold select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                Live Connected
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-extrabold select-none animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                Offline (Syncing...)
-              </div>
-            )}
+
+            {/* 2. Connection Sync Badge */}
+            <div 
+              className={`px-3 py-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold select-none ${
+                isSocketConnected
+                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                  : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+              }`}
+              title={isSocketConnected ? "KDS Live Sync Active (Real-time updates online)" : "Offline Mode - Reconnecting..."}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSocketConnected ? 'bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.6)] animate-pulse' : 'bg-amber-500 animate-ping'}`} />
+              <span className="text-[10px] uppercase tracking-wider">{isSocketConnected ? 'KDS Sync Live' : 'Syncing'}</span>
+            </div>
+
+            {/* 3. Sync Feed Button */}
             <button 
               onClick={() => { fetchDashboardData(); if (hasRestaurant && activeTab === 'orders') fetchOrdersData(page); }} 
-              className="bg-transparent border-none text-text-secondary hover:text-text-primary flex items-center p-2 rounded-lg cursor-pointer transition-colors"
-              title="Manual Sync Feed"
+              className="px-3.5 py-2.5 bg-white/[0.02] border border-white/5 hover:bg-white/[0.08] text-text-secondary hover:text-text-primary rounded-xl cursor-pointer transition-all duration-300 flex items-center gap-2 text-xs font-bold"
+              title="Sync Dashboard Telemetry"
             >
-              <RefreshCw size={12} className="hover:rotate-180 transition-transform duration-500" />
+              <RefreshCw size={13} className="hover:rotate-180 transition-transform duration-700" />
+              <span>Sync Feed</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 2. PERSISTENT TABS NAVIGATION STRIP */}
-      <div className="flex gap-2.5 overflow-x-auto pb-4 mb-6 border-b border-border-light select-none scrollbar-none">
-        {[
-          { id: 'analytics', label: 'Overview', icon: BarChart3 },
-          { id: 'orders', label: 'Incoming Orders', icon: ShoppingBag },
-          { id: 'menu', label: 'Dishes Catalog', icon: Layers },
-          { id: 'reels', label: 'Recipe Reels', icon: Film },
-          { id: 'comments', label: 'Reviews Feed', icon: MessageSquare },
-          { id: 'settings', label: 'Kitchen Settings', icon: Settings }
-        ].map(tab => {
-          const IconComp = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                soundController?.playClick();
-                setActiveTab(tab.id);
-                setErrorMsg('');
-              }}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-[13.5px] font-bold shrink-0 transition-all ${
-                activeTab === tab.id 
-                  ? 'bg-primary text-white shadow-md' 
-                  : 'bg-white/[0.03] text-text-secondary hover:text-text-primary hover:bg-white/[0.06] border border-border-light'
-              }`}
-            >
-              <IconComp size={14} />
-              {tab.label}
-              {tab.id === 'orders' && orders.filter(o => o.status === 'pending').length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[9px] font-extrabold bg-white text-primary rounded-full">
-                  {orders.filter(o => o.status === 'pending').length}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <div className="flex flex-col lg:flex-row gap-8 items-start mt-8 w-full">
+        {/* 1. MASTER SIDEBAR NAVIGATION */}
+        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
+          <div className="glass-panel p-5 rounded-[24px]">
+            <div className="flex items-center gap-2 mb-6 px-1.5">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                <Utensils size={18} />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-text-primary tracking-tight">Savoré Merchant</h2>
+                <span className="text-[9.5px] text-text-muted uppercase font-bold tracking-widest">Kitchen OS</span>
+              </div>
+            </div>
+
+            <nav className="flex flex-col gap-1.5 select-none">
+              {[
+                { id: 'analytics', label: 'Overview Dashboard', icon: BarChart3 },
+                { id: 'orders', label: 'Incoming Orders', icon: ShoppingBag },
+                { id: 'menu', label: 'Dishes Catalog', icon: Layers },
+                { id: 'reels', label: 'Recipe Reels Studio', icon: Film },
+                { id: 'comments', label: 'Customer Reviews Feed', icon: MessageSquare },
+                { id: 'settings', label: 'Kitchen Settings', icon: Settings }
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isSelected = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      soundController?.playClick();
+                      setActiveTab(tab.id);
+                      setErrorMsg('');
+                    }}
+                    className={`w-full h-11 px-4 rounded-xl flex items-center justify-between font-semibold text-xs border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary border-primary text-white shadow-md active:scale-[0.98]'
+                        : 'bg-white/[0.01] border-transparent text-text-secondary hover:bg-white/[0.04] hover:text-text-primary'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon size={14} className={isSelected ? 'text-white' : 'text-text-muted'} />
+                      <span>{tab.label}</span>
+                    </div>
+                    {tab.id === 'orders' && orders.filter(o => o.status === 'pending').length > 0 && (
+                      <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${isSelected ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary border border-primary/25 animate-pulse'}`}>
+                        {orders.filter(o => o.status === 'pending').length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* 2. DYNAMIC WORKSPACE PANEL */}
+        <div className="flex-grow min-w-0 w-full flex flex-col gap-6">
+          <div className="glass-panel p-6 rounded-[24px] flex justify-between items-center gap-4 flex-wrap">
+            <div>
+              <h1 className="text-xl font-extrabold text-text-primary capitalize">
+                {activeTab === 'analytics' ? 'Kitchen Overview' : `${activeTab.replace('_', ' ')} Management`}
+              </h1>
+              <p className="text-xs text-text-secondary mt-1">
+                {activeTab === 'analytics' && 'Monitor gross revenues, dining conversion velocities, and check daily spikes.'}
+                {activeTab === 'orders' && 'Real-time kitchen order pipelines, dispatch trackers, and simulator portals.'}
+                {activeTab === 'menu' && 'Publish new gastronomy dishes, toggle in-stock options, and configure pricing tiers.'}
+                {activeTab === 'reels' && 'Upload vertical recipe videos, track attribution clicks, and review flagged state details.'}
+                {activeTab === 'comments' && 'Audit feedback left by patrons on culinary Reels and manage customer reviews.'}
+                {activeTab === 'settings' && 'Update locational coordinate geofences, timings, cover images, and UPI VPA IDs.'}
+              </p>
+            </div>
+          </div>
 
       {/* FEEDBACK BANNERS */}
       {errorMsg && (
@@ -1365,8 +1454,8 @@ export default function MerchantDashboard() {
                       <Film size={18} className="text-[var(--accent)]" />
                       <span className="text-[11px] font-extrabold text-[var(--accent)]">CTR Ratio</span>
                     </div>
-                    <h4 className="text-[12px] text-text-muted font-bold mt-4 uppercase tracking-wider">Reels Placements CTR</h4>
-                    <h2 className="text-2xl font-extrabold mt-1 text-text-primary">
+                    <h4 className="text-[12px] text-text-muted font-bold mt-4 uppercase tracking-wider pr-14">Reels Placements CTR</h4>
+                    <h2 className="text-2xl font-extrabold mt-1 text-text-primary pr-14">
                       {analytics?.conversionRate !== undefined ? analytics.conversionRate.toFixed(1) : '0.0'}%
                     </h2>
                     
@@ -1414,17 +1503,16 @@ export default function MerchantDashboard() {
 
               </div>
             )}
-
             {/* TAB 2: INCOMING ORDERS TRACKER */}
             {activeTab === 'orders' && (
               <div className="glass-panel p-8 rounded-[24px]">
                 <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                   <h3 className="text-xl font-bold flex items-center gap-2.5">
                     <ShoppingBag size={20} className="text-primary" />
-                    Incoming Kitchen Orders
+                    Kitchen Operations Board
                   </h3>
                   <button onClick={() => fetchOrdersData(page)} className="chip btn-pill text-[12px] flex items-center">
-                    <RefreshCw size={12} className="mr-1.5" /> Reload List
+                    <RefreshCw size={12} className="mr-1.5" /> Reload Board
                   </button>
                 </div>
 
@@ -1433,125 +1521,349 @@ export default function MerchantDashboard() {
                     <RefreshCw className="animate-stir text-text-muted" size={24} />
                   </div>
                 ) : orders.length > 0 ? (
-                  <div className="flex flex-col gap-5">
-                    {orders.map((ord) => (
-                      <div 
-                        key={ord._id} 
-                        className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-2xl p-6 grid grid-cols-1 md:grid-cols-[1.4fr_1fr_0.9fr] gap-5 items-center hover:bg-white/[0.01] transition-colors text-left"
-                      >
-                        <div>
-                          <span className="text-[11px] text-text-muted flex items-center gap-2 font-semibold mb-1">
-                            Dining Token ID: {ord._id}
-                            {ord.isTestOrder && (
-                              <span className="bg-[#d9a752]/20 border border-[#d9a752]/30 text-[#d9a752] text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider">
-                                SIMULATED
-                              </span>
-                            )}
-                          </span>
-                          <h4 className="text-base font-extrabold text-text-primary mb-2 leading-relaxed">
-                            {ord.items.map(i => `${i.quantity}x ${i.foodItem?.name || 'Chef Dish'}`).join(', ')}
-                          </h4>
-                          <p className="text-[13px] text-text-secondary leading-relaxed">
-                            <strong>Deliver to:</strong> {ord.deliveryAddress}
-                          </p>
-                        </div>
+                  <div className="flex flex-col gap-8">
+                    {/* Active operational board */}
+                    <div className="flex flex-row gap-5 overflow-x-auto pb-4 mt-2 kds-scrollbar w-full h-[700px]">
+                      {['pending', 'preparing', 'ready', 'out_for_delivery'].map(statusName => {
+                        const statusOrders = orders.filter(o => o.status === statusName);
+                        
+                        let colTitle = 'Incoming';
+                        let colHeaderBorder = 'border-t-primary/80';
+                        let colBadgeStyle = 'bg-primary/10 text-primary border-primary/20';
+                        let colIcon = <ShoppingBag size={14} className="text-primary" />;
+                        
+                        if (statusName === 'preparing') {
+                          colTitle = 'Preparing';
+                          colHeaderBorder = 'border-t-amber-500/80';
+                          colBadgeStyle = 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+                          colIcon = <Utensils size={14} className="text-amber-500" />;
+                        } else if (statusName === 'ready') {
+                          colTitle = 'Ready';
+                          colHeaderBorder = 'border-t-indigo-500/80';
+                          colBadgeStyle = 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20';
+                          colIcon = <Layers size={14} className="text-indigo-500" />;
+                        } else if (statusName === 'out_for_delivery') {
+                          colTitle = 'In Transit';
+                          colHeaderBorder = 'border-t-green-500/80';
+                          colBadgeStyle = 'bg-green-500/10 text-green-500 border-green-500/20';
+                          colIcon = <Bike size={14} className="text-green-500" />;
+                        }
 
-                        <div>
-                          <div className="flex flex-col gap-1 text-[13px] text-text-secondary">
-                            <div>Total Charge: <strong className="text-primary text-[15px] font-extrabold">{formatPrice(ord.total)}</strong></div>
-                            <div className="pl-2 border-l border-border-light text-[11px] text-text-muted flex flex-col gap-0.5 mt-0.5 select-none">
-                              <div className="flex justify-between w-[150px]"><span>Subtotal:</span> <span>{formatPrice(ord.subtotal)}</span></div>
-                              <div className="flex justify-between w-[150px]"><span>Delivery Fee:</span> <span>{formatPrice(ord.deliveryFee)}</span></div>
-                              <div className="flex justify-between w-[150px]"><span>Taxes (10%):</span> <span>{formatPrice(ord.tax)}</span></div>
-                              {ord.transactionId && (
-                                <div className="truncate max-w-[170px] mt-0.5 text-[9.5px]">
-                                  Txn ID: <span className="font-mono select-all text-text-secondary">{ord.transactionId}</span>
+                        return (
+                          <div key={statusName} className={`flex flex-col gap-4 bg-slate-900/35 dark:bg-black/35 border border-white/[0.04] p-5 rounded-[20px] h-full text-left flex-1 min-w-[300px] md:min-w-[330px] border-t-[3px] ${colHeaderBorder} shadow-[var(--shadow-card)] backdrop-blur-md relative overflow-hidden`}>
+                            {/* Column Header */}
+                            <div className="flex items-center justify-between border-b border-white/[0.05] pb-3 mb-1 select-none">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                  statusName === 'pending' ? 'bg-primary shadow-[0_0_8px_rgba(255,90,60,0.5)]' :
+                                  statusName === 'preparing' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
+                                  statusName === 'ready' ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' :
+                                  'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
+                                }`} />
+                                {colIcon}
+                                <h4 className="text-[11px] font-black text-text-primary uppercase tracking-widest leading-none">
+                                  {colTitle}
+                                </h4>
+                              </div>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${colBadgeStyle}`}>
+                                {statusOrders.length}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col gap-3.5 w-full pr-1 overflow-y-auto flex-1 kds-scrollbar">
+                              {statusOrders.length > 0 ? (
+                                statusOrders.map(ord => {
+                                  const timeElapsed = Math.max(0, Math.floor((Date.now() - new Date(ord.createdAt).getTime()) / 60000));
+                                  let timerBadgeColor = 'bg-green-500/10 text-green-400 border border-green-500/20';
+                                  if (timeElapsed >= 20) {
+                                    timerBadgeColor = 'bg-red-500/10 text-red-400 border border-red-500/25 shadow-[0_0_10px_rgba(239,68,68,0.1)]';
+                                  } else if (timeElapsed >= 10) {
+                                    timerBadgeColor = 'bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-[0_0_8px_rgba(245,158,11,0.05)]';
+                                  }
+
+                                  return (
+                                    <div key={ord._id} className="bg-slate-950/40 dark:bg-black/45 border border-white/[0.07] hover:border-primary/30 rounded-xl p-4.5 flex flex-col gap-4 relative transition-all duration-300 hover:shadow-lg hover:shadow-primary/2">
+                                      {/* Card Titlebar */}
+                                      <div className="flex justify-between items-center gap-2 min-w-0">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                          <span 
+                                            className="text-[10px] font-black text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md font-mono tracking-wider shrink-0" 
+                                            title={ord._id}
+                                          >
+                                            #{ord._id.substring(ord._id.length - 8).toUpperCase()}
+                                          </span>
+                                          <span className="text-[10.5px] text-text-secondary font-bold truncate">
+                                            {ord.user?.username ? `@${ord.user.username}` : 'Guest'}
+                                          </span>
+                                        </div>
+                                        {/* Timer Indicator */}
+                                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shrink-0 font-extrabold select-none ${timerBadgeColor}`}>
+                                          <span className={`w-1.5 h-1.5 rounded-full ${
+                                            timeElapsed >= 20 ? 'bg-red-400 animate-pulse' :
+                                            timeElapsed >= 10 ? 'bg-amber-400 animate-pulse' :
+                                            'bg-green-400'
+                                          }`} />
+                                          {timeElapsed === 0 ? 'Just now' : `${timeElapsed}m`}
+                                        </span>
+                                      </div>
+
+                                      <div className="h-px bg-white/5 my-0.5" />
+
+                                      {/* Checklist items list */}
+                                      <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-1.5 text-[9px] text-text-muted font-black uppercase tracking-wider mb-0.5">
+                                          <Utensils size={9} />
+                                          <span>Kitchen Ticket</span>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                          {ord.items.map((item, idx) => (
+                                            <label key={idx} className="flex items-center justify-between text-xs cursor-pointer select-none min-w-0 gap-3 py-1.5 px-3 bg-white/[0.01] hover:bg-white/[0.03] border border-white/[0.02] rounded-lg transition-all">
+                                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <input 
+                                                  type="checkbox" 
+                                                  className="rounded border-white/20 bg-transparent text-primary focus:ring-0 cursor-pointer w-4.5 h-4.5 shrink-0 checked:bg-primary checked:border-primary transition-all" 
+                                                  onClick={(e) => e.stopPropagation()} 
+                                                />
+                                                <span className="text-text-secondary font-semibold break-words leading-tight truncate">{item.foodItem?.name || 'Chef Dish'}</span>
+                                              </div>
+                                              <span className="font-black text-primary text-[11px] bg-primary/10 border border-primary/15 px-1.5 py-0.5 rounded-md shrink-0">
+                                                ×{item.quantity}
+                                              </span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {ord.deliveryAddress && (
+                                        <>
+                                          <div className="h-px bg-white/5 my-0.5" />
+                                          <div className="flex flex-col gap-1 text-[11px]">
+                                            <span className="text-text-muted font-black uppercase text-[9px] tracking-wider block mb-0.5">Delivery Address</span>
+                                            <div className="flex items-start gap-1.5 text-text-secondary bg-white/[0.01] border border-white/[0.02] p-2.5 rounded-xl">
+                                              <MapPin size={12} className="text-primary mt-0.5 shrink-0" />
+                                              <span className="font-semibold leading-relaxed break-words text-[11.5px]">{ord.deliveryAddress}</span>
+                                            </div>
+                                          </div>
+                                        </>
+                                      )}
+
+                                      <div className="h-px bg-white/5 my-0.5" />
+
+                                      {/* Order Summary & Charge Info */}
+                                      <div className="flex justify-between items-center bg-white/[0.02] border border-white/[0.03] p-2.5 rounded-xl">
+                                        <div className="flex flex-col">
+                                          <span className="text-[9px] text-text-muted font-black uppercase tracking-wider leading-none">Total Bill</span>
+                                          <span className="text-text-primary font-black text-xs mt-1.5 font-mono">{formatPrice(ord.total)}</span>
+                                        </div>
+                                        <div className="flex gap-1.5 items-center select-none">
+                                          {ord.isTestOrder && (
+                                            <span className="bg-amber-500/15 border border-amber-500/25 text-amber-500 text-[8px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider">
+                                              SIMULATOR
+                                            </span>
+                                          )}
+                                          <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-md border tracking-wider ${
+                                            ord.paymentStatus === 'succeeded' || ord.paymentStatus === 'paid' || ord.paymentStatus === 'Paid'
+                                              ? 'bg-green-500/10 border-green-500/25 text-green-400'
+                                              : 'bg-amber-500/10 border-amber-500/25 text-amber-400'
+                                          }`}>
+                                            {ord.paymentMethod}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Action buttons inside cards */}
+                                      <div className="mt-1 flex gap-2 w-full select-none">
+                                        {ord.status === 'pending' && (
+                                          <>
+                                            <button 
+                                              onClick={() => handleUpdateStatus(ord._id, 'cancelled')} 
+                                              className="border border-red-500/30 text-red-400 hover:text-white bg-red-500/5 hover:bg-red-500 rounded-xl text-[11px] h-10 flex-1 flex items-center justify-center gap-1 font-bold transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                                            >
+                                              <X size={12} />
+                                              <span>Deny</span>
+                                            </button>
+                                            <button 
+                                              onClick={() => handleUpdateStatus(ord._id, 'preparing')} 
+                                              className="bg-gradient-to-r from-primary to-orange-500 hover:opacity-95 text-white rounded-xl text-[11px] h-10 flex-1 flex items-center justify-center gap-1 font-bold transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-md shadow-primary/10"
+                                            >
+                                              <Check size={12} />
+                                              <span>Accept</span>
+                                            </button>
+                                          </>
+                                        )}
+
+                                        {ord.status === 'preparing' && (
+                                          <button 
+                                            onClick={() => handleUpdateStatus(ord._id, 'ready')} 
+                                            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-95 text-white rounded-xl text-[11px] h-10 w-full flex items-center justify-center gap-1.5 font-bold transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer shadow-md"
+                                          >
+                                            <CheckCircle size={12} />
+                                            <span>Ready to Ship →</span>
+                                          </button>
+                                        )}
+
+                                        {ord.status === 'ready' && (
+                                          <button 
+                                            onClick={() => handleUpdateStatus(ord._id, 'out_for_delivery')} 
+                                            className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:opacity-95 text-white rounded-xl text-[11px] h-10 w-full flex items-center justify-center gap-1.5 font-bold transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer shadow-md"
+                                          >
+                                            <Bike size={13} />
+                                            <span>Hand to Rider →</span>
+                                          </button>
+                                        )}
+
+                                        {ord.status === 'out_for_delivery' && (
+                                          <div className="flex flex-col gap-2 w-full">
+                                            <span className="text-[10px] text-green-400/90 animate-pulse font-bold text-center block w-full py-1 flex items-center justify-center gap-1.5">🛵 Rider Dispatching...</span>
+                                            <DeliveryMapSimulator 
+                                              orderId={ord._id} 
+                                              onCompleteClick={() => handleUpdateStatus(ord._id, 'delivered')}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="py-12 border border-dashed border-white/5 rounded-xl text-center text-[11px] text-text-muted">
+                                  No active orders
                                 </div>
                               )}
                             </div>
-                            <div className="mt-1">Gateway: <strong className="uppercase text-[12.5px] text-text-primary">{ord.paymentMethod}</strong></div>
-                            <div className="flex items-center">Payment Status: 
-                              <span 
-                                className={`ml-2 px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold uppercase ${
-                                  ord.paymentStatus === 'paid' 
-                                    ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                                    : 'bg-orange-500/10 text-primary border border-primary/20'
-                                }`}
-                              >
-                                {ord.paymentStatus}
-                              </span>
-                            </div>
                           </div>
-                        </div>
+                        );
+                      })}
+                    </div>
 
-                        <div className="text-right">
-                          <span className="block text-[11px] text-text-muted mb-2 font-bold uppercase tracking-wider">Action Tracker</span>
-                          
-                          {ord.status === 'pending' && (
-                            <div className="flex gap-2 justify-end">
-                              <button 
-                                onClick={() => handleUpdateStatus(ord._id, 'cancelled')} 
-                                className="btn btn-secondary px-3 py-2 border border-red-500/30 text-red-500 rounded-xl text-xs flex items-center hover:bg-red-500/5 font-bold"
-                              >
-                                <X size={13} className="mr-1" /> Deny
-                              </button>
-                              <button 
-                                onClick={() => handleUpdateStatus(ord._id, 'preparing')} 
-                                className="btn btn-primary px-4 py-2 rounded-xl text-xs flex items-center font-bold"
-                              >
-                                <Check size={13} className="mr-1" /> Accept Order
-                              </button>
-                            </div>
-                          )}
-
-                          {ord.status === 'preparing' && (
-                            <button 
-                              onClick={() => handleUpdateStatus(ord._id, 'ready')} 
-                              className="btn btn-secondary btn-pill text-[12.5px] border-primary text-primary hover:bg-primary/5 font-bold"
+                    {/* Rebuilt past order archive table */}
+                    <div className="border-t border-white/[0.04] pt-8 mt-4 text-left">
+                      <h4 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
+                        📋 Past Order Archive
+                      </h4>
+                      
+                      {/* Search & filters inside ledger archive */}
+                      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 pb-4 border-b border-white/5">
+                        <div className="flex gap-2 overflow-x-auto pb-1 select-none flex-1 scrollbar-none">
+                          {['all', 'delivered', 'cancelled'].map(statusFilter => (
+                            <button
+                              key={statusFilter}
+                              onClick={() => setArchiveFilter(statusFilter)}
+                              className={`chip text-[11px] px-3.5 py-2 rounded-xl transition-all font-semibold cursor-pointer shrink-0 uppercase tracking-wider ${
+                                archiveFilter === statusFilter 
+                                  ? 'bg-primary text-white border-primary shadow-sm' 
+                                  : 'bg-white/[0.02] border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
+                              }`}
                             >
-                              Ready for Delivery →
+                              {statusFilter}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <div className="glass-input-wrapper relative w-full md:w-72 shrink-0">
+                          <input 
+                            type="text" 
+                            className="glass-input !pl-10 text-xs w-full" 
+                            placeholder="Search past orders (ID, address)..." 
+                            value={archiveSearch}
+                            onChange={(e) => setArchiveSearch(e.target.value)}
+                          />
+                          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
+                            <Search size={14} />
+                          </div>
+                          {archiveSearch && (
+                            <button 
+                              onClick={() => setArchiveSearch('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary bg-transparent border-none cursor-pointer"
+                            >
+                              <X size={12} />
                             </button>
                           )}
-
-                          {ord.status === 'ready' && (
-                            <button 
-                              onClick={() => handleUpdateStatus(ord._id, 'out_for_delivery')} 
-                              className="btn btn-secondary btn-pill text-[12.5px] border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)]/5 font-bold"
-                            >
-                              Hand to Rider →
-                            </button>
-                          )}
-
-                          {ord.status === 'out_for_delivery' && (
-                            <span className="text-[12px] font-bold text-[var(--accent)] animate-pulse">
-                              Rider In Transit...
-                            </span>
-                          )}
-
-                          {ord.status === 'delivered' && (
-                            <div className="inline-flex items-center gap-1.5 font-extrabold text-[13px] text-green-500">
-                              <CheckCircle size={15} /> Delivered Successfully
-                            </div>
-                          )}
-
-                          {ord.status === 'cancelled' && (
-                            <div className="inline-flex items-center gap-1.5 text-red-500 font-extrabold text-[13px]">
-                              Cancelled
-                            </div>
-                          )}
                         </div>
-
-                        {ord.status === 'out_for_delivery' && (
-                          <div className="col-span-full border-t border-white/[0.04] pt-4 mt-2">
-                            <DeliveryMapSimulator 
-                              orderId={ord._id} 
-                              onCompleteClick={() => handleUpdateStatus(ord._id, 'delivered')}
-                            />
-                          </div>
-                        )}
-
                       </div>
-                    ))}
+
+                      {/* Responsive data table */}
+                      {(() => {
+                        const filteredArchiveOrders = orders
+                          .filter(o => o.status === 'delivered' || o.status === 'cancelled')
+                          .filter(o => {
+                            const matchesFilter = archiveFilter === 'all' || o.status === archiveFilter;
+                            const searchLower = archiveSearch.toLowerCase();
+                            const matchesSearch = !archiveSearch || 
+                              o._id.toLowerCase().includes(searchLower) ||
+                              o.deliveryAddress?.toLowerCase().includes(searchLower) ||
+                              o.items.some(item => item.foodItem?.name?.toLowerCase().includes(searchLower));
+                            return matchesFilter && matchesSearch;
+                          });
+
+                        return (
+                          <div className="overflow-x-auto w-full rounded-2xl border border-white/[0.04] bg-white/[0.005] kds-scrollbar">
+                            <table className="w-full text-left border-collapse text-xs">
+                              <thead>
+                                <tr className="border-b border-white/[0.05] bg-white/[0.02] text-text-muted uppercase font-bold tracking-wider">
+                                  <th className="p-4">Date & Time</th>
+                                  <th className="p-4">Token ID</th>
+                                  <th className="p-4">Patron Items</th>
+                                  <th className="p-4">Destination Address</th>
+                                  <th className="p-4 text-right">Amount</th>
+                                  <th className="p-4 text-center">Status</th>
+                                  <th className="p-4 text-center">Action</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/[0.03]">
+                                {filteredArchiveOrders.map(ord => (
+                                  <tr key={ord._id} className="hover:bg-white/[0.01] transition-colors border-b border-white/[0.02]">
+                                    <td className="p-4 whitespace-nowrap text-text-secondary font-medium">
+                                      {new Date(ord.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </td>
+                                    <td className="p-4 whitespace-nowrap">
+                                      <span className="font-mono text-[10px] font-bold text-text-primary bg-white/5 border border-white/10 px-2 py-0.5 rounded-md" style={{ letterSpacing: '0.06em' }}>
+                                        #{ord._id.substring(ord._id.length - 8).toUpperCase()}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 text-text-primary font-semibold leading-relaxed">
+                                      <div className="max-w-[280px] break-words whitespace-normal">
+                                        {ord.items.map(i => `${i.quantity}x ${i.foodItem?.name || 'Chef Dish'}`).join(', ')}
+                                      </div>
+                                    </td>
+                                    <td className="p-4 text-text-secondary font-medium leading-normal">
+                                      <div className="max-w-[320px] break-words whitespace-normal">
+                                        {ord.deliveryAddress || 'N/A'}
+                                      </div>
+                                    </td>
+                                    <td className="p-4 text-right font-extrabold text-primary whitespace-nowrap">
+                                      {formatPrice(ord.total)}
+                                    </td>
+                                    <td className="p-4 text-center whitespace-nowrap">
+                                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                                        ord.status === 'delivered'
+                                          ? 'bg-green-500/10 text-green-400 border-green-500/25'
+                                          : 'bg-red-500/10 text-red-400 border-red-500/25'
+                                      }`}>
+                                        {ord.status}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 text-center whitespace-nowrap">
+                                      <button 
+                                        onClick={() => setSelectedArchiveOrder(ord)}
+                                        className="px-3 py-1.5 bg-white/[0.02] border border-white/10 hover:bg-primary hover:border-primary hover:text-white rounded-xl text-[10px] font-extrabold transition-all cursor-pointer hover:scale-[1.03] active:scale-[0.97]"
+                                      >
+                                        View Ticket
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {filteredArchiveOrders.length === 0 && (
+                              <div className="py-8 text-center text-text-muted font-medium">
+                                No archived transactions found matching criteria.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
 
                     {totalPages > 1 && (
                       <div className="flex justify-center gap-2 mt-4 select-none">
@@ -1575,6 +1887,7 @@ export default function MerchantDashboard() {
               </div>
             )}
 
+
             {/* TAB 3: MENU & DISHES CATALOG */}
             {activeTab === 'menu' && (
               <div className="flex flex-col gap-6">
@@ -1597,93 +1910,128 @@ export default function MerchantDashboard() {
                     </button>
                   </div>
 
-                  {/* Categories Sub-filtering Row */}
-                  <div className="flex gap-2 overflow-x-auto pb-4 mb-6 select-none border-b border-border-light/45">
-                    {['All', 'Signature Dishes', 'Appetizers', 'Main Course', 'Desserts', 'Beverages'].map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => setMenuFilter(cat)}
-                        className={`chip text-[12px] px-4.5 py-2.5 rounded-xl transition-all ${
-                          menuFilter === cat 
-                            ? 'bg-primary text-white border-primary' 
-                            : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
+                  {/* Categories & Search Filter Row */}
+                  <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 pb-4 border-b border-white/5">
+                    {/* Categories Sub-filtering Row */}
+                    <div className="flex gap-2 overflow-x-auto pb-1 select-none flex-1 scrollbar-none">
+                      {['All', 'Signature Dishes', 'Appetizers', 'Main Course', 'Desserts', 'Beverages'].map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setMenuFilter(cat)}
+                          className={`chip text-[12px] px-4.5 py-2.5 rounded-xl transition-all font-semibold cursor-pointer shrink-0 ${
+                            menuFilter === cat 
+                              ? 'bg-primary text-white border-primary shadow-sm' 
+                              : 'bg-white/[0.02] border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search Input wrapper */}
+                    <div className="glass-input-wrapper relative w-full md:w-72 shrink-0">
+                      <input 
+                        type="text" 
+                        className="glass-input !pl-10 text-xs w-full" 
+                        placeholder="Search dishes..." 
+                        value={menuSearch}
+                        onChange={(e) => setMenuSearch(e.target.value)}
+                      />
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted">
+                        <Search size={14} />
+                      </div>
+                      {menuSearch && (
+                        <button 
+                          onClick={() => setMenuSearch('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary bg-transparent border-none cursor-pointer"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {menuLoading ? (
                     <div className="py-12 text-center">
                       <RefreshCw className="animate-stir text-text-muted" size={24} />
                     </div>
-                  ) : menu.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {menu.filter(dish => menuFilter === 'All' || dish.category === menuFilter).map(dish => (
-                        <div 
-                          key={dish._id}
-                          className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-[20px] overflow-hidden flex flex-col justify-between hover:border-primary/20 transition-all duration-300 relative group"
-                        >
-                          <div className="h-44 w-full bg-slate-900 overflow-hidden relative">
-                            <SafeImage src={resolveMediaUrl(dish.image)} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                            <span className="absolute top-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm">
-                              {dish.category}
-                            </span>
-                            {!dish.isAvailable && (
-                              <div className="absolute inset-0 bg-black/55 backdrop-blur-xs flex items-center justify-center">
-                                <span className="text-[12.5px] font-extrabold text-white tracking-wider uppercase bg-red-600/80 px-3 py-1 rounded-[10px] border border-red-500/20">Out Of Stock</span>
-                              </div>
-                            )}
-                          </div>
+                  ) : (() => {
+                    const filteredMenu = menu.filter(dish => {
+                      const matchesCategory = menuFilter === 'All' || dish.category === menuFilter;
+                      const matchesSearch = !menuSearch || 
+                        dish.name.toLowerCase().includes(menuSearch.toLowerCase()) || 
+                        dish.description?.toLowerCase().includes(menuSearch.toLowerCase());
+                      return matchesCategory && matchesSearch;
+                    });
 
-                          <div className="p-5 text-left flex-1 flex flex-col justify-between">
-                            <div>
-                              <div className="flex justify-between items-start gap-2">
-                                <h4 className="text-base font-extrabold text-text-primary leading-snug line-clamp-1">{dish.name}</h4>
-                                <strong className="text-primary text-[15px] font-extrabold shrink-0">{formatPrice(dish.price)}</strong>
-                              </div>
-                              <p className="text-[13px] text-text-secondary mt-1.5 line-clamp-2 leading-relaxed min-h-[40px]">{dish.description || 'Artisanal culinary preparation.'}</p>
+                    return filteredMenu.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredMenu.map(dish => (
+                          <div 
+                            key={dish._id}
+                            className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-[20px] overflow-hidden flex flex-col justify-between hover:border-primary/30 hover:shadow-lg transition-all duration-300 relative group"
+                          >
+                            <div className="h-44 w-full bg-slate-900 overflow-hidden relative">
+                              <SafeImage src={resolveMediaUrl(dish.image)} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                              <span className="absolute top-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm">
+                                {dish.category}
+                              </span>
+                              {!dish.isAvailable && (
+                                <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
+                                  <span className="text-[12.5px] font-extrabold text-white tracking-wider uppercase bg-red-600/90 px-3 py-1 rounded-[10px] border border-red-500/20 shadow-md">Out Of Stock</span>
+                                </div>
+                              )}
                             </div>
 
-                            <div className="flex justify-between items-center mt-5 pt-3.5 border-t border-border-light/45">
-                              {/* Stock Toggler */}
-                              <div className="flex items-center gap-2 select-none cursor-pointer" onClick={() => handleToggleStock(dish)}>
-                                {dish.isAvailable ? (
-                                  <ToggleRight size={22} className="text-primary cursor-pointer" />
-                                ) : (
-                                  <ToggleLeft size={22} className="text-text-muted cursor-pointer" />
-                                )}
-                                <span className="text-[11.5px] font-bold text-text-secondary">{dish.isAvailable ? 'In Stock' : 'Unavailable'}</span>
+                            <div className="p-5 text-left flex-1 flex flex-col justify-between">
+                              <div>
+                                <div className="flex justify-between items-start gap-2">
+                                  <h4 className="text-base font-extrabold text-text-primary leading-snug line-clamp-1 group-hover:text-primary transition-colors">{dish.name}</h4>
+                                  <strong className="text-primary text-[15px] font-extrabold shrink-0">{formatPrice(dish.price)}</strong>
+                                </div>
+                                <p className="text-[13px] text-text-secondary mt-1.5 line-clamp-2 leading-relaxed min-h-[40px]">{dish.description || 'Artisanal culinary preparation.'}</p>
                               </div>
 
-                              <div className="flex gap-2">
-                                <button 
-                                  onClick={() => openDishDrawer(dish)}
-                                  className="btn-icon btn-circle w-8 h-8"
-                                  title="Edit Dish details"
-                                >
-                                  <Edit3 size={13} />
-                                </button>
-                                <button 
-                                  onClick={() => confirmDeletion('dish', dish._id, dish.name)}
-                                  className="btn-icon btn-circle w-8 h-8 text-red-500 hover:bg-red-500/10 hover:border-red-500/20"
-                                  title="Delete Dish"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
+                              <div className="flex justify-between items-center mt-5 pt-3.5 border-t border-white/5">
+                                {/* Stock Toggler */}
+                                <div className="flex items-center gap-2 select-none cursor-pointer" onClick={() => handleToggleStock(dish)}>
+                                  {dish.isAvailable ? (
+                                    <ToggleRight size={22} className="text-primary cursor-pointer" />
+                                  ) : (
+                                    <ToggleLeft size={22} className="text-text-muted cursor-pointer" />
+                                  )}
+                                  <span className="text-[11.5px] font-bold text-text-secondary">{dish.isAvailable ? 'In Stock' : 'Unavailable'}</span>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => openDishDrawer(dish)}
+                                    className="btn-icon btn-circle w-8 h-8 hover:bg-white/5 transition-all"
+                                    title="Edit Dish details"
+                                  >
+                                    <Edit3 size={13} />
+                                  </button>
+                                  <button 
+                                    onClick={() => confirmDeletion('dish', dish._id, dish.name)}
+                                    className="btn-icon btn-circle w-8 h-8 text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
+                                    title="Delete Dish"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-text-secondary text-sm">
-                      No menu items registered in this category yet.
-                    </div>
-                  )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-text-secondary text-sm">
+                        No menu items registered {menuSearch ? "matching your search query" : "in this category yet"}.
+                      </div>
+                    );
+                  })()}
 
                 </div>
 
@@ -1791,18 +2139,18 @@ export default function MerchantDashboard() {
                               </div>
 
                               <div className="mt-5 border-t border-border-light/45 pt-4">
-                                <div className="grid grid-cols-3 gap-2 text-center bg-white/[0.01] p-2.5 rounded-xl border border-border-light/25 mb-4">
-                                  <div>
-                                    <span className="text-[9px] text-text-muted uppercase tracking-wider block font-bold">Likes</span>
-                                    <strong className="text-sm font-extrabold text-text-primary mt-0.5 block">{reel.likes?.length || 0}</strong>
+                                <div className="grid grid-cols-3 gap-2 text-center bg-white/[0.01] p-2.5 rounded-xl border border-white/5 mb-4">
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[9px] text-text-muted uppercase tracking-wider block font-extrabold">Likes</span>
+                                    <strong className="text-sm font-black text-text-primary mt-0.5">{reel.likes?.length || 0}</strong>
                                   </div>
-                                  <div>
-                                    <span className="text-[9px] text-text-muted uppercase tracking-wider block font-bold">Clicks</span>
-                                    <strong className="text-sm font-extrabold text-text-primary mt-0.5 block">{reel.orderNowClicks || 0}</strong>
+                                  <div className="flex flex-col items-center border-x border-white/5">
+                                    <span className="text-[9px] text-text-muted uppercase tracking-wider block font-extrabold">Clicks</span>
+                                    <strong className="text-sm font-black text-text-primary mt-0.5">{reel.orderNowClicks || 0}</strong>
                                   </div>
-                                  <div>
-                                    <span className="text-[9px] text-text-muted uppercase tracking-wider block font-bold text-primary">CTR %</span>
-                                    <strong className="text-sm font-extrabold text-primary mt-0.5 block">
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[9px] text-primary uppercase tracking-wider block font-extrabold">CTR %</span>
+                                    <strong className="text-sm font-black text-primary mt-0.5">
                                       {computedCTR(reel.views, reel.orderNowClicks)}%
                                     </strong>
                                   </div>
@@ -1965,13 +2313,13 @@ export default function MerchantDashboard() {
                     {comments.map(c => (
                       <div 
                         key={c._id} 
-                        className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-2xl p-5 text-left"
+                        className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-2xl p-5 text-left hover:border-primary/10 transition-all duration-350"
                       >
                         <div className="flex justify-between items-center flex-wrap gap-2">
                           <div className="flex items-center gap-2.5">
-                            <SafeAvatar src={resolveMediaUrl(c.user?.profilePicture)} alt={c.user?.username} size={28} className="border border-primary/25" />
+                            <SafeAvatar src={resolveMediaUrl(c.user?.profilePicture)} alt={c.user?.username} size={28} className="border border-primary/25 shadow-sm" />
                             <span className="text-[13.5px] text-text-primary font-bold">
-                              {c.user?.username || 'Valued Patron'}
+                              @{c.user?.username || 'Valued Patron'}
                             </span>
                           </div>
                           <span className="text-[11.5px] text-text-muted font-semibold">{new Date(c.createdAt).toLocaleDateString()}</span>
@@ -1981,11 +2329,26 @@ export default function MerchantDashboard() {
                           "{c.text}"
                         </p>
 
-                        <div className="mt-4 flex items-center gap-1.5 text-[12px] text-text-secondary border-t border-border-light/35 pt-3 pl-1 font-semibold">
+                        <div className="mt-4 flex items-center gap-1.5 text-[12px] text-text-secondary border-t border-white/5 pt-3 pl-1 font-semibold">
                           <span>Reel Video:</span>
-                          <span className="text-primary hover:underline italic">
-                            {c.reelCaption || 'View Video Clip'}
-                          </span>
+                          {(() => {
+                            const matchedReel = restaurantReels.find(r => r._id === c.reelId);
+                            if (matchedReel) {
+                              return (
+                                <button 
+                                  onClick={() => setPreviewReel(matchedReel)}
+                                  className="text-primary hover:underline italic bg-transparent border-none cursor-pointer p-0 font-semibold flex items-center gap-1"
+                                >
+                                  <Film size={11} /> {c.reelCaption || 'View Video Clip'}
+                                </button>
+                              );
+                            }
+                            return (
+                              <span className="text-text-muted italic">
+                                {c.reelCaption || 'Recipe Reel'}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -2018,101 +2381,113 @@ export default function MerchantDashboard() {
                     <RefreshCw className="animate-stir text-text-muted" size={24} />
                   </div>
                 ) : (
-                  <form onSubmit={handleSaveKitchenSettings} className="flex flex-col gap-5 text-left">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Display Name *</label>
-                        <input 
-                          type="text" 
-                          className="glass-input font-semibold" 
-                          value={settingsName}
-                          onChange={(e) => setSettingsName(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Cover Banner URL</label>
-                        <input 
-                          type="url" 
-                          className="glass-input" 
-                          value={settingsCover}
-                          onChange={(e) => setSettingsCover(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[12px] font-semibold text-text-secondary mb-2">Gastronomy Description</label>
-                      <textarea 
-                        rows="3"
-                        className="glass-input resize-none rounded-xl" 
-                        value={settingsDesc}
-                        onChange={(e) => setSettingsDesc(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Cuisines (Comma separated)</label>
-                        <input 
-                          type="text" 
-                          className="glass-input font-medium" 
-                          value={settingsCuisines}
-                          onChange={(e) => setSettingsCuisines(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Aesthetic Tags (Comma separated)</label>
-                        <input 
-                          type="text" 
-                          className="glass-input font-medium" 
-                          value={settingsTags}
-                          onChange={(e) => setSettingsTags(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Avg. Delivery Time (Mins)</label>
-                        <input 
-                          type="number" 
-                          className="glass-input font-bold" 
-                          value={settingsTime}
-                          onChange={(e) => setSettingsTime(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Delivery Charge (₹)</label>
-                        <input 
-                          type="number" 
-                          className="glass-input font-bold" 
-                          step="0.01" 
-                          value={settingsFee}
-                          onChange={(e) => setSettingsFee(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Operating Hours / Timings</label>
-                        <input 
-                          type="text" 
-                          className="glass-input font-bold" 
-                          placeholder="11:00 AM - 11:00 PM"
-                          value={settingsTimings}
-                          onChange={(e) => setSettingsTimings(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* India-First Locality & Geospatial Settings Section */}
-                    <div className="border-t border-border-light/45 pt-5 mt-5">
-                      <h4 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-1.5">
-                        📍 India Locality & Dispatch coordinates
+                  <form onSubmit={handleSaveKitchenSettings} className="flex flex-col gap-6 text-left">
+                    
+                    {/* SECTION A: Store Profile */}
+                    <div className="bg-white/[0.01] border border-white/5 p-6 rounded-2xl flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-text-primary mb-1 flex items-center gap-2">
+                        <Utensils size={15} className="text-primary" /> Store Profile Details
                       </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Indian City *</label>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Display Name *</label>
+                          <input 
+                            type="text" 
+                            className="glass-input font-semibold" 
+                            value={settingsName}
+                            onChange={(e) => setSettingsName(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Cover Banner URL</label>
+                          <input 
+                            type="url" 
+                            className="glass-input" 
+                            value={settingsCover}
+                            onChange={(e) => setSettingsCover(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Gastronomy Description</label>
+                        <textarea 
+                          rows="3"
+                          className="glass-input resize-none rounded-xl" 
+                          value={settingsDesc}
+                          onChange={(e) => setSettingsDesc(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Cuisines (Comma separated)</label>
+                          <input 
+                            type="text" 
+                            className="glass-input font-medium" 
+                            value={settingsCuisines}
+                            onChange={(e) => setSettingsCuisines(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Aesthetic Tags (Comma separated)</label>
+                          <input 
+                            type="text" 
+                            className="glass-input font-medium" 
+                            value={settingsTags}
+                            onChange={(e) => setSettingsTags(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECTION B: Operational Parameters */}
+                    <div className="bg-white/[0.01] border border-white/5 p-6 rounded-2xl flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-text-primary mb-1 flex items-center gap-2">
+                        <Clock size={15} className="text-primary" /> Operational Parameters
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Avg. Delivery Time (Mins)</label>
+                          <input 
+                            type="number" 
+                            className="glass-input font-bold" 
+                            value={settingsTime}
+                            onChange={(e) => setSettingsTime(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Delivery Charge (₹)</label>
+                          <input 
+                            type="number" 
+                            className="glass-input font-bold" 
+                            step="0.01" 
+                            value={settingsFee}
+                            onChange={(e) => setSettingsFee(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Operating Hours / Timings</label>
+                          <input 
+                            type="text" 
+                            className="glass-input font-bold" 
+                            placeholder="11:00 AM - 11:00 PM"
+                            value={settingsTimings}
+                            onChange={(e) => setSettingsTimings(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECTION C: Locality & Geospatial Dispatch */}
+                    <div className="bg-white/[0.01] border border-white/5 p-6 rounded-2xl flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-text-primary mb-1 flex items-center gap-2">
+                        <Search size={15} className="text-primary" /> India Locality & Dispatch Coordinates
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Indian City *</label>
                           <select 
                             className="glass-input font-bold bg-[#111827] dark:bg-[#070A0E] text-text-primary cursor-pointer"
                             value={settingsCity}
@@ -2125,7 +2500,7 @@ export default function MerchantDashboard() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Locality / Area *</label>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Locality / Area *</label>
                           <input 
                             type="text" 
                             className="glass-input font-bold" 
@@ -2136,7 +2511,7 @@ export default function MerchantDashboard() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Price Tier *</label>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Price Tier *</label>
                           <select 
                             className="glass-input font-bold bg-[#111827] dark:bg-[#070A0E] text-text-primary cursor-pointer"
                             value={settingsPriceRange}
@@ -2151,9 +2526,9 @@ export default function MerchantDashboard() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Latitude Coordinates</label>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Latitude Coordinate</label>
                           <input 
                             type="number" 
                             className="glass-input font-bold" 
@@ -2165,7 +2540,7 @@ export default function MerchantDashboard() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Longitude Coordinates</label>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Longitude Coordinate</label>
                           <input 
                             type="number" 
                             className="glass-input font-bold" 
@@ -2177,7 +2552,7 @@ export default function MerchantDashboard() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Delivery Radius (km)</label>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Delivery Radius (km)</label>
                           <input 
                             type="number" 
                             className="glass-input font-bold" 
@@ -2188,7 +2563,7 @@ export default function MerchantDashboard() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Serviceable Pincodes</label>
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Serviceable Pincodes</label>
                           <input 
                             type="text" 
                             className="glass-input font-bold" 
@@ -2200,23 +2575,23 @@ export default function MerchantDashboard() {
                       </div>
                     </div>
 
-                    {/* Payout & UPI Bank Verification */}
-                    <div className="border-t border-border-light/45 pt-5 mt-5">
-                      <h4 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-1.5">
-                        💳 Payout & UPI Bank Verification
+                    {/* SECTION D: Settlements & UPI Bank Details */}
+                    <div className="bg-white/[0.01] border border-white/5 p-6 rounded-2xl flex flex-col gap-4">
+                      <h4 className="text-sm font-bold text-text-primary mb-1 flex items-center gap-2">
+                        <IndianRupee size={15} className="text-primary" /> Payout & UPI Bank Verification
                       </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                      <div className="grid grid-cols-1 gap-4">
                         <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Merchant UPI ID / VPA</label>
-                           <input 
-                             type="text" 
-                             className="glass-input font-bold" 
-                             placeholder="e.g. restaurantname@okhdfcbank"
-                             value={settingsUpiVpa}
-                             onChange={(e) => setSettingsUpiVpa(e.target.value)}
-                           />
-                          <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">
-                            Incoming customer UPI scan payments will be routed directly to this address. Ensure this is a valid VPA.
+                          <label className="block text-[11px] font-bold text-text-secondary mb-2 uppercase tracking-wider">Merchant UPI ID / VPA</label>
+                          <input 
+                            type="text" 
+                            className="glass-input font-bold" 
+                            placeholder="e.g. restaurantname@okhdfcbank"
+                            value={settingsUpiVpa}
+                            onChange={(e) => setSettingsUpiVpa(e.target.value)}
+                          />
+                          <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed font-semibold">
+                            Patron checkout scans and digital UPI settlements will route to this direct virtual payment address.
                           </p>
                         </div>
                       </div>
@@ -2224,7 +2599,7 @@ export default function MerchantDashboard() {
 
                     <button 
                       type="submit" 
-                      className={`btn btn-primary h-11 flex items-center justify-center gap-2 mt-3 font-bold ${settingsLoading ? 'btn-disabled' : ''}`}
+                      className={`btn btn-primary h-11 flex items-center justify-center gap-2 mt-4 font-bold ${settingsLoading ? 'btn-disabled' : ''}`}
                       disabled={settingsLoading}
                     >
                       {settingsLoading ? 'Saving Telemetry...' : 'Save Kitchen Settings'}
@@ -2237,6 +2612,9 @@ export default function MerchantDashboard() {
           </motion.div>
         </AnimatePresence>
       </div>
+      </div>
+      </div>
+    </div>
 
       {/* 4. PREMIUM COMPONENT SLIDE-IN DRAWER FOR MENU ITEMS */}
       <AnimatePresence>
@@ -2247,7 +2625,7 @@ export default function MerchantDashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMenuDrawerOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 cursor-pointer"
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[9998] cursor-pointer"
             />
             
             <motion.div
@@ -2255,7 +2633,7 @@ export default function MerchantDashboard() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-[480px] bg-[#0E1318]/95 dark:bg-[#070A0E]/98 border-l border-border-light shadow-[var(--shadow-floating)] z-50 p-8 overflow-y-auto text-left"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-[480px] bg-[#0e1420] dark:bg-[#070A0E] border-l border-white/10 shadow-[var(--shadow-floating)] z-[9999] p-8 overflow-y-auto text-left"
             >
               <div className="flex justify-between items-center mb-6 border-b border-border-light/45 pb-4">
                 <h3 className="text-xl font-bold flex items-center gap-2">
@@ -2274,9 +2652,9 @@ export default function MerchantDashboard() {
                 </div>
               )}
 
-              <form onSubmit={handleDishFormSubmit} className="flex flex-col gap-4.5">
+              <form onSubmit={handleDishFormSubmit} className="flex flex-col gap-6">
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary mb-1.5 uppercase tracking-wider">Dish Name *</label>
+                  <label className="block text-[11px] font-bold text-text-secondary mb-2.5 uppercase tracking-wider">Dish Name *</label>
                   <input 
                     type="text" 
                     className="glass-input font-semibold"
@@ -2288,7 +2666,7 @@ export default function MerchantDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary mb-1.5 uppercase tracking-wider">Item Description</label>
+                  <label className="block text-[11px] font-bold text-text-secondary mb-2.5 uppercase tracking-wider">Item Description</label>
                   <textarea 
                     rows="3"
                     className="glass-input resize-none rounded-xl"
@@ -2300,7 +2678,7 @@ export default function MerchantDashboard() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-text-secondary mb-1.5 uppercase tracking-wider">Price (₹) *</label>
+                    <label className="block text-[11px] font-bold text-text-secondary mb-2.5 uppercase tracking-wider">Price (₹) *</label>
                     <input 
                       type="number" 
                       className="glass-input font-bold"
@@ -2312,7 +2690,7 @@ export default function MerchantDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-text-secondary mb-1.5 uppercase tracking-wider">Category *</label>
+                    <label className="block text-[11px] font-bold text-text-secondary mb-2.5 uppercase tracking-wider">Category *</label>
                     <select 
                       className="glass-input font-bold bg-[#111827] dark:bg-[#070A0E] text-text-primary"
                       value={dishFormCategory}
@@ -2328,7 +2706,7 @@ export default function MerchantDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary mb-1.5 uppercase tracking-wider">Dish Image URL</label>
+                  <label className="block text-[11px] font-bold text-text-secondary mb-2.5 uppercase tracking-wider">Dish Image URL</label>
                   <input 
                     type="url" 
                     className="glass-input"
@@ -2353,7 +2731,7 @@ export default function MerchantDashboard() {
 
                 <button
                   type="submit"
-                  className={`btn btn-primary h-11 flex items-center justify-center gap-2 mt-4 font-bold ${dishFormLoading ? 'btn-disabled' : ''}`}
+                  className={`btn btn-primary h-11 flex items-center justify-center gap-2 mt-2 font-bold ${dishFormLoading ? 'btn-disabled' : ''}`}
                   disabled={dishFormLoading}
                 >
                   {dishFormLoading ? 'Persisting...' : editingDish ? 'Save Dish Changes' : 'Publish Menu Item'}
@@ -2367,7 +2745,7 @@ export default function MerchantDashboard() {
       {/* 5. MODAL PORTAL FOR VIDEO REELS CAPTIONS EDITS */}
       <AnimatePresence>
         {reelModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-6 select-none">
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2381,7 +2759,7 @@ export default function MerchantDashboard() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.22 }}
-              className="bg-[#0E1318]/95 dark:bg-[#070A0E]/98 border border-border-light rounded-[24px] p-7 max-w-[500px] w-full relative z-10 text-left shadow-2xl"
+              className="bg-[#0E1318] dark:bg-[#070A0E] border border-border-light rounded-[24px] p-7 max-w-[500px] w-full relative z-10 text-left shadow-2xl"
             >
               <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
                 <h3 className="text-base font-bold flex items-center gap-2">
@@ -2440,7 +2818,7 @@ export default function MerchantDashboard() {
       {/* 6. DUAL THEME CONFIRM DELETE DIALOG OVERLAY */}
       <AnimatePresence>
         {deleteConfirmOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-6 select-none">
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2483,7 +2861,6 @@ export default function MerchantDashboard() {
         )}
       </AnimatePresence>
 
-      </div>
 
       {/* Reel Preview Modal overlay placed OUTSIDE the container to prevent transform stacking bugs */}
       <AnimatePresence>
@@ -2523,6 +2900,133 @@ export default function MerchantDashboard() {
               />
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 7. HIGH-FIDELITY RECEIPT MODAL FOR DETAILED ORDER OVERVIEW */}
+      <AnimatePresence>
+        {selectedArchiveOrder && (
+          <div className="fixed inset-0 flex items-center justify-center z-[99999] p-4 select-none">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedArchiveOrder(null)}
+              className="absolute inset-0 bg-black/75 backdrop-blur-xs cursor-pointer"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              className="bg-[#0e1420] dark:bg-[#070A0E] border border-white/10 rounded-[24px] max-w-[460px] w-full relative z-10 p-6 text-left shadow-[var(--shadow-floating)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex justify-between items-start border-b border-white/5 pb-4 mb-4">
+                <div>
+                  <h4 className="text-[10px] text-text-muted uppercase font-black tracking-widest leading-none">Dining Invoice Receipt</h4>
+                  <h3 className="text-base font-extrabold text-text-primary mt-1.5">
+                    Order ID: #{selectedArchiveOrder._id.substring(selectedArchiveOrder._id.length - 12).toUpperCase()}
+                  </h3>
+                  <span className="text-[11px] text-text-secondary mt-1 block">
+                    Placed: {new Date(selectedArchiveOrder.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setSelectedArchiveOrder(null)} 
+                  className="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 text-text-muted hover:text-text-primary rounded-xl transition-colors cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Status Timeline */}
+              <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3.5 mb-4">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-text-muted font-bold uppercase tracking-wider">Transaction Status</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                    selectedArchiveOrder.status === 'delivered'
+                      ? 'bg-green-500/10 text-green-400 border-green-500/25'
+                      : 'bg-red-500/10 text-red-400 border-red-500/25'
+                  }`}>
+                    {selectedArchiveOrder.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-3 select-none text-[10px] text-text-muted">
+                  <div className={`w-2 h-2 rounded-full ${selectedArchiveOrder.status === 'delivered' ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]' : 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.5)]'}`} />
+                  <span>Order Lifecycle Terminated via {selectedArchiveOrder.status} stage</span>
+                </div>
+              </div>
+
+              {/* Item details */}
+              <div className="flex flex-col gap-2 mb-4">
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Culinary Breakdown</span>
+                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto kds-scrollbar pr-1">
+                  {selectedArchiveOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs bg-white/[0.01] px-3 py-2 rounded-lg border border-white/[0.02]">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                        <span className="font-extrabold text-primary text-[11px] bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                          {item.quantity}x
+                        </span>
+                        <span className="text-text-primary font-semibold break-words leading-tight">{item.foodItem?.name || 'Chef Dish'}</span>
+                      </div>
+                      <span className="text-text-secondary font-bold shrink-0">{formatPrice(item.foodItem?.price * item.quantity || 0)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Summary */}
+              <div className="border-t border-white/5 pt-3.5 flex flex-col gap-2 text-xs">
+                <div className="flex justify-between text-text-secondary">
+                  <span>Subtotal:</span>
+                  <span className="font-semibold">{formatPrice(selectedArchiveOrder.total - (selectedArchiveOrder.deliveryFee || 0))}</span>
+                </div>
+                <div className="flex justify-between text-text-secondary">
+                  <span>Delivery Dispatch Fee:</span>
+                  <span className="font-semibold">{formatPrice(selectedArchiveOrder.deliveryFee || 0)}</span>
+                </div>
+                <div className="flex justify-between text-text-secondary">
+                  <span>Taxes & GST (simulated):</span>
+                  <span className="font-semibold">₹0.00</span>
+                </div>
+                <div className="flex justify-between text-text-primary font-extrabold text-sm border-t border-dashed border-white/5 pt-2 mt-1">
+                  <span>Grand Total:</span>
+                  <span className="text-primary">{formatPrice(selectedArchiveOrder.total)}</span>
+                </div>
+              </div>
+
+              {/* Patron Locality & Settlements */}
+              <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2 text-[11px] text-text-secondary">
+                <div>
+                  <span className="text-text-muted font-bold uppercase text-[9px] tracking-wider block mb-0.5">Patron Address</span>
+                  <p className="leading-relaxed font-medium break-words">{selectedArchiveOrder.deliveryAddress || 'N/A'}</p>
+                </div>
+                <div className="flex justify-between items-center mt-1 pt-1.5 border-t border-white/[0.02]">
+                  <span>Payment Ledger:</span>
+                  <span className="font-extrabold text-text-primary uppercase">{selectedArchiveOrder.paymentMethod} ({selectedArchiveOrder.paymentStatus})</span>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2.5 mt-6">
+                <button
+                  onClick={() => alert('Print action triggered (Simulation Mode)')}
+                  className="flex-1 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-text-primary rounded-xl text-xs font-bold transition-all cursor-pointer text-center hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  🖨️ Print Ticket
+                </button>
+                <button
+                  onClick={() => setSelectedArchiveOrder(null)}
+                  className="flex-1 py-2 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all cursor-pointer text-center hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-primary/15"
+                >
+                  Close Receipt
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </>

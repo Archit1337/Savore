@@ -3,6 +3,19 @@ import api from '../utils/api';
 
 export const ReelsContext = createContext();
 
+const getSessionId = () => {
+  try {
+    let sId = localStorage.getItem('savore_session_id');
+    if (!sId) {
+      sId = 'sess_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+      localStorage.setItem('savore_session_id', sId);
+    }
+    return sId;
+  } catch (e) {
+    return 'sess_fallback_' + Math.random().toString(36).substring(2, 10);
+  }
+};
+
 // Reliable public domain food video URLs
 // Using commondatastorage (Google's public bucket) + sample-videos.com which have proper CORS headers
 const MOCK_REELS = [
@@ -376,7 +389,8 @@ export const ReelsProvider = ({ children }) => {
   const logReelView = async (reelId) => {
     const cleanId = getBaseReelId(reelId);
     try {
-      await api.post(`/reels/${cleanId}/impression`);
+      const sessionId = getSessionId();
+      await api.post(`/reels/${cleanId}/impression`, { sessionId });
     } catch (err) {
       console.warn('Silent analytics tracking failed for reel view:', err.message);
     }
@@ -385,7 +399,8 @@ export const ReelsProvider = ({ children }) => {
   const logReelOrderClick = async (reelId) => {
     const cleanId = getBaseReelId(reelId);
     try {
-      await api.post(`/reels/${cleanId}/click`);
+      const sessionId = getSessionId();
+      await api.post(`/reels/${cleanId}/click-order`, { sessionId });
     } catch (err) {
       console.warn('Silent analytics tracking failed for reel order click:', err.message);
     }

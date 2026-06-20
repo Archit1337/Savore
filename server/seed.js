@@ -6,6 +6,7 @@ const FoodItem = require('./models/FoodItem');
 const Reel = require('./models/Reel');
 const Comment = require('./models/Comment');
 const Order = require('./models/Order');
+const ReelEvent = require('./models/ReelEvent');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
@@ -508,6 +509,7 @@ const seedDatabase = async () => {
     await Reel.deleteMany({});
     await Comment.deleteMany({});
     await Order.deleteMany({});
+    await ReelEvent.deleteMany({});
     console.log('✅ Collections scrubbed successfully.');
 
     // 2. Generate Seed Users
@@ -856,6 +858,7 @@ const seedDatabase = async () => {
           cuisineType: selectedDish.category || 'Mains',
           likes: Math.random() < 0.35 ? [customer._id, admin._id] : [admin._id],
           views: Math.floor(Math.random() * 5000) + 1200,
+          impressions: Math.floor(Math.random() * 5000) + 1200, // Aligned impressions for CTR calculations
           comments: randomComments,
           orderNowClicks: Math.floor(Math.random() * 400) + 100,
           orderConversions: Math.floor(Math.random() * 80) + 15,

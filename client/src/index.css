@@ -2830,5 +2830,48 @@ html.light .brand-shimmer-text {
   image-rendering: -webkit-optimize-contrast;
 }
 
+/* 📥 Premium Custom Scrollbar for KDS Boards & Table Ledgers */
+.kds-scrollbar::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.kds-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01) !important;
+  border-radius: 9999px !important;
+}
+
+.kds-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 90, 60, 0.16) !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.02) !important;
+  transition: background var(--transition-smooth);
+}
+
+.kds-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 90, 60, 0.35) !important;
+}
+
+/* Light mode overrides for KDS scrollbar */
+html.light .kds-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 90, 60, 0.22) !important;
+  border: 1px solid rgba(0, 0, 0, 0.02) !important;
+}
+
+html.light .kds-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 90, 60, 0.45) !important;
+}
+
+.kds-scrollbar {
+  scrollbar-width: thin !important; /* Firefox */
+  scrollbar-color: rgba(255, 90, 60, 0.16) rgba(255, 255, 255, 0.01) !important;
+}
+
+html.light .kds-scrollbar {
+  scrollbar-color: rgba(255, 90, 60, 0.22) rgba(0, 0, 0, 0.01) !important;
+}
+
+
 
 

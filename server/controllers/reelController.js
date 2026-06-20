@@ -1,11 +1,27 @@
 const Reel = require('../models/Reel');
 const Comment = require('../models/Comment');
 const Restaurant = require('../models/Restaurant');
+const ReelEvent = require('../models/ReelEvent');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const fs = require('fs').promises;
 const path = require('path');
 const ActivityLog = require('../models/ActivityLog');
+
+// Helper to optionally extract authenticated user ID from request headers in public endpoints
+const getUserIdFromHeader = (req) => {
+  try {
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      const token = req.headers.authorization.split(' ')[1];
+      const jwtSecret = process.env.JWT_SECRET || 'savore_saas_jwt_secret_token_2026';
+      const decoded = jwt.verify(token, jwtSecret);
+      return decoded.id;
+    }
+  } catch (e) {
+    // Ignore decoding issues for optional authorization lookup
+  }
+  return null;
+};
 
 // @desc    Upload a new vertical video reel
 // @route   POST /api/reels
@@ -325,16 +341,24 @@ const trackReelView = async (req, res, next) => {
       res.status(404);
       return next(new Error('Reel not found'));
     }
-    const reel = await Reel.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { views: 1 } },
-      { new: true }
-    );
-
+    const reel = await Reel.findById(req.params.id);
     if (!reel) {
       res.status(404);
       return next(new Error('Reel not found'));
     }
+
+    const sessionId = req.body.sessionId || req.ip || 'fallback_session';
+    const userId = getUserIdFromHeader(req);
+    await ReelEvent.create({
+      reel: reel._id,
+      restaurant: reel.restaurant,
+      user: userId,
+      eventType: 'impression', // A view counts as a standard impression
+      sessionId,
+    });
+
+    reel.views += 1;
+    await reel.save();
 
     res.json({
       success: true,
@@ -354,16 +378,24 @@ const trackReelOrderClick = async (req, res, next) => {
       res.status(404);
       return next(new Error('Reel not found'));
     }
-    const reel = await Reel.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { orderNowClicks: 1 } },
-      { new: true }
-    );
-
+    const reel = await Reel.findById(req.params.id);
     if (!reel) {
       res.status(404);
       return next(new Error('Reel not found'));
     }
+
+    const sessionId = req.body.sessionId || req.ip || 'fallback_session';
+    const userId = getUserIdFromHeader(req);
+    await ReelEvent.create({
+      reel: reel._id,
+      restaurant: reel.restaurant,
+      user: userId,
+      eventType: 'click_order',
+      sessionId,
+    });
+
+    reel.orderNowClicks += 1;
+    await reel.save();
 
     res.json({
       success: true,
@@ -383,16 +415,24 @@ const trackReelClick = async (req, res, next) => {
       res.status(404);
       return next(new Error('Reel not found'));
     }
-    const reel = await Reel.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { clicks: 1 } },
-      { new: true }
-    );
-
+    const reel = await Reel.findById(req.params.id);
     if (!reel) {
       res.status(404);
       return next(new Error('Reel not found'));
     }
+
+    const sessionId = req.body.sessionId || req.ip || 'fallback_session';
+    const userId = getUserIdFromHeader(req);
+    await ReelEvent.create({
+      reel: reel._id,
+      restaurant: reel.restaurant,
+      user: userId,
+      eventType: 'click',
+      sessionId,
+    });
+
+    reel.clicks += 1;
+    await reel.save();
 
     res.json({
       success: true,
@@ -526,16 +566,25 @@ const trackReelImpression = async (req, res, next) => {
       res.status(404);
       return next(new Error('Reel not found'));
     }
-    const reel = await Reel.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { impressions: 1, views: 1 } },
-      { new: true }
-    );
-
+    const reel = await Reel.findById(req.params.id);
     if (!reel) {
       res.status(404);
       return next(new Error('Reel not found'));
     }
+
+    const sessionId = req.body.sessionId || req.ip || 'fallback_session';
+    const userId = getUserIdFromHeader(req);
+    await ReelEvent.create({
+      reel: reel._id,
+      restaurant: reel.restaurant,
+      user: userId,
+      eventType: 'impression',
+      sessionId,
+    });
+
+    reel.impressions += 1;
+    reel.views += 1;
+    await reel.save();
 
     res.json({
       success: true,

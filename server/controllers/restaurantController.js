@@ -2,6 +2,7 @@ const Restaurant = require('../models/Restaurant');
 const FoodItem = require('../models/FoodItem');
 const Order = require('../models/Order');
 const Reel = require('../models/Reel');
+const ReelEvent = require('../models/ReelEvent');
 const Comment = require('../models/Comment');
 const mongoose = require('mongoose');
 
@@ -169,7 +170,24 @@ const getOwnerAnalytics = async (req, res, next) => {
     }
 
     // Capture SaaS analytics metrics:
-    // 1. Total revenue
+    // 1. Total revenue (calculated dynamically from delivered orders)
+    const revenueSumResult = await Order.aggregate([
+      {
+        $match: {
+          restaurant: restaurant._id,
+          status: 'delivered',
+          isTestOrder: { $ne: true }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$subtotal' }
+        }
+      }
+    ]);
+    const totalRevenue = revenueSumResult[0]?.total || 0;
+
     // 2. Active Orders
     // 3. Completed Orders count
     const activeOrdersCount = await Order.countDocuments({
@@ -183,25 +201,59 @@ const getOwnerAnalytics = async (req, res, next) => {
       isTestOrder: { $ne: true },
     });
 
-    // 4. Calculate conversions (true Reels CTR based on impressions vs clicks)
-    const reels = await Reel.find({ restaurant: restaurant._id });
-    let totalImpressions = 0;
-    let totalClicks = 0;
-    reels.forEach(r => {
-      totalImpressions += r.impressions || 0;
-      totalClicks += r.clicks || 0;
-    });
+    // 4. Define time-series and analytics window setup (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    const conversionRate = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(1) : 0.0;
+    // Calculate unique session conversions (true Reels CTR based on unique impressions vs unique order clicks)
+    const ctrStats = await ReelEvent.aggregate([
+      {
+        $match: {
+          restaurant: restaurant._id,
+          createdAt: { $gte: sixMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: "$eventType",
+          uniqueSessions: { $addToSet: "$sessionId" }
+        }
+      }
+    ]);
+
+    const uniqueImpressions = ctrStats.find(s => s._id === 'impression')?.uniqueSessions.length || 0;
+    const uniqueClicks = ctrStats.find(s => s._id === 'click_order')?.uniqueSessions.length || 0;
+
+    // Fallback logic: If no events exist in the ledger yet (e.g., just after upgrade or database migration), 
+    // fall back to the aggregated raw counter values on the Reel models for backwards compatibility.
+    let conversionRate = 0.0;
+    if (uniqueImpressions > 0) {
+      conversionRate = parseFloat(((uniqueClicks / uniqueImpressions) * 100).toFixed(1));
+    } else {
+      const reels = await Reel.find({ restaurant: restaurant._id });
+      let fallbackImpressions = 0;
+      let fallbackClicks = 0;
+      reels.forEach(r => {
+        fallbackImpressions += r.impressions || r.views || 0;
+        fallbackClicks += r.orderNowClicks || 0;
+      });
+      conversionRate = fallbackImpressions > 0 
+        ? parseFloat(((fallbackClicks / fallbackImpressions) * 100).toFixed(1)) 
+        : 0.0;
+    }
 
     // 5. Time-series data aggregations
-    // Aggregation for monthly revenue (subtotal sum of delivered orders)
+    // Aggregation for monthly revenue (subtotal sum of delivered orders in the last 6 months)
+
     const monthlyRevenue = await Order.aggregate([
       {
         $match: {
           restaurant: restaurant._id,
           status: 'delivered',
-          isTestOrder: { $ne: true }
+          isTestOrder: { $ne: true },
+          createdAt: { $gte: sixMonthsAgo }
         }
       },
       {
@@ -260,12 +312,13 @@ const getOwnerAnalytics = async (req, res, next) => {
       success: true,
       data: {
         restaurantName: restaurant.name,
-        totalRevenue: restaurant.revenue,
+        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
         activeOrders: activeOrdersCount,
         completedOrders: completedOrdersCount,
         conversionRate: parseFloat(conversionRate),
         monthlyRevenue: last6Months,
         weeklySpikes: formattedWeeklySpikes,
+        isOpen: restaurant.isOpen,
       },
     });
   } catch (error) {
@@ -299,7 +352,7 @@ const updateOwnerRestaurant = async (req, res, next) => {
   try {
     const { 
       name, description, coverImage, tags, cuisines, deliveryTime, deliveryFee, timings,
-      city, locality, priceRange, deliveryRadius, serviceableZones, latitude, longitude, upiVpa
+      city, locality, priceRange, deliveryRadius, serviceableZones, latitude, longitude, upiVpa, isOpen
     } = req.body;
     const restaurant = await Restaurant.findOne({ owner: req.user.id });
 
@@ -309,6 +362,7 @@ const updateOwnerRestaurant = async (req, res, next) => {
     }
 
     if (name !== undefined) restaurant.name = name;
+    if (isOpen !== undefined) restaurant.isOpen = isOpen;
     if (description !== undefined) restaurant.description = description;
     if (coverImage !== undefined) restaurant.coverImage = coverImage;
     if (tags !== undefined) restaurant.tags = tags;

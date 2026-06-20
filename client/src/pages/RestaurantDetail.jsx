@@ -24,6 +24,7 @@ export default function RestaurantDetail() {
   const [restaurant, setRestaurant] = useState(null);
   const isOwnRestaurant = isAuthenticated && user && restaurant && (restaurant.owner === user._id || restaurant.owner?._id === user._id);
   const isOutOfRegion = restaurant && activeCity && restaurant.city && restaurant.city.toLowerCase().trim() !== activeCity.toLowerCase().trim() && !isOwnRestaurant;
+  const isClosed = restaurant && !restaurant.isOpen && !isOwnRestaurant;
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -223,6 +224,17 @@ export default function RestaurantDetail() {
         </div>
       </motion.div>
 
+      {isClosed && (
+        <div className="glass-panel border-red-500/30 bg-red-500/10 p-4 rounded-[20px] mb-6 flex items-center gap-3 text-left relative overflow-hidden animate-fade-in">
+          <div className="noise-overlay" />
+          <AlertTriangle className="text-red-500 shrink-0" size={20} />
+          <div>
+            <h4 className="text-[14px] font-bold text-text-primary">Kitchen Currently Closed</h4>
+            <p className="text-[12.5px] text-text-secondary leading-relaxed">This restaurant is not currently accepting delivery orders. You can browse their menu, but checkout is disabled.</p>
+          </div>
+        </div>
+      )}
+
       {isOutOfRegion && (
         <div className="glass-panel border-[#ff6a4d]/30 bg-[#ff6a4d]/10 p-4 rounded-[20px] mb-6 flex items-center gap-3 text-left relative overflow-hidden animate-fade-in">
           <div className="noise-overlay" />
@@ -311,6 +323,13 @@ export default function RestaurantDetail() {
                                 className="btn bg-[var(--surface-bright)] text-[var(--text-muted)] cursor-not-allowed border-none rounded-full px-[18px] py-[9px] text-[13.5px] font-bold opacity-60"
                               >
                                 Unavailable in {activeCity}
+                              </button>
+                            ) : isClosed ? (
+                              <button 
+                                disabled 
+                                className="btn bg-[var(--surface-bright)] text-[var(--text-muted)] cursor-not-allowed border-none rounded-full px-[18px] py-[9px] text-[13.5px] font-bold opacity-60"
+                              >
+                                Kitchen Closed
                               </button>
                             ) : (
                               <>
@@ -425,17 +444,17 @@ export default function RestaurantDetail() {
                   </div>
 
                   <motion.button 
-                    whileHover={isOutOfRegion ? {} : { scale: 1.02 }}
-                    whileTap={isOutOfRegion ? {} : { scale: 0.98 }}
-                    onClick={isOutOfRegion ? null : () => navigate('/checkout')}
-                    disabled={isOutOfRegion}
+                    whileHover={isOutOfRegion || isClosed ? {} : { scale: 1.02 }}
+                    whileTap={isOutOfRegion || isClosed ? {} : { scale: 0.98 }}
+                    onClick={isOutOfRegion || isClosed ? null : () => navigate('/checkout')}
+                    disabled={isOutOfRegion || isClosed}
                     className={`btn w-full p-3.5 rounded-[14px] font-medium transition-all ${
-                      isOutOfRegion
+                      isOutOfRegion || isClosed
                         ? 'bg-[var(--surface-bright)] text-[var(--text-muted)] cursor-not-allowed opacity-60 border-none'
                         : 'btn-primary cursor-pointer'
                     }`}
                   >
-                    {isOutOfRegion ? 'Outside Active Zone' : isOwnRestaurant ? 'Simulate Checkout' : 'Proceed To Checkout'}
+                    {isOutOfRegion ? 'Outside Active Zone' : isClosed ? 'Kitchen Closed' : isOwnRestaurant ? 'Simulate Checkout' : 'Proceed To Checkout'}
                   </motion.button>
                 </motion.div>
               ) : (

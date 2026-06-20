@@ -98,6 +98,12 @@ const placeOrder = async (req, res, next) => {
     // Determine if this is a test order placed by the owner
     const isTestOrder = restaurant.owner.toString() === req.user.id;
 
+    // Validate if restaurant is open (bypassed for test orders placed by the owner)
+    if (!restaurant.isOpen && !isTestOrder) {
+      res.status(400);
+      throw new Error(`This restaurant (${restaurant.name}) is currently closed and not accepting new orders.`);
+    }
+
     if (paymentMethod === 'SIMULATED' && !isTestOrder) {
       res.status(400);
       throw new Error('Simulation payment mode is only available for the kitchen owner.');

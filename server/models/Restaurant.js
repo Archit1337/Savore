@@ -103,6 +103,10 @@ const restaurantSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isOpen: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
