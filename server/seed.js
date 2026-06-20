@@ -377,7 +377,7 @@ const RESTAURANTS_DATA = [
     rating: 4.7, deliveryTime: 20, deliveryFee: 3.50,
     tags: ["Most Loved", "Sweet", "Dessert"], cuisines: ["Desserts", "Bakery", "Pastries"],
     menu: [
-      { name: "Pistachio Strawberry Plating", description: "Melted dark chocolate truffles, organic fresh garden strawberries, alongside premium pistachio gelato.", price: 14.5, image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&q=80", category: "Dessert" }
+      { name: "Pistachio Strawberry Plating", description: "Melted dark chocolate truffles, organic fresh garden strawberries, alongside premium pistachio gelato.", price: 14.5, image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&q=80", category: "Desserts" }
     ]
   },
   {

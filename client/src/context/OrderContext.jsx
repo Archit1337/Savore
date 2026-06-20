@@ -77,11 +77,12 @@ export const OrderProvider = ({ children }) => {
   };
 
   // Fetch merchant's incoming orders
-  const fetchRestaurantOrders = async (page = 1, limit = 10) => {
+  const fetchRestaurantOrders = async (page = 1, limit = 10, status = '') => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get(`/orders/restaurant?page=${page}&limit=${limit}`);
+      const statusParam = status ? `&status=${status}` : '';
+      const res = await api.get(`/orders/restaurant?page=${page}&limit=${limit}${statusParam}`);
       return res.data; // contains { data: [], page, totalPages }
     } catch (err) {
       setError(err.message);

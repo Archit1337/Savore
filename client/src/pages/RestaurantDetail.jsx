@@ -305,7 +305,7 @@ export default function RestaurantDetail() {
                           {item.category}
                         </span>
                         <h3 className="text-[21px] my-1 mb-2.5 font-normal">{item.name}</h3>
-                        <p className="text-[14px] text-[var(--text-secondary)] leading-[1.55] mb-4.5">
+                        <p className="text-[14px] text-[var(--text-secondary)] leading-[1.55] mb-5">
                           {item.description}
                         </p>
                       </div>

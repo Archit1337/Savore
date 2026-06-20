@@ -263,10 +263,22 @@ const getRestaurantOrders = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const totalOrders = await Order.countDocuments({ restaurant: restaurant._id });
+    const query = { restaurant: restaurant._id };
+    
+    if (req.query.status) {
+      if (req.query.status === 'active') {
+        query.status = { $in: ['pending', 'preparing', 'ready', 'out_for_delivery'] };
+      } else if (req.query.status === 'archived') {
+        query.status = { $in: ['delivered', 'cancelled'] };
+      } else {
+        query.status = req.query.status;
+      }
+    }
+
+    const totalOrders = await Order.countDocuments(query);
     const totalPages = Math.ceil(totalOrders / limit) || 1;
 
-    const orders = await Order.find({ restaurant: restaurant._id })
+    const orders = await Order.find(query)
       .populate('user', 'username email')
       .populate('items.foodItem', 'name price')
       .sort({ createdAt: -1 })

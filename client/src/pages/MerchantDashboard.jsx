@@ -392,6 +392,12 @@ export default function MerchantDashboard() {
   const [comments, setComments] = useState([]);
   const [restaurantDetails, setRestaurantDetails] = useState(null);
   
+  // Archive orders specific state
+  const [archiveOrders, setArchiveOrders] = useState([]);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [archivePage, setArchivePage] = useState(1);
+  const [archiveTotalPages, setArchiveTotalPages] = useState(1);
+
   // Loading indicators
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [menuLoading, setMenuLoading] = useState(false);
@@ -544,22 +550,46 @@ export default function MerchantDashboard() {
     }
   };
 
-  // Orders Retrieval
-  const fetchOrdersData = async (targetPage = 1) => {
+  // Fetch active orders (limit 100 to ensure we don't hide active orders in KDS)
+  const fetchActiveOrders = async () => {
     if (!hasRestaurant) return;
     setOrdersLoading(true);
     try {
-      const res = await fetchRestaurantOrders(targetPage, 10);
+      const res = await fetchRestaurantOrders(1, 100, 'active');
       if (res && res.data) {
         setOrders(res.data);
-        setPage(res.page);
-        setTotalPages(res.totalPages);
       }
     } catch (err) {
-      console.error('Failed to load incoming orders:', err.message);
+      console.error('Failed to load active orders:', err.message);
     } finally {
       setOrdersLoading(false);
     }
+  };
+
+  // Fetch paginated archived orders
+  const fetchArchiveOrders = async (targetPage = 1) => {
+    if (!hasRestaurant) return;
+    setArchiveLoading(true);
+    try {
+      const res = await fetchRestaurantOrders(targetPage, 10, 'archived');
+      if (res && res.data) {
+        setArchiveOrders(res.data);
+        setArchivePage(res.page);
+        setArchiveTotalPages(res.totalPages);
+      }
+    } catch (err) {
+      console.error('Failed to load archived orders:', err.message);
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
+  // Orders Retrieval (loads active and the specified page of archived orders)
+  const fetchOrdersData = async (targetPage = 1) => {
+    await Promise.all([
+      fetchActiveOrders(),
+      fetchArchiveOrders(targetPage)
+    ]);
   };
 
   // Menu items fetching
@@ -793,7 +823,7 @@ export default function MerchantDashboard() {
       setDishFormName(dish.name || '');
       setDishFormDesc(dish.description || '');
       setDishFormPrice(dish.price || '');
-      setDishFormCategory(dish.category || 'Main Course');
+      setDishFormCategory(dish.category === 'Dessert' ? 'Desserts' : (dish.category || 'Main Course'));
       setDishFormImage(dish.image || '');
       setDishFormAvailable(dish.isAvailable !== false);
     } else {
@@ -1582,7 +1612,7 @@ export default function MerchantDashboard() {
                                   }
 
                                   return (
-                                    <div key={ord._id} className="bg-slate-950/40 dark:bg-black/45 border border-white/[0.07] hover:border-primary/30 rounded-xl p-4.5 flex flex-col gap-4 relative transition-all duration-300 hover:shadow-lg hover:shadow-primary/2">
+                                    <div key={ord._id} className="bg-slate-950/40 dark:bg-black/45 border border-white/[0.07] hover:border-primary/30 rounded-xl p-5 flex flex-col gap-4 relative transition-all duration-300 hover:shadow-lg hover:shadow-primary/2">
                                       {/* Card Titlebar */}
                                       <div className="flex justify-between items-center gap-2 min-w-0">
                                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1621,7 +1651,7 @@ export default function MerchantDashboard() {
                                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                                 <input 
                                                   type="checkbox" 
-                                                  className="rounded border-white/20 bg-transparent text-primary focus:ring-0 cursor-pointer w-4.5 h-4.5 shrink-0 checked:bg-primary checked:border-primary transition-all" 
+                                                  className="rounded border-white/20 bg-transparent text-primary focus:ring-0 cursor-pointer w-4 h-4 shrink-0 checked:bg-primary checked:border-primary transition-all" 
                                                   onClick={(e) => e.stopPropagation()} 
                                                 />
                                                 <span className="text-text-secondary font-semibold break-words leading-tight truncate">{item.foodItem?.name || 'Chef Dish'}</span>
@@ -1783,18 +1813,20 @@ export default function MerchantDashboard() {
                       </div>
 
                       {/* Responsive data table */}
-                      {(() => {
-                        const filteredArchiveOrders = orders
-                          .filter(o => o.status === 'delivered' || o.status === 'cancelled')
-                          .filter(o => {
-                            const matchesFilter = archiveFilter === 'all' || o.status === archiveFilter;
-                            const searchLower = archiveSearch.toLowerCase();
-                            const matchesSearch = !archiveSearch || 
-                              o._id.toLowerCase().includes(searchLower) ||
-                              o.deliveryAddress?.toLowerCase().includes(searchLower) ||
-                              o.items.some(item => item.foodItem?.name?.toLowerCase().includes(searchLower));
-                            return matchesFilter && matchesSearch;
-                          });
+                      {archiveLoading ? (
+                        <div className="py-12 text-center">
+                          <RefreshCw className="animate-stir text-text-muted" size={24} />
+                        </div>
+                      ) : (() => {
+                        const filteredArchiveOrders = archiveOrders.filter(o => {
+                          const matchesFilter = archiveFilter === 'all' || o.status === archiveFilter;
+                          const searchLower = archiveSearch.toLowerCase();
+                          const matchesSearch = !archiveSearch || 
+                            o._id.toLowerCase().includes(searchLower) ||
+                            o.deliveryAddress?.toLowerCase().includes(searchLower) ||
+                            o.items.some(item => item.foodItem?.name?.toLowerCase().includes(searchLower));
+                          return matchesFilter && matchesSearch;
+                        });
 
                         return (
                           <div className="overflow-x-auto w-full rounded-2xl border border-white/[0.04] bg-white/[0.005] kds-scrollbar">
@@ -1865,13 +1897,13 @@ export default function MerchantDashboard() {
                       })()}
                     </div>
 
-                    {totalPages > 1 && (
+                    {archiveTotalPages > 1 && (
                       <div className="flex justify-center gap-2 mt-4 select-none">
-                        {Array(totalPages).fill(0).map((_, i) => (
+                        {Array(archiveTotalPages).fill(0).map((_, i) => (
                           <button 
                             key={i} 
-                            onClick={() => fetchOrdersData(i + 1)}
-                            className={`chip btn-pill ${page === i + 1 ? 'btn-primary text-white bg-primary' : 'bg-transparent text-text-secondary'}`}
+                            onClick={() => fetchArchiveOrders(i + 1)}
+                            className={`chip btn-pill ${archivePage === i + 1 ? 'btn-primary text-white bg-primary' : 'bg-transparent text-text-secondary'}`}
                           >
                             {i + 1}
                           </button>
@@ -1918,7 +1950,7 @@ export default function MerchantDashboard() {
                         <button
                           key={cat}
                           onClick={() => setMenuFilter(cat)}
-                          className={`chip text-[12px] px-4.5 py-2.5 rounded-xl transition-all font-semibold cursor-pointer shrink-0 ${
+                          className={`chip text-[12px] px-5 py-2.5 rounded-xl transition-all font-semibold cursor-pointer shrink-0 ${
                             menuFilter === cat 
                               ? 'bg-primary text-white border-primary shadow-sm' 
                               : 'bg-white/[0.02] border-white/5 text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
@@ -1958,7 +1990,9 @@ export default function MerchantDashboard() {
                     </div>
                   ) : (() => {
                     const filteredMenu = menu.filter(dish => {
-                      const matchesCategory = menuFilter === 'All' || dish.category === menuFilter;
+                      const matchesCategory = menuFilter === 'All' || 
+                        dish.category === menuFilter || 
+                        (menuFilter === 'Desserts' && (dish.category === 'Dessert' || dish.category === 'Desserts'));
                       const matchesSearch = !menuSearch || 
                         dish.name.toLowerCase().includes(menuSearch.toLowerCase()) || 
                         dish.description?.toLowerCase().includes(menuSearch.toLowerCase());
@@ -1975,7 +2009,7 @@ export default function MerchantDashboard() {
                             <div className="h-44 w-full bg-slate-900 overflow-hidden relative">
                               <SafeImage src={resolveMediaUrl(dish.image)} alt={dish.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                               <span className="absolute top-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm">
-                                {dish.category}
+                                {dish.category === 'Dessert' ? 'Desserts' : dish.category}
                               </span>
                               {!dish.isAvailable && (
                                 <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
@@ -2309,7 +2343,7 @@ export default function MerchantDashboard() {
                     <RefreshCw className="animate-stir text-text-muted" size={24} />
                   </div>
                 ) : comments.length > 0 ? (
-                  <div className="flex flex-col gap-4.5">
+                  <div className="flex flex-col gap-5">
                     {comments.map(c => (
                       <div 
                         key={c._id} 
