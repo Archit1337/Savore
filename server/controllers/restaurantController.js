@@ -416,12 +416,21 @@ const getOwnerComments = async (req, res, next) => {
       return next(new Error('No restaurant registered for this owner account.'));
     }
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const reels = await Reel.find({ restaurant: restaurant._id });
     const commentIds = reels.flatMap(r => r.comments || []);
 
+    const totalComments = await Comment.countDocuments({ _id: { $in: commentIds } });
+    const totalPages = Math.ceil(totalComments / limit) || 1;
+
     const comments = await Comment.find({ _id: { $in: commentIds } })
       .populate('user', 'username profilePicture')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const formattedComments = [];
     comments.forEach(c => {
@@ -438,7 +447,40 @@ const getOwnerComments = async (req, res, next) => {
 
     res.json({
       success: true,
-      data: formattedComments || []
+      data: formattedComments || [],
+      page,
+      totalPages,
+      totalComments
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Mark a restaurant notification as read/dismissed
+// @route   PUT /api/restaurants/owner/notifications/:id/read
+// @access  Private (Restaurant Owner)
+const markNotificationRead = async (req, res, next) => {
+  try {
+    const restaurant = await Restaurant.findOne({ owner: req.user.id });
+    if (!restaurant) {
+      res.status(404);
+      return next(new Error('No restaurant found for this owner'));
+    }
+
+    const notification = restaurant.notifications.id(req.params.id);
+    if (!notification) {
+      res.status(404);
+      return next(new Error('Notification not found'));
+    }
+
+    notification.isRead = true;
+    await restaurant.save();
+
+    res.json({
+      success: true,
+      data: restaurant.notifications,
+      message: 'Notification marked as read successfully'
     });
   } catch (error) {
     next(error);
@@ -453,4 +495,5 @@ module.exports = {
   getOwnerRestaurant,
   updateOwnerRestaurant,
   getOwnerComments,
+  markNotificationRead,
 };

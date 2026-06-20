@@ -652,6 +652,27 @@ const reportReel = async (req, res, next) => {
       updatedReel.isFlagged = true;
       await updatedReel.save();
 
+      // Create owner notification on associated restaurant
+      if (restaurant) {
+        if (!restaurant.notifications) {
+          restaurant.notifications = [];
+        }
+        restaurant.notifications.push({
+          title: 'Reel Suspended by System',
+          message: `Your video Reel "${updatedReel.caption || 'Culinary Reel'}" has been automatically suspended due to excessive community flags.`,
+          type: 'reel_removal',
+          details: {
+            reelCaption: updatedReel.caption || 'Culinary Reel',
+            removedBy: 'system',
+            reason: 'Community Guidelines Violation Threshold',
+            description: `This video received ${updatedReel.reports.length} report flags from the customer community. It has been hidden from public swipe feeds pending administrative audit.`,
+          },
+          createdAt: new Date(),
+          isRead: false
+        });
+        await restaurant.save();
+      }
+
       // Log system auto-flagging event
       try {
         await ActivityLog.create({

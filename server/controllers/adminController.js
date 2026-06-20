@@ -345,6 +345,33 @@ const deleteReel = async (req, res, next) => {
     }
 
     const reelCaption = reel.caption;
+    
+    // Create owner notification on associated restaurant
+    const { reason, description } = req.body;
+    const adminReason = reason || 'Policy Violation';
+    const adminDescription = description || 'This video violated our community guidelines and has been permanently removed by the administration.';
+    
+    const restaurant = await Restaurant.findById(reel.restaurant);
+    if (restaurant) {
+      if (!restaurant.notifications) {
+        restaurant.notifications = [];
+      }
+      restaurant.notifications.push({
+        title: 'Reel Removed by Administration',
+        message: `Your video Reel "${reelCaption || 'Culinary Reel'}" has been permanently removed by an Administrator.`,
+        type: 'reel_removal',
+        details: {
+          reelCaption: reelCaption || 'Culinary Reel',
+          removedBy: 'admin',
+          reason: adminReason,
+          description: adminDescription,
+        },
+        createdAt: new Date(),
+        isRead: false
+      });
+      await restaurant.save();
+    }
+
     await reel.deleteOne();
 
     await logAdminActivity(

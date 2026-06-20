@@ -107,6 +107,39 @@ const restaurantSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    notifications: [
+      {
+        title: {
+          type: String,
+          required: true,
+        },
+        message: {
+          type: String,
+          required: true,
+        },
+        type: {
+          type: String,
+          default: 'info',
+        },
+        details: {
+          reelCaption: String,
+          removedBy: {
+            type: String,
+            enum: ['admin', 'system'],
+          },
+          reason: String,
+          description: String,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+        isRead: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

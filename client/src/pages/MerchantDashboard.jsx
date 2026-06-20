@@ -390,6 +390,8 @@ export default function MerchantDashboard() {
   const [menu, setMenu] = useState([]);
   const [restaurantReels, setRestaurantReels] = useState([]);
   const [comments, setComments] = useState([]);
+  const [commentsPage, setCommentsPage] = useState(1);
+  const [commentsTotalPages, setCommentsTotalPages] = useState(1);
   const [restaurantDetails, setRestaurantDetails] = useState(null);
   
   // Archive orders specific state
@@ -629,16 +631,18 @@ export default function MerchantDashboard() {
   };
 
   // Feedback reviews fetching
-  const fetchCommentsData = async () => {
+  const fetchCommentsData = async (targetPage = 1) => {
     if (!hasRestaurant) return;
     setCommentsLoading(true);
     try {
       const [commentsRes, reelsRes] = await Promise.all([
-        api.get('/restaurants/owner/comments'),
+        api.get(`/restaurants/owner/comments?page=${targetPage}&limit=10`),
         api.get('/reels/owner')
       ]);
       if (commentsRes.data && commentsRes.data.success) {
         setComments(commentsRes.data.data || []);
+        setCommentsPage(commentsRes.data.page || 1);
+        setCommentsTotalPages(commentsRes.data.totalPages || 1);
       }
       if (reelsRes.data && reelsRes.data.success) {
         setRestaurantReels(reelsRes.data.data || []);
@@ -928,6 +932,23 @@ export default function MerchantDashboard() {
     } catch (err) {
       setErrorMsg(err.message || `Failed to delete ${deleteTargetType}`);
       setDeleteConfirmOpen(false);
+    }
+  };
+
+  const handleDismissNotification = async (notificationId) => {
+    try {
+      const res = await api.put(`/restaurants/owner/notifications/${notificationId}/read`);
+      if (res.data && res.data.success) {
+        setRestaurantDetails(prev => {
+          if (!prev) return null;
+          const updatedNotifications = prev.notifications.map(n => 
+            n._id === notificationId ? { ...n, isRead: true } : n
+          );
+          return { ...prev, notifications: updatedNotifications };
+        });
+      }
+    } catch (err) {
+      console.error('Failed to dismiss notification:', err.message);
     }
   };
 
@@ -1419,6 +1440,51 @@ export default function MerchantDashboard() {
               </p>
             </div>
           </div>
+
+      {/* RESTAURANT REEL REMOVAL NOTIFICATIONS */}
+      {restaurantDetails?.notifications && restaurantDetails.notifications.filter(n => !n.isRead).length > 0 && (
+        <div className="flex flex-col gap-4 mb-6">
+          {restaurantDetails.notifications.filter(n => !n.isRead).map(n => (
+            <div 
+              key={n._id}
+              className="bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl p-5 flex items-start justify-between gap-4 backdrop-blur-md relative"
+            >
+              <div className="flex gap-3">
+                <div className="p-2 rounded-lg bg-red-500/15 text-red-500 mt-0.5">
+                  <ShieldAlert size={16} />
+                </div>
+                <div className="text-left">
+                  <strong className="text-sm font-bold text-text-primary block">{n.title}</strong>
+                  <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                    {n.message}
+                  </p>
+                  {n.details && (
+                    <div className="mt-2.5 p-3 rounded-lg bg-black/30 border border-white/5 text-[11px] text-text-secondary max-w-xl">
+                      <div className="flex items-center gap-1.5 font-bold mb-1">
+                        <span className="capitalize text-primary text-[10px] tracking-wide uppercase px-1.5 py-0.5 bg-primary/10 rounded">
+                          Source: {n.details.removedBy || 'System'}
+                        </span>
+                        <span className="text-text-muted">•</span>
+                        <span>Reason: {n.details.reason}</span>
+                      </div>
+                      <p className="leading-relaxed font-medium italic">
+                        "{n.details.description}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => handleDismissNotification(n._id)}
+                className="p-1.5 rounded-lg hover:bg-red-500/15 text-text-muted hover:text-red-500 transition-colors cursor-pointer"
+                title="Dismiss Alert"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* FEEDBACK BANNERS */}
       {errorMsg && (
@@ -2128,12 +2194,17 @@ export default function MerchantDashboard() {
                                 </div>
                               </div>
 
-                              {reel.isFlagged && (
+                              {reel.moderationState === 'suspended' ? (
+                                <div className="absolute top-3 left-3 bg-red-600 text-white flex items-center gap-1 rounded-lg text-[9px] px-2 py-0.5 font-extrabold uppercase tracking-[0.05em] backdrop-blur-sm z-20 border border-red-500/30 shadow-lg shadow-red-600/20">
+                                  <ShieldAlert size={10} />
+                                  <span>Removed / Suspended</span>
+                                </div>
+                              ) : reel.isFlagged ? (
                                 <div className="absolute top-3 left-3 bg-red-500/90 text-white flex items-center gap-1 rounded-lg text-[9px] px-2 py-0.5 font-extrabold uppercase tracking-[0.05em] backdrop-blur-sm z-20 border border-red-400/20 shadow-lg shadow-red-500/20">
                                   <AlertTriangle size={10} />
                                   <span>Flagged</span>
                                 </div>
-                              )}
+                              ) : null}
 
                               <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2.5 py-0.5 font-bold uppercase tracking-[0.05em] backdrop-blur-sm z-20">
                                 Views: {reel.views || 0}
@@ -2151,6 +2222,18 @@ export default function MerchantDashboard() {
                                     {reel.tags.map(tag => (
                                       <span key={tag} className="text-[10px] text-primary font-bold">#{tag}</span>
                                     ))}
+                                  </div>
+                                )}
+
+                                {reel.moderationState === 'suspended' && (
+                                  <div className="mt-3.5 p-3 rounded-xl bg-red-500/5 dark:bg-red-500/10 border border-red-500/20 text-xs">
+                                    <div className="flex items-center gap-1.5 font-bold text-red-500 mb-1">
+                                      <ShieldAlert size={12} className="shrink-0" />
+                                      <span>Removed by Administration</span>
+                                    </div>
+                                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                                      This video has been suspended and removed from public feeds due to policy violations or community reporting threshold.
+                                    </p>
                                   </div>
                                 )}
 
@@ -2343,50 +2426,84 @@ export default function MerchantDashboard() {
                     <RefreshCw className="animate-stir text-text-muted" size={24} />
                   </div>
                 ) : comments.length > 0 ? (
-                  <div className="flex flex-col gap-5">
-                    {comments.map(c => (
-                      <div 
-                        key={c._id} 
-                        className="bg-[var(--surface-container)] border border-[var(--border-light)] rounded-2xl p-5 text-left hover:border-primary/10 transition-all duration-350"
-                      >
-                        <div className="flex justify-between items-center flex-wrap gap-2">
-                          <div className="flex items-center gap-2.5">
-                            <SafeAvatar src={resolveMediaUrl(c.user?.profilePicture)} alt={c.user?.username} size={28} className="border border-primary/25 shadow-sm" />
-                            <span className="text-[13.5px] text-text-primary font-bold">
-                              @{c.user?.username || 'Valued Patron'}
-                            </span>
-                          </div>
-                          <span className="text-[11.5px] text-text-muted font-semibold">{new Date(c.createdAt).toLocaleDateString()}</span>
-                        </div>
-
-                        <p className="text-[14px] text-text-primary mt-3 font-semibold italic pl-1 leading-relaxed">
-                          "{c.text}"
-                        </p>
-
-                        <div className="mt-4 flex items-center gap-1.5 text-[12px] text-text-secondary border-t border-white/5 pt-3 pl-1 font-semibold">
-                          <span>Reel Video:</span>
-                          {(() => {
-                            const matchedReel = restaurantReels.find(r => r._id === c.reelId);
-                            if (matchedReel) {
-                              return (
-                                <button 
-                                  onClick={() => setPreviewReel(matchedReel)}
-                                  className="text-primary hover:underline italic bg-transparent border-none cursor-pointer p-0 font-semibold flex items-center gap-1"
-                                >
-                                  <Film size={11} /> {c.reelCaption || 'View Video Clip'}
-                                </button>
-                              );
-                            }
-                            return (
-                              <span className="text-text-muted italic">
-                                {c.reelCaption || 'Recipe Reel'}
+                  <>
+                    <div className="flex flex-col gap-5">
+                      {comments.map(c => (
+                        <div 
+                          key={c._id} 
+                          className="bg-slate-900/40 dark:bg-black/45 border border-white/[0.04] hover:border-primary/20 rounded-[20px] p-6 text-left transition-all duration-300 shadow-[var(--shadow-card)] hover:shadow-lg hover:shadow-primary/1"
+                        >
+                          <div className="flex justify-between items-center flex-wrap gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <SafeAvatar src={resolveMediaUrl(c.user?.profilePicture)} alt={c.user?.username} size={28} className="border border-primary/25 shadow-sm" />
+                              <span className="text-[13.5px] text-text-primary font-bold">
+                                @{c.user?.username || 'Valued Patron'}
                               </span>
-                            );
-                          })()}
+                            </div>
+                            <span className="text-[11.5px] text-text-muted font-semibold">{new Date(c.createdAt).toLocaleDateString()}</span>
+                          </div>
+
+                          <p className="text-[13.5px] text-text-secondary mt-3.5 font-medium italic pl-3 leading-relaxed border-l-2 border-primary/20">
+                            "{c.text}"
+                          </p>
+
+                          <div className="mt-4 border-t border-white/5 pt-4">
+                            <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-2.5">Attributed Recipe Reel</span>
+                            {(() => {
+                              const matchedReel = restaurantReels.find(r => r._id === c.reelId);
+                              const reelCaption = c.reelCaption || (matchedReel ? matchedReel.caption : 'View Video Clip');
+                              
+                              return (
+                                <div 
+                                  onClick={() => matchedReel && setPreviewReel(matchedReel)}
+                                  className={`flex items-center gap-3.5 bg-white/[0.01] border border-white/[0.03] p-3 rounded-xl transition-all select-none ${
+                                    matchedReel ? 'hover:bg-white/[0.04] hover:border-primary/25 cursor-pointer group/reel' : ''
+                                  }`}
+                                >
+                                  <div className="w-10 h-10 rounded-lg bg-slate-950 flex items-center justify-center shrink-0 border border-white/5 relative overflow-hidden">
+                                    <Film size={14} className="text-text-muted group-hover/reel:text-primary transition-colors" />
+                                    {matchedReel && (
+                                      <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover/reel:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Play size={10} fill="currentColor" className="text-primary" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-left">
+                                    <p className="text-[12px] text-text-primary font-bold truncate group-hover/reel:text-primary transition-colors">
+                                      {reelCaption}
+                                    </p>
+                                    <span className="text-[10.5px] text-text-muted mt-0.5 block font-semibold flex items-center gap-1">
+                                      {matchedReel ? (
+                                        <>
+                                          <span>Click to watch clip</span>
+                                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase font-bold shrink-0 font-sans tracking-wide">Watch →</span>
+                                        </>
+                                      ) : (
+                                        'Video Archive'
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                    {commentsTotalPages > 1 && (
+                      <div className="flex justify-center gap-2 mt-6 select-none">
+                        {Array(commentsTotalPages).fill(0).map((_, i) => (
+                          <button 
+                            key={i} 
+                            onClick={() => fetchCommentsData(i + 1)}
+                            className={`chip btn-pill ${commentsPage === i + 1 ? 'btn-primary text-white bg-primary' : 'bg-transparent text-text-secondary'}`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-12 text-text-secondary text-sm">
                     No feedback comments left on your reels yet.

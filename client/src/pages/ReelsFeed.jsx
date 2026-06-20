@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageSquare, Volume2, VolumeX, Send, ArrowLeft, ArrowUp, ArrowDown, ShoppingBag, AlertTriangle, RefreshCw, Check, Sparkles, Search, X, ChevronDown, ShieldAlert, EyeOff, UserX, Copyright, HelpCircle } from 'lucide-react';
+import { Heart, MessageSquare, Volume2, VolumeX, Send, ArrowLeft, ArrowUp, ArrowDown, ShoppingBag, AlertTriangle, RefreshCw, Check, Sparkles, Search, X, ChevronDown, ShieldAlert, EyeOff, UserX, Copyright, HelpCircle, Utensils } from 'lucide-react';
 import { ReelsContext } from '../context/ReelsContext';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
@@ -581,7 +581,7 @@ export default function ReelsFeed() {
               >
                 <div className="noise-overlay" />
                 <h4 className="text-[10px] uppercase tracking-[0.2em] text-[#FF8A72] font-bold mb-3.5 flex items-center gap-1.5">
-                  <Sparkles size={11} className="text-[#FF8A72]" />
+                  <Utensils size={11} className="text-[#FF8A72]" />
                   Featured Recipe
                 </h4>
                 <div className="flex items-center gap-4">
