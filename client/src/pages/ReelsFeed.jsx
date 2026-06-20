@@ -91,6 +91,8 @@ export default function ReelsFeed() {
       return [];
     }
   });
+  const [revealedReels, setRevealedReels] = useState(new Set());
+
 
   
   const failedVideoIds = useRef(new Set());
@@ -138,9 +140,9 @@ export default function ReelsFeed() {
       return;
     }
     
-    // Safety role checks: Owners and admins cannot report reels
-    if (user && user.role !== 'customer') {
-      showToast("Access Denied: Administrative accounts cannot report content.");
+    // Safety check: Prevent owners from reporting their own restaurant's reels
+    if (user && activeReel.restaurantDetails && activeReel.restaurantDetails.owner === user._id) {
+      showToast("Access Denied: You cannot report video reels posted by your own restaurant.");
       setShowReportModal(false);
       setIsReasonDropdownOpen(false);
       return;
@@ -249,7 +251,11 @@ export default function ReelsFeed() {
     const playCurrentVideo = () => {
       const vid = videoRefs.current[activeIndex];
       if (vid) {
-        vid.play().catch((err) => console.log('Video play interrupted:', err.message));
+        if (isReelReported) {
+          try { vid.pause(); } catch (e) {}
+        } else {
+          vid.play().catch((err) => console.log('Video play interrupted:', err.message));
+        }
       }
     };
 
@@ -264,7 +270,7 @@ export default function ReelsFeed() {
         }
       });
     };
-  }, [activeIndex, reels, isMuted]);
+  }, [activeIndex, reels, isMuted, isReelReported]);
 
   // Safety-net: proactively prefetch when the user is near the end of loaded reels
   useEffect(() => {
@@ -302,6 +308,7 @@ export default function ReelsFeed() {
   // Single Tap Triggering Play/Pause Cinematic Toggles
   const handleVideoTap = (e) => {
     if (e) e.stopPropagation();
+    if (isReelReported) return;
 
     // Tap guard: Ignore taps immediately after swiping/changing reels to prevent accidental play/pause toggle toasts
     if (Date.now() - lastActiveIndexChangeTime.current < 450) {
@@ -327,6 +334,7 @@ export default function ReelsFeed() {
   // Double Click / Double Tap Triggering Premium Center Pulse
   const handleVideoDoubleClick = (e) => {
     e.stopPropagation();
+    if (isReelReported) return;
     
     if (!isAuthenticated) {
       showToast("Sign in to like this reel ❤️");
@@ -1015,6 +1023,40 @@ export default function ReelsFeed() {
                   </motion.button>
                 </div>
               </div>
+              
+              {/* 🙈 Reported Content Blur Overlay */}
+              {isReelReported && (
+                <div 
+                  className="absolute inset-0 flex flex-col items-center justify-center p-6 z-[18] bg-black/85 backdrop-blur-[24px]"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerUp={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <div className="flex flex-col items-center text-center gap-4 max-w-[280px] pointer-events-auto">
+                    <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                      <AlertTriangle size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-[15px] font-semibold text-white mb-2">
+                        Content Reported
+                      </h4>
+                      <p className="text-[12px] text-white/70 leading-normal">
+                        You have successfully reported this reel. We have hidden this video.
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNextReel();
+                      }}
+                      className="w-full bg-primary hover:bg-primary-hover active:bg-primary-pressed text-white py-2.5 px-4 rounded-xl text-[12px] font-bold transition-all duration-200 cursor-pointer shadow-md border-none"
+                    >
+                      Swipe Next →
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
 

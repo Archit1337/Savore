@@ -2,6 +2,10 @@ const Reel = require('../models/Reel');
 const Comment = require('../models/Comment');
 const Restaurant = require('../models/Restaurant');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const fs = require('fs').promises;
+const path = require('path');
+const ActivityLog = require('../models/ActivityLog');
 
 // @desc    Upload a new vertical video reel
 // @route   POST /api/reels
@@ -98,6 +102,21 @@ const getReelsFeed = async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 5;
     const skip = (page - 1) * limit;
 
+    // Optional user ID extraction to filter out already reported reels for this user session
+    let requestingUserId = null;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const jwtSecret = process.env.JWT_SECRET || 'savore_saas_jwt_secret_token_2026';
+        const decoded = jwt.verify(token, jwtSecret);
+        requestingUserId = decoded.id;
+      } catch (err) {
+        // Silently catch token parse errors (public route fallback)
+      }
+    }
 
     // Aggregation pipeline to compute on-the-fly trending score
     // score = likes * 2 + comments * 1.5 + views * 0.5 + recencyBoost
@@ -133,7 +152,14 @@ const getReelsFeed = async (req, res, next) => {
     const cityQuery = req.query.city;
     const cuisineQuery = req.query.cuisine;
     
-    const filter = {};
+    // Suppress flagged content globally
+    const filter = { moderationState: { $ne: 'suspended' }, isFlagged: { $ne: true } };
+
+    // Suppress content reported by the requesting user
+    if (requestingUserId) {
+      filter['reports.user'] = { $ne: new mongoose.Types.ObjectId(requestingUserId) };
+    }
+
     if (cityQuery) {
       filter.city = { $regex: new RegExp(`^${cityQuery}$`, 'i') };
     }
@@ -469,6 +495,17 @@ const deleteReel = async (req, res, next) => {
       await Comment.deleteMany({ _id: { $in: reel.comments } });
     }
 
+    // Delete physical video file from uploads folder
+    if (reel.videoUrl && reel.videoUrl.startsWith('/uploads/')) {
+      const relativePath = reel.videoUrl.replace(/^\//, ''); // remove leading slash
+      const absolutePath = path.join(__dirname, '..', relativePath);
+      try {
+        await fs.unlink(absolutePath);
+      } catch (err) {
+        console.error(`⚠️ Failed to delete physical video file at ${absolutePath}:`, err.message);
+      }
+    }
+
     await reel.deleteOne();
 
     res.json({
@@ -515,12 +552,6 @@ const trackReelImpression = async (req, res, next) => {
 // @access  Private (Regular Customer Users only)
 const reportReel = async (req, res, next) => {
   try {
-    // Only allow customer users to report, block restaurant owners and admins
-    if (req.user.role !== 'customer') {
-      res.status(403);
-      return next(new Error('Access Denied: Only customers can report video reels.'));
-    }
-
     if (!req.params.id || !mongoose.Types.ObjectId.isValid(req.params.id)) {
       res.status(404);
       return next(new Error('Reel not found'));
@@ -530,6 +561,13 @@ const reportReel = async (req, res, next) => {
     if (!reel) {
       res.status(404);
       return next(new Error('Reel not found'));
+    }
+
+    // Security check: Prevent users/owners from reporting their own restaurant's videos
+    const restaurant = await Restaurant.findById(reel.restaurant);
+    if (restaurant && restaurant.owner.toString() === req.user.id) {
+      res.status(400);
+      return next(new Error('Access Denied: You cannot report video reels posted by your own restaurant.'));
     }
 
     const userId = req.user.id;
@@ -545,8 +583,7 @@ const reportReel = async (req, res, next) => {
             reason: reason || 'Other', 
             description: description || '' 
           } 
-        },
-        $set: { isFlagged: true }
+        }
       },
       { new: true }
     );
@@ -554,6 +591,28 @@ const reportReel = async (req, res, next) => {
     if (!updatedReel) {
       res.status(400);
       return next(new Error('You have already submitted a report for this reel.'));
+    }
+
+    // Update moderationState and log activity when thresholds are met
+    const AUTO_FLAG_THRESHOLD = 10;
+    if (updatedReel.reports.length === 1 && (updatedReel.moderationState === 'active' || updatedReel.moderationState === 'approved')) {
+      updatedReel.moderationState = 'pending_review';
+      await updatedReel.save();
+    } else if (updatedReel.reports.length >= AUTO_FLAG_THRESHOLD && updatedReel.moderationState !== 'suspended') {
+      updatedReel.moderationState = 'suspended';
+      updatedReel.isFlagged = true;
+      await updatedReel.save();
+
+      // Log system auto-flagging event
+      try {
+        await ActivityLog.create({
+          action: 'REEL_AUTO_FLAGGED',
+          details: `Reel "${updatedReel.caption || 'Untitled'}" was auto-suspended after receiving ${updatedReel.reports.length} reports.`,
+          performedBy: null, // Indicates automated system action
+        });
+      } catch (err) {
+        console.error('Failed to write system auto-flag activity log:', err.message);
+      }
     }
 
     res.json({

@@ -90,6 +90,11 @@ const reelSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    moderationState: {
+      type: String,
+      enum: ['active', 'pending_review', 'approved', 'suspended'],
+      default: 'active',
+    },
     reports: [
       {
         user: {
@@ -131,5 +136,7 @@ reelSchema.virtual('trendingScore').get(function () {
 reelSchema.index({ city: 1, state: 1, region: 1 });
 reelSchema.index({ cuisineType: 1, city: 1 });
 reelSchema.index({ isFlagged: 1 });
+reelSchema.index({ 'reports.user': 1 });
+reelSchema.index({ moderationState: 1 });
 
 module.exports = mongoose.model('Reel', reelSchema);

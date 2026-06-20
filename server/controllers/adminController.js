@@ -6,6 +6,8 @@ const Comment = require('../models/Comment');
 const PartnershipRequest = require('../models/PartnershipRequest');
 const ActivityLog = require('../models/ActivityLog');
 const mongoose = require('mongoose');
+const fs = require('fs').promises;
+const path = require('path');
 
 // Helper to escape regex special characters (prevents ReDoS and regex injection attacks)
 const escapeRegex = (string) => {
@@ -252,11 +254,12 @@ const getFlaggedReels = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Fetch reels that are flagged or have at least one user report
+    // Fetch reels that are flagged, have at least one user report, or are in pending/suspended review
     const filter = {
       $or: [
         { isFlagged: true },
         { 'reports.0': { $exists: true } },
+        { moderationState: { $in: ['pending_review', 'suspended'] } },
       ]
     };
 
@@ -294,6 +297,7 @@ const dismissReelReports = async (req, res, next) => {
 
     reel.reports = [];
     reel.isFlagged = false;
+    reel.moderationState = 'approved';
     await reel.save();
 
     await logAdminActivity(
@@ -327,6 +331,17 @@ const deleteReel = async (req, res, next) => {
     // Cascade delete associated comments to prevent database orphan leaks
     if (reel.comments && reel.comments.length > 0) {
       await Comment.deleteMany({ _id: { $in: reel.comments } });
+    }
+
+    // Delete physical video file from uploads folder
+    if (reel.videoUrl && reel.videoUrl.startsWith('/uploads/')) {
+      const relativePath = reel.videoUrl.replace(/^\//, ''); // remove leading slash
+      const absolutePath = path.join(__dirname, '..', relativePath);
+      try {
+        await fs.unlink(absolutePath);
+      } catch (err) {
+        console.error(`⚠️ Failed to delete physical video file at ${absolutePath}:`, err.message);
+      }
     }
 
     const reelCaption = reel.caption;
@@ -374,7 +389,8 @@ const getAdminStats = async (req, res, next) => {
     const flaggedReels = await Reel.countDocuments({
       $or: [
         { isFlagged: true },
-        { 'reports.0': { $exists: true } }
+        { 'reports.0': { $exists: true } },
+        { moderationState: { $in: ['pending_review', 'suspended'] } },
       ]
     });
 
