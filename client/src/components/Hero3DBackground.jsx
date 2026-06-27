@@ -356,9 +356,9 @@ export default function Hero3DBackground({ chefVisible = false }) {
       );
 
       if (isDark) {
-        grad.addColorStop(0, '#141a24'); // Teal midnight center
-        grad.addColorStop(0.55, '#0b0f14'); // Main backdrop Savoré Dark
-        grad.addColorStop(1, '#05070a');
+        grad.addColorStop(0, '#080a0f'); // Deep dark midnight center (darker backdrop)
+        grad.addColorStop(0.55, '#040508'); // Rich deep dark
+        grad.addColorStop(1, '#010203'); // Almost pitch black
       } else {
         grad.addColorStop(0, '#ffffff');
         grad.addColorStop(0.65, '#faf6ee'); // Savoré Light warm cream
@@ -369,9 +369,9 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
       // ── DRAW AMBIENT GRADIENT WASHES (AURORA GLOWS) ──
       const glows = [
-        { x: width * 0.28, y: height * 0.42, r: 380, color: isDark ? 'rgba(255, 106, 77, 0.022)' : 'rgba(255, 106, 77, 0.012)' }, // Left orange wash (reduced)
-        { x: width * 0.72, y: height * 0.40, r: 420, color: isDark ? 'rgba(255, 210, 127, 0.032)' : 'rgba(255, 210, 127, 0.015)' },  // Gold wash right behind chef (reduced)
-        { x: width * 0.50, y: height * 0.72, r: 320, color: isDark ? 'rgba(255, 106, 77, 0.014)' : 'rgba(255, 106, 77, 0.008)' }  // Bottom center ambient glow (reduced)
+        { x: width * 0.28, y: height * 0.42, r: 380, color: isDark ? 'rgba(255, 106, 77, 0.010)' : 'rgba(255, 106, 77, 0.012)' }, // Left orange wash (ultra-subtle)
+        { x: width * 0.72, y: height * 0.40, r: 420, color: isDark ? 'rgba(255, 210, 127, 0.015)' : 'rgba(255, 210, 127, 0.015)' },  // Gold wash right behind chef (ultra-subtle)
+        { x: width * 0.50, y: height * 0.72, r: 320, color: isDark ? 'rgba(255, 106, 77, 0.006)' : 'rgba(255, 106, 77, 0.008)' }  // Bottom center ambient glow (ultra-subtle)
       ];
 
       glows.forEach((g) => {
