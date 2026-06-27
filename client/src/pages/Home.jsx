@@ -1464,11 +1464,12 @@ export default function Home() {
         <Hero3DBackground chefVisible={showChef} />
 
         {/* Left-side readability fade so text column stays crisp */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,_var(--bg-primary)_18%,_transparent_58%)]" />
-        {/* Right-side soft edge — lighter in light mode so image shows through more */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_left,_rgba(246,243,238,0.28)_0%,_transparent_50%)] dark:bg-[linear-gradient(to_left,_rgba(11,15,20,0.65)_0%,_transparent_50%)]" />
-        {/* Bottom fade into page background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,_transparent_40%,_var(--bg-primary)_90%)]" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, var(--bg-primary) 18%, transparent 58%)' }} />
+        
+        {/* Right-side soft edge */}
+        <div className="absolute inset-0 dark:hidden" style={{ background: 'linear-gradient(to left, rgba(246,243,238,0.28) 0%, transparent 50%)' }} />
+        <div className="absolute inset-0 hidden dark:block" style={{ background: 'linear-gradient(to left, rgba(11,15,20,0.65) 0%, transparent 50%)' }} />
+        
         {/* Dynamic Weather Ambient Vignette Overlay */}
         <div 
           className="absolute inset-0 transition-all duration-1000"
@@ -1484,6 +1485,8 @@ export default function Home() {
           }}
         />
 
+        {/* Bottom fade into page background (MUST BE LAST to mask all layers seamlessly) */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, var(--bg-primary) 98%, var(--bg-primary) 100%)' }} />
       </motion.div>
 
       <div className="container relative z-[1]">
@@ -1954,30 +1957,32 @@ export default function Home() {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative z-20 flex flex-col items-center justify-end"
-                style={{ x: chefX }}
+                className="relative z-20 flex flex-col items-center justify-end md:-ml-16"
               >
-                {/* Floating Close Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowChef(false);
-                    soundController.playClick();
-                  }}
-                  className="absolute top-4 right-[28px] z-50 bg-black/45 hover:bg-black/60 hover:border-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center backdrop-blur-sm border border-white/10 hover:scale-105 active:scale-95 transition-all pointer-events-auto cursor-pointer"
-                  title="Hide Chef"
-                >
-                  <X size={14} className="text-white" />
-                </button>
+                <motion.div style={{ x: chefX }} className="flex flex-col items-center justify-end relative w-full h-full">
+                  <motion.div
+                    className="relative"
+                    animate={{ 
+                      x: mouseOffset.x * 14,
+                      y: mouseOffset.y * 10
+                    }}
+                    transition={{ type: "spring", stiffness: 50, damping: 14 }}
+                  >
+                    {/* Floating Close Button positioned beautifully relative to the chat/character */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowChef(false);
+                        soundController.playClick();
+                      }}
+                      className="absolute -top-4 -right-12 z-50 bg-[#1A1A1A]/80 hover:bg-[#2A2A2A] hover:border-white/30 text-white rounded-full w-9 h-9 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-xl hover:scale-105 active:scale-95 transition-all pointer-events-auto cursor-pointer"
+                      title="Hide Chef"
+                    >
+                      <X size={15} className="text-white/90" />
+                    </button>
 
-                <motion.div
-                  animate={{ 
-                    x: mouseOffset.x * 14,
-                    y: mouseOffset.y * 10
-                  }}
-                  transition={{ type: "spring", stiffness: 50, damping: 14 }}
-                >
-                  <MascotChef forceSmile={forceChefSmile} />
+                    <MascotChef forceSmile={forceChefSmile} />
+                  </motion.div>
                 </motion.div>
               </motion.div>
             )}

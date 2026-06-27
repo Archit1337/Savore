@@ -11,14 +11,31 @@ export default function ChefInteractionLayer({ forceSmile = false }) {
   const [isHovered, setIsHovered] = useState(false);
   const containerRef = useRef(null);
 
+  const rAF = useRef(null);
+
   // Passive event listener for high performance (60fps) mouse track
   const handleMouseMove = (e) => {
     if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2); // Normalize to -1 to 1
-    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2); // Normalize to -1 to 1
-    setMousePos({ x, y });
+    
+    if (rAF.current) cancelAnimationFrame(rAF.current);
+    
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+
+    rAF.current = requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = (clientX - rect.left - rect.width / 2) / (rect.width / 2); // Normalize to -1 to 1
+      const y = (clientY - rect.top - rect.height / 2) / (rect.height / 2); // Normalize to -1 to 1
+      setMousePos({ x, y });
+    });
   };
+
+  useEffect(() => {
+    return () => {
+      if (rAF.current) cancelAnimationFrame(rAF.current);
+    };
+  }, []);
 
   const handleMouseEnter = () => {
     setIsHovered(true);

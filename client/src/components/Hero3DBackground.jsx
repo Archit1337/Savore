@@ -173,49 +173,122 @@ export default function Hero3DBackground({ chefVisible = false }) {
           }
         }
 
-        // ── Shape 1: Culinary Plate ──
+        // ── Shape 1: Sizzling Cast Iron Skillet with a Fried Egg ──
         let pX = 0, pY = 0, pZ = 0;
-        if (r < 14) {
-          // Flat Well
-          const radius = (r / 13) * R * 0.75;
+        if (r < 6) {
+          // Skillet Pan (Flat Base & Angled Walls)
+          if (r < 4) {
+            pY = 30; // Flat bottom
+            const radius = R * 0.65 * (r / 3);
+            pX = radius * Math.cos(phi);
+            pZ = radius * Math.sin(phi);
+          } else {
+            pY = 30 - ((r - 3) / 2) * 15; // Sloped walls rising to Y=15
+            const radius = R * 0.65 + ((r - 3) / 2) * R * 0.05;
+            pX = radius * Math.cos(phi);
+            pZ = radius * Math.sin(phi);
+          }
+        } else if (r < 10) {
+          // Skillet Handle (Protruding along the X-axis)
+          const t = (r - 6) / 3; // 0 to 1
+          const handleLength = R * 0.85;
+          const centerX = R * 0.70 + t * handleLength; 
+          const handleR = R * 0.06 * (1 - t * 0.2); // Tapers slightly towards the end
+          
+          pX = centerX;
+          pY = 15 + handleR * Math.cos(phi); // Forms a tube along X-axis
+          pZ = handleR * Math.sin(phi);
+        } else if (r < 18) {
+          // Egg White (Sizzling organic flat shape lying inside the pan)
+          const t = (r - 9) / 8; // 1/8 to 1
+          const maxRadius = R * 0.45 + Math.sin(phi * 4) * 15 + Math.cos(phi * 7) * 10;
+          const radius = maxRadius * t; 
+          
+          pY = 28; // Resting just above the pan base
           pX = radius * Math.cos(phi);
-          pY = -15; // Centered vertically
           pZ = radius * Math.sin(phi);
         } else {
-          // Tilted Rim
-          const radius = R * 0.75 + ((r - 14) / 9) * R * 0.45;
-          pX = radius * Math.cos(phi);
-          pY = -15 - (radius - R * 0.75) * 0.25;
-          pZ = radius * Math.sin(phi);
+          // Egg Yolk (Plump 3D dome, sitting slightly off-center)
+          const t = (r - 17) / 6; // 1/6 to 1
+          const yolkR = R * 0.15;
+          const radius = yolkR * Math.cos(t * Math.PI / 2); // Curves to a point
+          
+          pY = 28 - yolkR * Math.sin(t * Math.PI / 2); // Pops upwards
+          pX = R * 0.12 + radius * Math.cos(phi); // Shifted slightly right
+          pZ = -R * 0.08 + radius * Math.sin(phi); // Shifted slightly back
         }
 
-        // ── Shape 2: Wine Chalice ──
+        // ── Shape 2: Mortar and Pestle ──
         let gX = 0, gY = 0, gZ = 0;
-        if (r < 12) {
-          // Bowl
-          const theta = (r / 11) * (Math.PI / 2) * 0.85;
-          gX = R * 0.65 * Math.sin(theta) * Math.cos(phi);
-          gY = R * 0.55 * Math.cos(theta) + 20;
-          gZ = R * 0.65 * Math.sin(theta) * Math.sin(phi);
-        } else if (r < 20) {
-          // Stem
-          const stemY = -R * 0.6 + ((r - 12) / 7) * R * 0.6 + 20;
-          const stemR = R * 0.05;
-          gX = stemR * Math.cos(phi);
-          gY = stemY;
-          gZ = stemR * Math.sin(phi);
+        if (r < 16) {
+          // Mortar (Heavy Stone Bowl)
+          let mRadius = 0;
+          if (r < 3) {
+            // Thick Base
+            mRadius = R * 0.35;
+            gY = 45 - r * 5;
+          } else if (r < 14) {
+            // Heavy Sloping Body
+            const t = (r - 2) / 11; 
+            mRadius = R * 0.35 + Math.pow(t, 1.5) * R * 0.45;
+            gY = 30 - t * 65; 
+          } else {
+            // Thick Lip
+            mRadius = R * 0.80 - (r - 13) * 8;
+            gY = -35 - (r - 13) * 2;
+          }
+          gX = mRadius * Math.cos(phi);
+          gZ = mRadius * Math.sin(phi);
         } else {
-          // Base
-          const radius = R * 0.05 + ((r - 20) / 3) * R * 0.4;
-          gX = radius * Math.cos(phi);
-          gY = -R * 0.6 + 20;
-          gZ = radius * Math.sin(phi);
+          // Pestle (Grinding Club protruding diagonally)
+          const t = (r - 16) / 7; // 0 to 1
+          
+          let pestleR = R * 0.08;
+          if (r < 18) pestleR = R * 0.16; // Grinding head
+          if (r === 23) pestleR = R * 0.12; // Handle pommel
+          
+          // Angled extrusion matrix hack
+          const pCenterX = -R * 0.2 + t * R * 1.1; 
+          const pCenterY = 10 - t * 130; 
+          const pCenterZ = -R * 0.1 + t * R * 0.4;
+          
+          gX = pCenterX + pestleR * Math.cos(phi);
+          gY = pCenterY;
+          gZ = pCenterZ + pestleR * Math.sin(phi);
         }
 
-        // ── Shape 3: Dispersed Steam ──
-        const dX = (Math.random() - 0.5) * 800;
-        const dY = (Math.random() - 0.5) * 600;
-        const dZ = (Math.random() - 0.5) * 400;
+        // ── Shape 3: Japanese Ramen Bowl (With Noodles inside!) ──
+        let bX = 0, bY = 0, bZ = 0;
+        if (r < 3) {
+          // Wooden Foot Base
+          const radius = R * 0.25;
+          bX = radius * Math.cos(phi);
+          bY = 35 - (r / 2) * 10; // 35 to 25
+          bZ = radius * Math.sin(phi);
+        } else if (r < 16) {
+          // Sloping Bowl Exterior
+          const theta = ((r - 3) / 12) * (Math.PI / 2);
+          const radius = R * 0.25 + R * 0.65 * Math.sin(theta);
+          bX = radius * Math.cos(phi);
+          bY = 25 - R * 0.55 * Math.sin(theta);
+          bZ = radius * Math.sin(phi);
+        } else if (r === 16) {
+          // Thick Rim
+          const radius = R * 0.90 + 3;
+          bX = radius * Math.cos(phi);
+          bY = 25 - R * 0.55;
+          bZ = radius * Math.sin(phi);
+        } else {
+          // Ramen Noodles Inside the Bowl (r=17 to 23)
+          // Creates a chaotic, wavy interior surface mound sitting below the rim
+          const innerRadius = R * 0.85 * ((23 - r) / 6); 
+          const noodleWobble = Math.sin(phi * 12 + r * 3) * 12; // Curly sine waves
+          const noodleHeight = (25 - R * 0.55) + 15 + Math.cos(phi * 8) * 8 + ((23 - r) / 6) * -15; // Mounded slightly
+          
+          bX = (innerRadius + noodleWobble) * Math.cos(phi);
+          bY = noodleHeight;
+          bZ = (innerRadius + noodleWobble) * Math.sin(phi);
+        }
 
         // ── Shape 4: Savoré "S" Logo Monogram (Mirrored & scaled to align with Savoré branding) ──
         let sX = 0, sY = 0, sZ = 0;
@@ -231,6 +304,10 @@ export default function Hero3DBackground({ chefVisible = false }) {
         }
         sZ = (Math.random() - 0.5) * R * 0.18;
 
+        const dX = (Math.random() - 0.5) * 800;
+        const dY = (Math.random() - 0.5) * 600;
+        const dZ = (Math.random() - 0.5) * 400;
+
         particles.push({
           isMesh: true,
           x: cX + (Math.random() - 0.5) * 200,
@@ -239,8 +316,9 @@ export default function Hero3DBackground({ chefVisible = false }) {
           pos0: { x: cX, y: cY, z: cZ },
           pos1: { x: pX, y: pY, z: pZ },
           pos2: { x: gX, y: gY, z: gZ },
-          pos3: { x: dX, y: dY, z: dZ },
+          pos3: { x: bX, y: bY, z: bZ },
           posLogo: { x: sX, y: sY, z: sZ },
+          posDispersed: { x: dX, y: dY, z: dZ },
           size: 1.5 + Math.random() * 1.5,
           speed: 0.04 + Math.random() * 0.04,
           noiseAmp: 3 + Math.random() * 6,
@@ -420,7 +498,8 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
       // ── MORPHING CALCULATIONS & DRAWING ──
       const fov = 380; // Perspective zoom field of view
-      const zOffset = 380; // Constant Z offset, no knockback
+      // Dynamic Z knockback: as you scroll down, push the 3D constellation deeper into the screen
+      const zOffset = 380 + (scroll.y * 220); 
 
       const projected = new Array(particles.length);
       const currentProjected = [];
@@ -429,37 +508,56 @@ export default function Hero3DBackground({ chefVisible = false }) {
       const centerX = width > 768 ? width * 0.68 : width * 0.5;
       const centerY = height * 0.50; // Shifted slightly upwards
 
+      // ── TIME-BASED AUTO-MORPHING LOGIC ──
+      const SHAPE_COUNT = 4;
+      const INTERVAL = 5.0; // 5 seconds per shape
+      const currentCycle = Math.max(0, time / INTERVAL);
+      const shapeIndex = Math.floor(currentCycle) % SHAPE_COUNT;
+      const nextShapeIndex = (shapeIndex + 1) % SHAPE_COUNT;
+      
+      const cycleProgress = currentCycle % 1.0;
+      let morphEase = 0;
+      // Morph during the final 1.5 seconds (0.7 to 1.0 of the cycle)
+      if (cycleProgress > 0.7) {
+        const tMorph = (cycleProgress - 0.7) / 0.3;
+        morphEase = tMorph * tMorph * (3 - 2 * tMorph); // Smoothstep
+      }
+
       particles.forEach((p, idx) => {
-        // 1. Calculate Target Position based on Click State (Logo override) or Scroll percentage
+        // 1. Calculate Target Position based on Click State (Logo override) or Auto-Morph
         let tx, ty, tz;
         
         if (isLogoActiveRef.current) {
-          // Morph: Savoré "S" Logo shape, morphing to pos3 (dispersed steam) as you scroll
+          // Fallback initialization for Hot Module Replacement (HMR) to prevent NaN crashes
+          if (!p.posDispersed) {
+            p.posDispersed = {
+              x: (Math.random() - 0.5) * 800,
+              y: (Math.random() - 0.5) * 600,
+              z: (Math.random() - 0.5) * 400
+            };
+          }
+          
+          // Savoré S Logo: Retains its dramatic scroll-based burst dispersion!
           const ease = scroll.y * scroll.y * (3 - 2 * scroll.y);
-          tx = p.posLogo.x + (p.pos3.x - p.posLogo.x) * ease;
-          ty = p.posLogo.y + (p.pos3.y - p.posLogo.y) * ease;
-          tz = p.posLogo.z + (p.pos3.z - p.posLogo.z) * ease;
-        } else if (scroll.y < 0.33) {
-          // Morph: Cloche (0) ➔ Plate (1)
-          const t = scroll.y / 0.33;
-          const ease = t * t * (3 - 2 * t);
-          tx = p.pos0.x + (p.pos1.x - p.pos0.x) * ease;
-          ty = p.pos0.y + (p.pos1.y - p.pos0.y) * ease;
-          tz = p.pos0.z + (p.pos1.z - p.pos0.z) * ease;
-        } else if (scroll.y < 0.66) {
-          // Morph: Plate (1) ➔ Wine Chalice (2)
-          const t = (scroll.y - 0.33) / 0.33;
-          const ease = t * t * (3 - 2 * t);
-          tx = p.pos1.x + (p.pos2.x - p.pos1.x) * ease;
-          ty = p.pos1.y + (p.pos2.y - p.pos1.y) * ease;
-          tz = p.pos1.z + (p.pos2.z - p.pos1.z) * ease;
+          tx = p.posLogo.x + (p.posDispersed.x - p.posLogo.x) * ease;
+          ty = p.posLogo.y + (p.posDispersed.y - p.posLogo.y) * ease;
+          tz = p.posLogo.z + (p.posDispersed.z - p.posLogo.z) * ease;
         } else {
-          // Morph: Wine Chalice (2) ➔ Dispersed Steam Cloud (3)
-          const t = (scroll.y - 0.66) / 0.34;
-          const ease = t * t * (3 - 2 * t);
-          tx = p.pos2.x + (p.pos3.x - p.pos2.x) * ease;
-          ty = p.pos2.y + (p.pos3.y - p.pos2.y) * ease;
-          tz = p.pos2.z + (p.pos3.z - p.pos2.z) * ease;
+          // Helper to fetch shape position
+          const getPos = (i) => {
+            if (i === 0) return p.pos0;
+            if (i === 1) return p.pos1;
+            if (i === 2) return p.pos2;
+            if (i === 3) return p.pos3;
+            return p.pos0;
+          };
+          
+          const posCurrent = getPos(shapeIndex);
+          const posNext = getPos(nextShapeIndex);
+          
+          tx = posCurrent.x + (posNext.x - posCurrent.x) * morphEase;
+          ty = posCurrent.y + (posNext.y - posCurrent.y) * morphEase;
+          tz = posCurrent.z + (posNext.z - posCurrent.z) * morphEase;
         }
 
         // Apply Chef Sizzle Upwards Scatter
@@ -499,12 +597,13 @@ export default function Hero3DBackground({ chefVisible = false }) {
           rotP = rotateY(p.x, p.y, p.z, mouseAngleY);
           rotP = rotateX(rotP.x, rotP.y, rotP.z, mouseAngleX);
         } else {
-          const autoSpinAngleY = time * 0.24;
+          // As you scroll down, heavily spin the 3D mesh to simulate tumbling through space
+          const autoSpinAngleY = time * 0.24 + (scroll.y * Math.PI * 1.5);
           rotP = rotateY(p.x, p.y, p.z, autoSpinAngleY);
 
           const mouseAngleY = mouse.x * 0.24;
-          // Apply a default baseline tilt (0.20) simulating the cursor being UP
-          const mouseAngleX = 0.20 - mouse.y * 0.15 + scroll.y * 0.12;
+          // Apply a default baseline tilt, plus an aggressive scroll tilt to reveal top/bottom perspectives
+          const mouseAngleX = 0.20 - mouse.y * 0.15 + (scroll.y * Math.PI * 0.35);
           rotP = rotateY(rotP.x, rotP.y, rotP.z, mouseAngleY);
           rotP = rotateX(rotP.x, rotP.y, rotP.z, mouseAngleX);
         }
@@ -564,14 +663,15 @@ export default function Hero3DBackground({ chefVisible = false }) {
         return (dx * dx + dy * dy) < 1296; // 36px radius check (smooth, forgiving hover pointer)
       });
 
-      if (isHoveringParticle) {
-        canvas.style.cursor = 'pointer';
-      } else {
-        canvas.style.cursor = 'default';
+      const targetCursor = isHoveringParticle ? 'pointer' : 'default';
+      if (canvas.style.cursor !== targetCursor) {
+        canvas.style.cursor = targetCursor;
       }
 
       // ── DRAW MESH CONNECTION LINES (Hologram grid) ──
       ctx.lineWidth = 0.75;
+      ctx.strokeStyle = '#FF6A4D'; // Glowing orange mesh lines
+      
       lines.forEach(([u, v]) => {
         const p1 = projected[u];
         const p2 = projected[v];
@@ -583,14 +683,10 @@ export default function Hero3DBackground({ chefVisible = false }) {
           const fade = Math.max(0, 1.2 - avgZ / 580) * Math.max(0, 1.0 - (scroll.y - 0.7) * 3) * globalFade;
           
           if (fade > 0.01) {
+            ctx.globalAlpha = isDark ? fade * 0.14 : fade * 0.08;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            if (isDark) {
-              ctx.strokeStyle = `rgba(255, 106, 77, ${fade * 0.14})`; // Glowing orange mesh lines
-            } else {
-              ctx.strokeStyle = `rgba(255, 106, 77, ${fade * 0.08})`;
-            }
             ctx.stroke();
           }
         }
@@ -617,35 +713,44 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
         if (isDark) {
           if (pt.colorType === 0) {
-            ctx.fillStyle = `rgba(255, 106, 77, ${opacity * 0.75})`; // Restored orange glow
+            ctx.globalAlpha = opacity * 0.75;
+            ctx.fillStyle = '#FF6A4D'; // Restored orange glow
           } else if (pt.colorType === 1) {
-            ctx.fillStyle = `rgba(255, 210, 127, ${opacity * 0.90})`; // Restored gold glow
+            ctx.globalAlpha = opacity * 0.90;
+            ctx.fillStyle = '#FFD27F'; // Restored gold glow
           } else {
-            ctx.fillStyle = `rgba(250, 246, 238, ${opacity * 0.40})`; // Restored cream
+            ctx.globalAlpha = opacity * 0.40;
+            ctx.fillStyle = '#FAF6EE'; // Restored cream
           }
         } else {
           if (pt.colorType === 0) {
-            ctx.fillStyle = `rgba(255, 106, 77, ${opacity * 0.45})`;
+            ctx.globalAlpha = opacity * 0.45;
+            ctx.fillStyle = '#FF6A4D';
           } else if (pt.colorType === 1) {
-            ctx.fillStyle = `rgba(220, 155, 65, ${opacity * 0.50})`;
+            ctx.globalAlpha = opacity * 0.50;
+            ctx.fillStyle = '#DC9B41';
           } else {
-            ctx.fillStyle = `rgba(130, 120, 105, ${opacity * 0.28})`;
+            ctx.globalAlpha = opacity * 0.28;
+            ctx.fillStyle = '#827869';
           }
         }
         ctx.fill();
 
         // Draw ambient halo glow for closer, prominent particles
         if (isDark && radius > 2.8 && opacity > 0.55) {
+          ctx.globalAlpha = 0.08;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, radius * 2.8, 0, Math.PI * 2);
           if (pt.colorType === 0) {
-            ctx.fillStyle = `rgba(255, 106, 77, 0.08)`;
+            ctx.fillStyle = '#FF6A4D';
           } else {
-            ctx.fillStyle = `rgba(255, 210, 127, 0.08)`;
+            ctx.fillStyle = '#FFD27F';
           }
           ctx.fill();
         }
       });
+      
+      ctx.globalAlpha = 1.0; // Reset alpha for the next frame
 
       animationFrameId = requestAnimationFrame(tick);
     };
