@@ -8,6 +8,7 @@ import api from '../utils/api';
 import { formatPrice } from '../utils/priceFormatter';
 import { resolveMediaUrl } from '../utils/mediaResolver';
 import SafeImage from '../components/SafeImage';
+import Hero3DBackground from '../components/Hero3DBackground';
 import { useChefMood } from '../components/ChefSystem/ChefMoodEngine';
 import { soundController } from '../components/ChefSystem/SoundController';
 import { LocationContext, CITIES, CITY_LOCALITIES, CITY_COORDINATES } from '../context/LocationContext';
@@ -251,21 +252,7 @@ const HERO_SLIDES = [
   }
 ];
 
-// Dark mode hero pool — rotates randomly between these four
-const DARK_HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&w=1800&q=80", // moody artisanal pizza
-  "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&w=1800&q=80", // moody luxury chocolate lava cake
-  "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&w=1800&q=80", // luxury A5 wagyu teppanyaki plating
-  "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&w=1800&q=80", // steaming gourmet ramen bowl, dark background
-];
 
-// Light mode hero pool — rotates randomly between these four
-const LIGHT_HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1546549032-9571cd6b27df?auto=format&w=1800&q=80", // minimalist gourmet pasta, clean white plate
-  "https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&w=1800&q=80", // luxury gourmet strawberry cake, white marble table
-  "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&w=1800&q=80", // premium gourmet avocado toast with poached eggs
-  "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&w=1800&q=80", // fluffy banana pancake stack with syrup
-];
 
 const MOCK_RESTAURANTS = [
   {
@@ -1060,6 +1047,7 @@ export default function Home() {
       }
     };
   }, [scrollY, smoothScrollY]);
+  const [showChef, setShowChef] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [forceChefSmile, setForceChefSmile] = useState(false);
 
@@ -1259,8 +1247,7 @@ export default function Home() {
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
 
-  // Hero background random image index (0-3) — switches every 9s
-  const [heroImgIdx, setHeroImgIdx] = useState(() => Math.floor(Math.random() * DARK_HERO_IMAGES.length));
+
   const [isBoxHovered, setIsBoxHovered] = useState(false);
   const [steamParticles, setSteamParticles] = useState([]);
   const lastBoxHoveredRef = useRef(false);
@@ -1373,13 +1360,7 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  // Hero background image rotator — cycles through available images every 9s
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setHeroImgIdx((prev) => (prev + 1) % DARK_HERO_IMAGES.length);
-    }, 9000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   // Mouse Parallax Effect
   const handleMouseMove = (e) => {
@@ -1460,44 +1441,15 @@ export default function Home() {
       className="fade-in pb-[100px] w-full" 
       onMouseMove={handleMouseMove}
     >
-      {/* 🎬 HERO BACKGROUND — crisp object-cover img, no blur/scale distortion */}
+      {/* 🎬 HERO BACKGROUND — Interactive 3D Canvas Background */}
       <motion.div 
         variants={bgRevealVariant}
         initial="hidden"
         animate={isPageReady ? "visible" : "hidden"}
         className="absolute top-0 left-0 right-0 h-[840px] overflow-hidden z-0 pointer-events-none"
       >
-        {/* ── DARK pool: images always mounted, opacity 0 when not active ── */}
-        {DARK_HERO_IMAGES.map((imgSrc, idx) => (
-          <motion.img
-            key={`dark-hero-${idx}`}
-            src={imgSrc}
-            alt="" aria-hidden="true"
-            loading="eager"
-            fetchPriority="high"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: isDark && heroImgIdx === idx ? 0.40 : 0 }}
-            transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.7] select-none pointer-events-none opacity-0"
-            style={{ imageRendering: '-webkit-optimize-contrast' }}
-          />
-        ))}
+        <Hero3DBackground chefVisible={showChef} />
 
-        {/* ── LIGHT pool: images always mounted, opacity 0 when not active ── */}
-        {LIGHT_HERO_IMAGES.map((imgSrc, idx) => (
-          <motion.img
-            key={`light-hero-${idx}`}
-            src={imgSrc}
-            alt="" aria-hidden="true"
-            loading="eager"
-            fetchPriority="high"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: !isDark && heroImgIdx === idx ? 0.58 : 0 }}
-            transition={{ duration: 1.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute inset-0 w-full h-full object-cover object-[center_35%] brightness-[1.0] saturate-[1.06] select-none pointer-events-none opacity-0"
-            style={{ imageRendering: '-webkit-optimize-contrast' }}
-          />
-        ))}
         {/* Left-side readability fade so text column stays crisp */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,_var(--bg-primary)_18%,_transparent_58%)]" />
         {/* Right-side soft edge — lighter in light mode so image shows through more */}
@@ -1981,23 +1933,41 @@ export default function Home() {
           </motion.div>
 
           {/* Right Mascot Column */}
-          <motion.div
-            variants={mascotRevealVariant}
-            initial="hidden"
-            animate={isPageReady ? "visible" : "hidden"}
-            className="relative z-20"
-            style={{ x: chefX }}
-          >
-            <motion.div
-              animate={{ 
-                x: mouseOffset.x * 14,
-                y: mouseOffset.y * 10
-              }}
-              transition={{ type: "spring", stiffness: 50, damping: 14 }}
-            >
-              <MascotChef forceSmile={forceChefSmile} />
-            </motion.div>
-          </motion.div>
+          <AnimatePresence>
+            {showChef && (
+              <motion.div
+                variants={mascotRevealVariant}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                className="relative z-20 flex flex-col items-center justify-end"
+                style={{ x: chefX }}
+              >
+                {/* Floating Close Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowChef(false);
+                    soundController.playClick();
+                  }}
+                  className="absolute top-4 right-[28px] z-50 bg-black/45 hover:bg-black/60 hover:border-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center backdrop-blur-sm border border-white/10 hover:scale-105 active:scale-95 transition-all pointer-events-auto cursor-pointer"
+                  title="Hide Chef"
+                >
+                  <X size={14} className="text-white" />
+                </button>
+
+                <motion.div
+                  animate={{ 
+                    x: mouseOffset.x * 14,
+                    y: mouseOffset.y * 10
+                  }}
+                  transition={{ type: "spring", stiffness: 50, damping: 14 }}
+                >
+                  <MascotChef forceSmile={forceChefSmile} />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
         {/* SAVORÉ EDITORIAL PILLARS */}
@@ -2515,6 +2485,35 @@ export default function Home() {
                 </div>
               </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* "Let Chef Savoré Cook" FAB */}
+      <AnimatePresence>
+        {!showChef && !showFloatingLocation && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 30 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="fixed bottom-6 right-6 z-[90] pointer-events-auto"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setShowChef(true);
+                soundController.playWhoosh();
+                soundController.playSizzle();
+              }}
+              className="flex items-center gap-2.5 rounded-full bg-surface-bright/85 backdrop-blur-md border border-[var(--border-light)] text-[12.5px] font-bold text-text-primary shadow-2xl hover:border-primary/45 h-12 px-5 hover:scale-[1.03] hover:-translate-y-[1px] active:scale-[0.98] transition-all cursor-pointer group select-none"
+            >
+              <div className="relative flex items-center justify-center">
+                <Flame size={15} className="text-primary z-10 animate-bounce" />
+                <div className="absolute -inset-1.5 bg-primary/20 rounded-full blur-sm" />
+              </div>
+              <span className="group-hover:text-primary transition-colors pr-1">Let Chef Savoré Cook!</span>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

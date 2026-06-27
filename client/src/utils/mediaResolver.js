@@ -10,8 +10,31 @@ export const resolveMediaUrl = (url, fallback = '') => {
     return fallback;
   }
 
+  // If it's a client-side Vite asset (starts with /src/ or /assets/ or data URI), return as-is
+  if (typeof url === 'string' && (url.startsWith('/src/') || url.startsWith('/assets/') || url.startsWith('data:'))) {
+    return url;
+  }
+
   // If already absolute or data URI, handle Unsplash optimization
   if (/^(https?:\/\/|data:)/i.test(url)) {
+    // Intercept unsplash.com/photos/... page URLs and resolve them to images.unsplash.com
+    if (/unsplash\.com\/photos\//i.test(url)) {
+      const parts = url.split('/');
+      const lastPart = parts[parts.length - 1];
+      const slugParts = lastPart.split('-');
+      const photoId = slugParts[slugParts.length - 1];
+      
+      const unsplashMap = {
+        'XoByiBymX20': 'https://images.unsplash.com/photo-1547592180-85f173990554',
+        'KlR6vX1R0fQ': 'https://images.unsplash.com/photo-1621468889981-d419e4871999',
+        '1H1GdqYeybg': 'https://images.unsplash.com/photo-1606755962773-d324e0a13086'
+      };
+      
+      if (unsplashMap[photoId]) {
+        url = unsplashMap[photoId];
+      }
+    }
+
     if (url.includes('images.unsplash.com')) {
       let upgradedUrl = url;
       
