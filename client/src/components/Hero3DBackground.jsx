@@ -19,6 +19,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
   // Sizzle burst state trackers
   const prevChefVisibleRef = useRef(chefVisible);
   const sizzleRef = useRef({ intensity: 0 });
+  const chefSizzleFadeRef = useRef(0);
 
   // Detect chef visibility changes to trigger particle sizzle burst
   useEffect(() => {
@@ -121,8 +122,8 @@ export default function Hero3DBackground({ chefVisible = false }) {
     const R = 230; 
     const particles = [];
 
-    // Mesh Grid Definition (12 rings, 30 segments = 360 structural mesh points)
-    const meshRings = 12;
+    // Mesh Grid Definition (24 rings, 30 segments = 720 structural mesh points)
+    const meshRings = 24;
     const meshSegments = 30;
     const totalMeshPoints = meshRings * meshSegments;
 
@@ -133,63 +134,79 @@ export default function Hero3DBackground({ chefVisible = false }) {
         const idx = r * meshSegments + s;
         const t = idx / totalMeshPoints;
 
-        // ── Shape 0: Chef's Cloche Dome ──
+        // ── Shape 0: Chef's Cloche + Plate ──
         let cX = 0, cY = 0, cZ = 0;
-        if (r < 8) {
-          // Dome
-          const theta = (r / 7) * (Math.PI / 2) * 0.9;
-          cX = R * Math.sin(theta) * Math.cos(phi);
-          cY = R * 0.9 * Math.cos(theta) - 30;
-          cZ = R * Math.sin(theta) * Math.sin(phi);
-        } else if (r < 10) {
-          // Rim
-          const rimOffset = (r === 8) ? 0 : 5;
-          cX = (R + rimOffset) * Math.cos(phi);
-          cY = -30;
-          cZ = (R + rimOffset) * Math.sin(phi);
+        if (r < 12) {
+          // Cloche Part (0 to 11)
+          if (r < 8) {
+            const theta = (r / 7) * (Math.PI / 2) * 0.9;
+            cX = R * Math.sin(theta) * Math.cos(phi);
+            cY = -R * 0.9 * Math.cos(theta) + 30; // Shifted up slightly
+            cZ = R * Math.sin(theta) * Math.sin(phi);
+          } else if (r < 10) {
+            const rimOffset = (r === 8) ? 0 : 5;
+            cX = (R + rimOffset) * Math.cos(phi);
+            cY = 30;
+            cZ = (R + rimOffset) * Math.sin(phi);
+          } else {
+            const theta = ((r - 10) / 1) * Math.PI;
+            const knobR = R * 0.13;
+            cX = knobR * Math.sin(theta) * Math.cos(phi);
+            cY = -knobR * Math.cos(theta) - R * 0.9 + 30;
+            cZ = knobR * Math.sin(theta) * Math.sin(phi);
+          }
         } else {
-          // Knob on top
-          const theta = ((r - 10) / 1) * Math.PI;
-          const knobR = R * 0.13;
-          cX = knobR * Math.sin(theta) * Math.cos(phi);
-          cY = knobR * Math.cos(theta) + R * 0.9 - 30;
-          cZ = knobR * Math.sin(theta) * Math.sin(phi);
+          // Plate Part (12 to 23)
+          const pr = r - 12; // 0 to 11
+          if (pr < 7) {
+            // Flat Well
+            const radius = (pr / 6) * R * 0.75;
+            cX = radius * Math.cos(phi);
+            cY = 35; // Plate sits just below the cloche rim (30)
+            cZ = radius * Math.sin(phi);
+          } else {
+            // Tilted Rim
+            const radius = R * 0.75 + ((pr - 7) / 4) * R * 0.45;
+            cX = radius * Math.cos(phi);
+            cY = 35 - (radius - R * 0.75) * 0.25;
+            cZ = radius * Math.sin(phi);
+          }
         }
 
         // ── Shape 1: Culinary Plate ──
         let pX = 0, pY = 0, pZ = 0;
-        if (r < 7) {
+        if (r < 14) {
           // Flat Well
-          const radius = (r / 6) * R * 0.65;
+          const radius = (r / 13) * R * 0.75;
           pX = radius * Math.cos(phi);
-          pY = -35;
+          pY = -15; // Centered vertically
           pZ = radius * Math.sin(phi);
         } else {
           // Tilted Rim
-          const radius = R * 0.65 + ((r - 7) / 4) * R * 0.35;
+          const radius = R * 0.75 + ((r - 14) / 9) * R * 0.45;
           pX = radius * Math.cos(phi);
-          pY = -35 + (radius - R * 0.65) * 0.35;
+          pY = -15 - (radius - R * 0.75) * 0.25;
           pZ = radius * Math.sin(phi);
         }
 
         // ── Shape 2: Wine Chalice ──
         let gX = 0, gY = 0, gZ = 0;
-        if (r < 6) {
+        if (r < 12) {
           // Bowl
-          const theta = (r / 5) * (Math.PI / 2) * 0.85;
+          const theta = (r / 11) * (Math.PI / 2) * 0.85;
           gX = R * 0.65 * Math.sin(theta) * Math.cos(phi);
           gY = R * 0.55 * Math.cos(theta) + 20;
           gZ = R * 0.65 * Math.sin(theta) * Math.sin(phi);
-        } else if (r < 10) {
+        } else if (r < 20) {
           // Stem
-          const stemY = -R * 0.6 + ((r - 6) / 3) * R * 0.6 + 20;
+          const stemY = -R * 0.6 + ((r - 12) / 7) * R * 0.6 + 20;
           const stemR = R * 0.05;
           gX = stemR * Math.cos(phi);
           gY = stemY;
           gZ = stemR * Math.sin(phi);
         } else {
           // Base
-          const radius = ((r - 10) / 1) * R * 0.45;
+          const radius = R * 0.05 + ((r - 20) / 3) * R * 0.4;
           gX = radius * Math.cos(phi);
           gY = -R * 0.6 + 20;
           gZ = radius * Math.sin(phi);
@@ -247,8 +264,11 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
         // Connect to next ring
         if (r < meshRings - 1) {
-          const idxNextR = (r + 1) * meshSegments + s;
-          lines.push([idx, idxNextR]);
+          // Skip connecting ring 11 to ring 12 (separates Cloche/Plate and Bowl/Stem)
+          if (r !== 11) {
+            const idxNextR = (r + 1) * meshSegments + s;
+            lines.push([idx, idxNextR]);
+          }
         }
       }
     }
@@ -393,16 +413,21 @@ export default function Hero3DBackground({ chefVisible = false }) {
         ctx.fillRect(0, 0, width, height);
       });
 
+      // ── CHEF VISIBILITY SIZZLE/FADE LERP ──
+      const targetSizzleFade = prevChefVisibleRef.current ? 1.0 : 0.0;
+      chefSizzleFadeRef.current += (targetSizzleFade - chefSizzleFadeRef.current) * 0.05;
+      const globalFade = 1.0 - chefSizzleFadeRef.current;
+
       // ── MORPHING CALCULATIONS & DRAWING ──
       const fov = 380; // Perspective zoom field of view
-      const zOffset = 380; // Camera distance offset
+      const zOffset = 380; // Constant Z offset, no knockback
 
       const projected = new Array(particles.length);
       const currentProjected = [];
 
       // Center point (offset to the right on desktop to frame the mascot chef)
       const centerX = width > 768 ? width * 0.68 : width * 0.5;
-      const centerY = height * 0.46;
+      const centerY = height * 0.50; // Shifted slightly upwards
 
       particles.forEach((p, idx) => {
         // 1. Calculate Target Position based on Click State (Logo override) or Scroll percentage
@@ -437,6 +462,15 @@ export default function Hero3DBackground({ chefVisible = false }) {
           tz = p.pos2.z + (p.pos3.z - p.pos2.z) * ease;
         }
 
+        // Apply Chef Sizzle Upwards Scatter
+        if (chefSizzleFadeRef.current > 0.001) {
+          const fadeEase = chefSizzleFadeRef.current;
+          // Interpolate current target towards pos3 (dispersed) and shift upwards
+          tx = tx + (p.pos3.x - tx) * fadeEase;
+          ty = ty + (p.pos3.y - ty - 600) * fadeEase; // Push up by 600
+          tz = tz + (p.pos3.z - tz) * fadeEase;
+        }
+
         // Add organic thermal noise jitter (sizzling cooking effect)
         const jitter = Math.sin(time * p.noiseFreq * 100 + p.noisePhase) * p.noiseAmp;
         
@@ -469,7 +503,8 @@ export default function Hero3DBackground({ chefVisible = false }) {
           rotP = rotateY(p.x, p.y, p.z, autoSpinAngleY);
 
           const mouseAngleY = mouse.x * 0.24;
-          const mouseAngleX = -mouse.y * 0.20 + scroll.y * 0.12;
+          // Apply a default baseline tilt (0.20) simulating the cursor being UP
+          const mouseAngleX = 0.20 - mouse.y * 0.15 + scroll.y * 0.12;
           rotP = rotateY(rotP.x, rotP.y, rotP.z, mouseAngleY);
           rotP = rotateX(rotP.x, rotP.y, rotP.z, mouseAngleX);
         }
@@ -545,9 +580,9 @@ export default function Hero3DBackground({ chefVisible = false }) {
           const avgZ = (p1.z + p2.z) / 2;
           
           // Fades out lines when scrolling deep into the dispersed steam phase
-          const fade = Math.max(0, 1.2 - avgZ / 580) * Math.max(0, 1.0 - (scroll.y - 0.7) * 3);
+          const fade = Math.max(0, 1.2 - avgZ / 580) * Math.max(0, 1.0 - (scroll.y - 0.7) * 3) * globalFade;
           
-          if (fade > 0.05) {
+          if (fade > 0.01) {
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
@@ -571,7 +606,10 @@ export default function Hero3DBackground({ chefVisible = false }) {
       drawList.sort((a, b) => b.z - a.z);
 
       drawList.forEach((pt) => {
-        const opacity = Math.max(0.04, Math.min(0.9, 1.35 - pt.z / 600));
+        let opacity = Math.max(0.04, Math.min(0.9, 1.35 - pt.z / 600));
+        opacity *= globalFade;
+        if (opacity < 0.01) return; // Skip rendering fully transparent particles
+
         const radius = Math.max(0.4, pt.size);
 
         ctx.beginPath();

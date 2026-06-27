@@ -124,6 +124,17 @@ const mascotRevealVariant = {
       duration: 1.4,
       ease: [0.16, 1, 0.3, 1]
     }
+  },
+  exit: {
+    opacity: 0,
+    x: 40,
+    y: 15,
+    scale: 0.90,
+    rotate: 6,
+    transition: {
+      duration: 0.45,
+      ease: [0.16, 1, 0.3, 1]
+    }
   }
 };
 
@@ -514,9 +525,9 @@ const WEATHER_POOLS = {
       "Golden sunlight. Let's paint your palate with fresh, vibrant flavors."
     ],
     chefLines: [
-      "Ah, what a beautiful sun-kissed afternoon! Mon ami, the weather calls for the crisp, clean flavor of our fresh Edo-style Salmon Sashimi! 🍣",
-      "Bright skies demand bright flavors! Might I suggest our signature chilled Truffle Caprese or a glass of crisp champagne? 🥂",
-      "The sun is shining beautifully today! Let's celebrate with light, vibrant dishes crafted just for you! ☀️🥗"
+      "Ah, what a beautiful sun-kissed afternoon! Mon ami, the weather calls for the crisp, clean flavor of our fresh Edo-style Salmon Sashimi!",
+      "Bright skies demand bright flavors! Might I suggest our signature chilled Truffle Caprese or a glass of crisp champagne?",
+      "The sun is shining beautifully today! Let's celebrate with light, vibrant dishes crafted just for you!"
     ]
   },
   starry: {
@@ -528,9 +539,9 @@ const WEATHER_POOLS = {
       "Cool night air. Cozy up with our chef's signature warm creations."
     ],
     chefLines: [
-      "Ah, what a beautiful, clear starlit night! Mon ami, cozy up with the rich warmth of our slow-cooked Wagyu Beef Bourguignon! 🥩✨",
-      "Under the starry night sky, let us elevate your evening with a glass of robust Cabernet Sauvignon and fresh truffles! 🍷🌌",
-      "A cool, calm evening is upon us. Celebrate the night with our molten-core chocolate creations! 🍫💫"
+      "Ah, what a beautiful, clear starlit night! Mon ami, cozy up with the rich warmth of our slow-cooked Wagyu Beef Bourguignon!",
+      "Under the starry night sky, let us elevate your evening with a glass of robust Cabernet Sauvignon and fresh truffles!",
+      "A cool, calm evening is upon us. Celebrate the night with our molten-core chocolate creations!"
     ]
   },
   rainy: {
@@ -542,9 +553,9 @@ const WEATHER_POOLS = {
       "Drizzling skies. Warm the soul with slow-simmered culinary poetry."
     ],
     chefLines: [
-      "Soft rain drumming outside... it is the ultimate excuse to wrap yourself in deep comfort with a steaming bowl of Lobster Bisque! 🍲",
-      "Rainy skies call for warmth from the inside out. Savor our slow-cooked Wagyu Beef Bourguignon, mon ami! 🥩🌧️",
-      "Ah, listen to the rain fall... warm your soul with a rich, hot Valrhona Chocolate Soufflé fresh from the oven! 🍫🧁"
+      "Soft rain drumming outside... it is the ultimate excuse to wrap yourself in deep comfort with a steaming bowl of Lobster Bisque!",
+      "Rainy skies call for warmth from the inside out. Savor our slow-cooked Wagyu Beef Bourguignon, mon ami!",
+      "Ah, listen to the rain fall... warm your soul with a rich, hot Valrhona Chocolate Soufflé fresh from the oven!"
     ]
   },
   cloudy: {
@@ -555,9 +566,9 @@ const WEATHER_POOLS = {
       "Cozy overcast daydreaming. Let our chef craft your warm culinary escape."
     ],
     chefLines: [
-      "Cozy silver skies today... wrap yourself in pure luxury with a glass of rich red wine and our dry-aged culinary specials! 🍷",
-      "The overcast mist calls for slow-roasted masterpieces. Our Roasted Truffle Chicken is waiting to delight you! 🍗✨",
-      "Cloudy daydreams call for comforting food creations. Let me cook up a comforting feast for you! 👨‍🍳🍳"
+      "Cozy silver skies today... wrap yourself in pure luxury with a glass of rich red wine and our dry-aged culinary specials!",
+      "The overcast mist calls for slow-roasted masterpieces. Our Roasted Truffle Chicken is waiting to delight you!",
+      "Cloudy daydreams call for comforting food creations. Let me cook up a comforting feast for you!"
     ]
   },
   chilly: {
@@ -569,9 +580,9 @@ const WEATHER_POOLS = {
       "Chilly evening. Cozy up to a hot plate of sizzling culinary magic."
     ],
     chefLines: [
-      "Ooh, there is a crisp chill in the air today! Warm up instantly with a steaming bowl of our 24-hour slow-cooked Spicy Fusion Ramen! 🍜🔥",
-      "Cold winds are blowing, mon ami! Seek shelter in the warm luxury of our hot Truffle Gnocchi or sizzling dry-aged steaks! 🥩🍄",
-      "Chilly evenings call for cozy culinary magic. Warm your senses with our molten core chocolate creations and robust stews! 🍲🍫"
+      "Ooh, there is a crisp chill in the air today! Warm up instantly with a steaming bowl of our 24-hour slow-cooked Spicy Fusion Ramen!",
+      "Cold winds are blowing, mon ami! Seek shelter in the warm luxury of our hot Truffle Gnocchi or sizzling dry-aged steaks!",
+      "Chilly evenings call for cozy culinary magic. Warm your senses with our molten core chocolate creations and robust stews!"
     ]
   },
   stormy: {
@@ -582,8 +593,8 @@ const WEATHER_POOLS = {
       "Stormy skies outside. Warm up with our chef's spicy, bold delicacies."
     ],
     chefLines: [
-      "Mon dieu, quite a storm raging outside! ⚡ Let me warm you up with our fiery Spicy Szechuan Fusion Noodles! 🍜🔥",
-      "Thunder & lightning call for bold flavors! Cozy up with our sizzling hotpots and robust, spiced red wine! 🍷⛈️"
+      "Mon dieu, quite a storm raging outside! Let me warm you up with our fiery Spicy Szechuan Fusion Noodles!",
+      "Thunder & lightning call for bold flavors! Cozy up with our sizzling hotpots and robust, spiced red wine!"
     ]
   },
   snowy: {
@@ -594,8 +605,8 @@ const WEATHER_POOLS = {
       "Crisp, snowy day. The perfect backdrop for steaming hot culinary magic."
     ],
     chefLines: [
-      "Ah, a beautiful blanket of snow outside! ❄️ Cozy up with a piping hot bowl of our Signature Wild Mushroom Truffle Risotto! 🍄🍚",
-      "It is a winter wonderland! Let us bring you warmth with a hot, freshly baked chocolate soufflé! 🍫❄️"
+      "Ah, a beautiful blanket of snow outside! Cozy up with a piping hot bowl of our Signature Wild Mushroom Truffle Risotto!",
+      "It is a winter wonderland! Let us bring you warmth with a hot, freshly baked chocolate soufflé!"
     ]
   }
 };
@@ -1938,10 +1949,11 @@ export default function Home() {
           <AnimatePresence>
             {showChef && (
               <motion.div
+                key="mascot-chef-container"
                 variants={mascotRevealVariant}
                 initial="hidden"
                 animate="visible"
-                exit="hidden"
+                exit="exit"
                 className="relative z-20 flex flex-col items-center justify-end"
                 style={{ x: chefX }}
               >
