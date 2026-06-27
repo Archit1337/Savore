@@ -95,9 +95,27 @@ export default function Hero3DBackground({ chefVisible = false }) {
       }
     };
 
+    // Prevent accidental text selection on spam-clicking particles
+    const handleGlobalMouseDown = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const clickedOnParticle = projectedPointsRef.current.some(pt => {
+        const dx = clickX - pt.x;
+        const dy = clickY - pt.y;
+        return (dx * dx + dy * dy) < 1600; // 40px comfortable target
+      });
+
+      if (clickedOnParticle) {
+        e.preventDefault(); // Blocks browser text selection highlight start
+      }
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('click', handleGlobalClick);
+    window.addEventListener('mousedown', handleGlobalMouseDown);
 
     // ── 3D SHAPE CONSTELLATION MATHEMATICS ──
     const R = 230; 
@@ -351,9 +369,9 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
       // ── DRAW AMBIENT GRADIENT WASHES (AURORA GLOWS) ──
       const glows = [
-        { x: width * 0.28, y: height * 0.42, r: 380, color: isDark ? 'rgba(255, 106, 77, 0.055)' : 'rgba(255, 106, 77, 0.03)' }, // Left orange wash
-        { x: width * 0.72, y: height * 0.40, r: 420, color: isDark ? 'rgba(255, 210, 127, 0.08)' : 'rgba(255, 210, 127, 0.04)' },  // Gold wash right behind chef
-        { x: width * 0.50, y: height * 0.72, r: 320, color: isDark ? 'rgba(255, 106, 77, 0.035)' : 'rgba(255, 106, 77, 0.02)' }  // Bottom center ambient glow
+        { x: width * 0.28, y: height * 0.42, r: 380, color: isDark ? 'rgba(255, 106, 77, 0.022)' : 'rgba(255, 106, 77, 0.012)' }, // Left orange wash (reduced)
+        { x: width * 0.72, y: height * 0.40, r: 420, color: isDark ? 'rgba(255, 210, 127, 0.032)' : 'rgba(255, 210, 127, 0.015)' },  // Gold wash right behind chef (reduced)
+        { x: width * 0.50, y: height * 0.72, r: 320, color: isDark ? 'rgba(255, 106, 77, 0.014)' : 'rgba(255, 106, 77, 0.008)' }  // Bottom center ambient glow (reduced)
       ];
 
       glows.forEach((g) => {
@@ -391,10 +409,11 @@ export default function Hero3DBackground({ chefVisible = false }) {
         let tx, ty, tz;
         
         if (isLogoActiveRef.current) {
-          // Morph: Savoré "S" Logo shape
-          tx = p.posLogo.x;
-          ty = p.posLogo.y;
-          tz = p.posLogo.z;
+          // Morph: Savoré "S" Logo shape, morphing to pos3 (dispersed steam) as you scroll
+          const ease = scroll.y * scroll.y * (3 - 2 * scroll.y);
+          tx = p.posLogo.x + (p.pos3.x - p.posLogo.x) * ease;
+          ty = p.posLogo.y + (p.pos3.y - p.posLogo.y) * ease;
+          tz = p.posLogo.z + (p.pos3.z - p.posLogo.z) * ease;
         } else if (scroll.y < 0.33) {
           // Morph: Cloche (0) ➔ Plate (1)
           const t = scroll.y / 0.33;
@@ -440,8 +459,11 @@ export default function Hero3DBackground({ chefVisible = false }) {
         // Apply global auto-spin and mouse parallax tilt ONLY if logo is NOT active
         let rotP;
         if (isLogoActiveRef.current) {
-          // Keep it flat and upright (remove all spin/rotation from Savoré Logo)
-          rotP = { x: p.x, y: p.y, z: p.z };
+          // Keep Savoré Logo facing forward (no auto-spin Y), but apply 3D scroll tilt X and mouse tilts
+          const mouseAngleY = mouse.x * 0.18;
+          const mouseAngleX = -mouse.y * 0.14 + scroll.y * 0.12;
+          rotP = rotateY(p.x, p.y, p.z, mouseAngleY);
+          rotP = rotateX(rotP.x, rotP.y, rotP.z, mouseAngleX);
         } else {
           const autoSpinAngleY = time * 0.24;
           rotP = rotateY(p.x, p.y, p.z, autoSpinAngleY);
@@ -557,11 +579,11 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
         if (isDark) {
           if (pt.colorType === 0) {
-            ctx.fillStyle = `rgba(255, 106, 77, ${opacity * 0.75})`; // Savoré orange
+            ctx.fillStyle = `rgba(255, 106, 77, ${opacity * 0.75})`; // Restored orange glow
           } else if (pt.colorType === 1) {
-            ctx.fillStyle = `rgba(255, 210, 127, ${opacity * 0.90})`; // Savoré gold
+            ctx.fillStyle = `rgba(255, 210, 127, ${opacity * 0.90})`; // Restored gold glow
           } else {
-            ctx.fillStyle = `rgba(250, 246, 238, ${opacity * 0.40})`; // Cream
+            ctx.fillStyle = `rgba(250, 246, 238, ${opacity * 0.40})`; // Restored cream
           }
         } else {
           if (pt.colorType === 0) {
@@ -599,6 +621,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('click', handleGlobalClick);
+      window.removeEventListener('mousedown', handleGlobalMouseDown);
     };
   }, [isDark]);
 
@@ -608,7 +631,6 @@ export default function Hero3DBackground({ chefVisible = false }) {
         ref={canvasRef}
         className="w-full h-full block pointer-events-auto"
         style={{ opacity: 0.98 }}
-        title="Click to toggle Savoré Logo"
       />
     </div>
   );

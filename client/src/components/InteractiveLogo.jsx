@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import logoImg from '../assets/logo.png';
 
 export default function InteractiveLogo() {
   const [coords, setCoords] = useState({ x: 0, y: 0 });
@@ -69,10 +68,10 @@ export default function InteractiveLogo() {
 
       {/* 🧊 2. CERAMIC / METAL GEOMETRIC LOGO TILE */}
       <motion.div
-        className="logo-ceramic-tile !bg-[#FAF6EE] !p-1 !w-[34px] !h-[34px] flex items-center justify-center rounded-xl overflow-hidden shrink-0 border border-[#FF6A4D]/15 shadow-sm"
+        className="logo-ceramic-tile !p-1 !w-[34px] !h-[34px] flex items-center justify-center rounded-xl overflow-hidden shrink-0 border border-[#FFFFFF]/15 shadow-sm"
         whileHover={{
           scale: 1.05,
-          borderColor: 'rgba(255, 106, 77, 0.4)'
+          borderColor: 'rgba(255, 255, 255, 0.35)'
         }}
         whileTap={{ scale: 0.94 }}
         animate={{
@@ -84,15 +83,21 @@ export default function InteractiveLogo() {
         }}
         transition={{ type: 'spring', stiffness: 150, damping: 14 }}
       >
-        <img 
-          src={logoImg} 
-          alt="S" 
-          className="w-full h-full object-contain pointer-events-none transform-none scale-100" 
-          style={{ 
-            mixBlendMode: 'multiply',
-            filter: 'blur(0.45px) contrast(1.75) brightness(0.54) saturate(1.1)'
-          }}
-        />
+        <svg 
+          viewBox="0 0 100 100" 
+          className="w-[23px] h-[23px] pointer-events-none" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Thick organic fluid S monogram (exact replica of the uploaded logo asset) */}
+          <path 
+            d="M68 29C68 18 58 14 48 14C33 14 27 23 27 36C27 49 73 51 73 64C73 77 67 86 48 86C38 86 32 81 32 71" 
+            stroke="#FFFFFF" 
+            strokeWidth="17.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+          />
+        </svg>
         
         {/* Dynamic Light Sweep reflection */}
         <div className="logo-sweep-element" />
