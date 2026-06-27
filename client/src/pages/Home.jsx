@@ -963,6 +963,7 @@ export default function Home() {
   });
 
   const [showFloatingLocation, setShowFloatingLocation] = useState(false);
+  const [isPastScrollThreshold, setIsPastScrollThreshold] = useState(false);
   const [isPillHovered, setIsPillHovered] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchHovered, setSearchHovered] = useState(false);
@@ -970,6 +971,7 @@ export default function Home() {
   useEffect(() => {
     const handleScroll = () => {
       const isPastThreshold = window.scrollY > 120;
+      setIsPastScrollThreshold(isPastThreshold);
       
       const docHeight = document.documentElement.scrollHeight;
       const windowHeight = window.innerHeight;
@@ -2491,7 +2493,7 @@ export default function Home() {
 
       {/* "Let Chef Savoré Cook" FAB */}
       <AnimatePresence>
-        {!showChef && !showFloatingLocation && (
+        {!showChef && !isPastScrollThreshold && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

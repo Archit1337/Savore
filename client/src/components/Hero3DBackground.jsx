@@ -9,6 +9,9 @@ export default function Hero3DBackground({ chefVisible = false }) {
   const [isLogoActive, setIsLogoActive] = useState(false);
   const isLogoActiveRef = useRef(false);
 
+  // Store projected screen space coordinates of all active particles for exact collision detection
+  const projectedPointsRef = useRef([]);
+
   // Smooth mouse coordinates and scroll offsets tracking (with lerp interpolation)
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
   const scrollRef = useRef({ y: 0, targetY: 0 });
@@ -24,19 +27,6 @@ export default function Hero3DBackground({ chefVisible = false }) {
       prevChefVisibleRef.current = chefVisible;
     }
   }, [chefVisible]);
-
-  // Click on the 3D canvas toggles the morphing to the Savoré "S" logo
-  const handleCanvasClick = () => {
-    const nextState = !isLogoActiveRef.current;
-    isLogoActiveRef.current = nextState;
-    setIsLogoActive(nextState);
-    
-    // Play popping Web Audio sound
-    soundController.playPop();
-    
-    // Trigger sizzle burst during transition
-    sizzleRef.current.intensity = 1.3;
-  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -79,11 +69,38 @@ export default function Hero3DBackground({ chefVisible = false }) {
       scrollRef.current.targetY = Math.min(scrollPos / maxScroll, 1.0);
     };
 
+    // Global Click Handler (ensures clicks work even if covered by overlays/gradients)
+    const handleGlobalClick = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // Check if click coordinate is within 40px of any Point Cloud particle
+      const clickedOnParticle = projectedPointsRef.current.some(pt => {
+        const dx = clickX - pt.x;
+        const dy = clickY - pt.y;
+        return (dx * dx + dy * dy) < 1600; // 40px comfortable click target
+      });
+
+      if (clickedOnParticle) {
+        const nextState = !isLogoActiveRef.current;
+        isLogoActiveRef.current = nextState;
+        setIsLogoActive(nextState);
+        
+        // Play popping Web Audio sound
+        soundController.playPop();
+        
+        // Trigger sizzle burst during transition
+        sizzleRef.current.intensity = 1.35;
+      }
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('click', handleGlobalClick);
 
     // ── 3D SHAPE CONSTELLATION MATHEMATICS ──
-    const R = 230; // Increased shape scale to R=230 for epic coverage!
+    const R = 230; 
     const particles = [];
 
     // Mesh Grid Definition (12 rings, 30 segments = 360 structural mesh points)
@@ -165,17 +182,17 @@ export default function Hero3DBackground({ chefVisible = false }) {
         const dY = (Math.random() - 0.5) * 600;
         const dZ = (Math.random() - 0.5) * 400;
 
-        // ── Shape 4: Savoré "S" Logo Monogram ──
+        // ── Shape 4: Savoré "S" Logo Monogram (Mirrored & scaled to align with Savoré branding) ──
         let sX = 0, sY = 0, sZ = 0;
         const sAngle = t * Math.PI * 2.8 - Math.PI * 0.4;
         if (t < 0.5) {
-          // Bottom loop curve
-          sX = R * 0.45 * Math.sin(sAngle);
-          sY = R * 0.45 * Math.cos(sAngle) - R * 0.35;
+          // Top loop curve (curves left, matches branding monogram)
+          sX = -R * 0.42 * Math.sin(sAngle);
+          sY = (R * 0.42 * Math.cos(sAngle) - R * 0.28) * 0.85;
         } else {
-          // Top loop curve (opposite spin direction)
-          sX = R * 0.45 * Math.sin(-sAngle + Math.PI);
-          sY = R * 0.45 * Math.cos(-sAngle + Math.PI) + R * 0.35;
+          // Bottom loop curve (curves right, matches branding monogram)
+          sX = -R * 0.42 * Math.sin(-sAngle + Math.PI);
+          sY = (R * 0.42 * Math.cos(-sAngle + Math.PI) + R * 0.28) * 0.85;
         }
         sZ = (Math.random() - 0.5) * R * 0.18;
 
@@ -244,11 +261,11 @@ export default function Hero3DBackground({ chefVisible = false }) {
       let sX = 0, sY = 0, sZ = 0;
       const sAngle = t * Math.PI * 2.8 - Math.PI * 0.4;
       if (t < 0.5) {
-        sX = R * 0.45 * Math.sin(sAngle) + offX;
-        sY = R * 0.45 * Math.cos(sAngle) - R * 0.35 + offY;
+        sX = -R * 0.42 * Math.sin(sAngle) + offX;
+        sY = ((R * 0.42 * Math.cos(sAngle) - R * 0.28) * 0.85) + offY;
       } else {
-        sX = R * 0.45 * Math.sin(-sAngle + Math.PI) + offX;
-        sY = R * 0.45 * Math.cos(-sAngle + Math.PI) + R * 0.35 + offY;
+        sX = -R * 0.42 * Math.sin(-sAngle + Math.PI) + offX;
+        sY = ((R * 0.42 * Math.cos(-sAngle + Math.PI) + R * 0.28) * 0.85) + offY;
       }
       sZ = (Math.random() - 0.5) * R * 0.18 + offZ;
 
@@ -271,7 +288,6 @@ export default function Hero3DBackground({ chefVisible = false }) {
       });
     }
 
-    // ── 3D COORDINATE ROTATIONS ──
     const rotateX = (x, y, z, angle) => {
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
@@ -364,6 +380,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
       const zOffset = 380; // Camera distance offset
 
       const projected = new Array(particles.length);
+      const currentProjected = [];
 
       // Center point (offset to the right on desktop to frame the mascot chef)
       const centerX = width > 768 ? width * 0.68 : width * 0.5;
@@ -420,32 +437,81 @@ export default function Hero3DBackground({ chefVisible = false }) {
         p.y += (ty - p.y) * lerpSpeed;
         p.z += (tz - p.z) * lerpSpeed;
 
-        // Apply global auto-spin
-        const autoSpinAngleY = time * 0.24;
-        let rotP = rotateY(p.x, p.y, p.z, autoSpinAngleY);
+        // Apply global auto-spin and mouse parallax tilt ONLY if logo is NOT active
+        let rotP;
+        if (isLogoActiveRef.current) {
+          // Keep it flat and upright (remove all spin/rotation from Savoré Logo)
+          rotP = { x: p.x, y: p.y, z: p.z };
+        } else {
+          const autoSpinAngleY = time * 0.24;
+          rotP = rotateY(p.x, p.y, p.z, autoSpinAngleY);
 
-        // Apply interactive mouse parallax tilt
-        const mouseAngleY = mouse.x * 0.24;
-        const mouseAngleX = -mouse.y * 0.20 + scroll.y * 0.12;
-        rotP = rotateY(rotP.x, rotP.y, rotP.z, mouseAngleY);
-        rotP = rotateX(rotP.x, rotP.y, rotP.z, mouseAngleX);
+          const mouseAngleY = mouse.x * 0.24;
+          const mouseAngleX = -mouse.y * 0.20 + scroll.y * 0.12;
+          rotP = rotateY(rotP.x, rotP.y, rotP.z, mouseAngleY);
+          rotP = rotateX(rotP.x, rotP.y, rotP.z, mouseAngleX);
+        }
 
         // Perspective Projection
         const finalZ = rotP.z + zOffset;
         if (finalZ > 10) {
           const scale = fov / finalZ;
+          let projX = rotP.x * scale + centerX;
+          let projY = rotP.y * scale + centerY;
+
+          // Animation on Logo hover: a small subset of particles disintegrate (push away) smoothly
+          if (isLogoActiveRef.current && idx % 5 === 0) {
+            const mouseCanvasX = mouse.x * (width / 2) + width / 2;
+            const mouseCanvasY = mouse.y * (height / 2) + height / 2;
+            const dx = projX - mouseCanvasX;
+            const dy = projY - mouseCanvasY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Particles within 125px radius push outward along vector (re-integrates back on mouse leave)
+            if (dist < 125) {
+              const strength = 1.0 - dist / 125;
+              const pushFactor = strength * 45; // Smooth distance push offset
+              projX += (dx / (dist || 1)) * pushFactor;
+              projY += (dy / (dist || 1)) * pushFactor;
+            }
+          }
+
           projected[idx] = {
-            x: rotP.x * scale + centerX,
-            y: rotP.y * scale + centerY,
+            x: projX,
+            y: projY,
             z: finalZ,
             size: p.size * scale * 0.85,
             colorType: p.colorType,
             isMesh: p.isMesh
           };
+
+          // Save projected coordinates of mesh points for accurate click detection
+          if (p.isMesh) {
+            currentProjected.push({ x: projX, y: projY });
+          }
         } else {
           projected[idx] = null;
         }
       });
+
+      // Update projected points ref for handleCanvasClick
+      projectedPointsRef.current = currentProjected;
+
+      // Update cursor dynamically based on whether hovering over any visible particle
+      const mouseCanvasX = mouse.x * (width / 2) + width / 2;
+      const mouseCanvasY = mouse.y * (height / 2) + height / 2;
+
+      const isHoveringParticle = currentProjected.some(pt => {
+        const dx = mouseCanvasX - pt.x;
+        const dy = mouseCanvasY - pt.y;
+        return (dx * dx + dy * dy) < 1296; // 36px radius check (smooth, forgiving hover pointer)
+      });
+
+      if (isHoveringParticle) {
+        canvas.style.cursor = 'pointer';
+      } else {
+        canvas.style.cursor = 'default';
+      }
 
       // ── DRAW MESH CONNECTION LINES (Hologram grid) ──
       ctx.lineWidth = 0.75;
@@ -532,6 +598,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('click', handleGlobalClick);
     };
   }, [isDark]);
 
@@ -539,8 +606,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
     <div className="absolute top-0 left-0 right-0 h-[840px] overflow-hidden z-0 pointer-events-none w-full">
       <canvas
         ref={canvasRef}
-        onClick={handleCanvasClick}
-        className="w-full h-full block cursor-pointer pointer-events-auto"
+        className="w-full h-full block pointer-events-auto"
         style={{ opacity: 0.98 }}
         title="Click to toggle Savoré Logo"
       />
