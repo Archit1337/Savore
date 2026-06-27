@@ -85,15 +85,32 @@ export default function InteractiveLogo() {
       >
         <svg 
           viewBox="0 0 100 100" 
-          className="w-[23px] h-[23px] pointer-events-none" 
+          className="w-[24px] h-[24px] pointer-events-none" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Thick organic fluid S monogram (exact replica of the uploaded logo asset) */}
+          {/* Subtle cloche dome backdrop (resembles first phase of 3D object) */}
           <path 
-            d="M68 29C68 18 58 14 48 14C33 14 27 23 27 36C27 49 73 51 73 64C73 77 67 86 48 86C38 86 32 81 32 71" 
+            d="M23 72C23 43 34 32 50 32C66 32 77 43 77 72" 
+            stroke="rgba(255, 255, 255, 0.35)" 
+            strokeWidth="5" 
+            strokeLinecap="round" 
+          />
+          {/* Subtle cloche plate base */}
+          <path 
+            d="M17 76H83" 
+            stroke="rgba(255, 255, 255, 0.35)" 
+            strokeWidth="5.5" 
+            strokeLinecap="round" 
+          />
+          {/* Polished gold cloche handle knob */}
+          <circle cx="50" cy="25" r="5" fill="#DCA041" />
+          
+          {/* Elegant fluid S monogram inside cloche dome (matches branding shape) */}
+          <path 
+            d="M63 46C63 40 58 37 50 37C40 37 36 43 36 50C36 57 64 59 64 66C64 72 60 75 50 75C40 75 36 71 36 65" 
             stroke="#FFFFFF" 
-            strokeWidth="17.5" 
+            strokeWidth="10.2" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
           />
