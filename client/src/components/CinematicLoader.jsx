@@ -86,7 +86,6 @@ export default function CinematicLoader({ onComplete }) {
   const progressRef = useRef(0);
 
   // Parallax Tilt 3D mouse tracking
-  const containerRef = useRef(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -95,15 +94,27 @@ export default function CinematicLoader({ onComplete }) {
   const rotateX = useSpring(mouseY, springConfig);
   const rotateY = useSpring(mouseX, springConfig);
 
+  const rectSizeRef = useRef({ width: 800, height: 600 });
+
+  useEffect(() => {
+    const handleResize = () => {
+      rectSizeRef.current = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      };
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleMouseMove = (e) => {
-    if (isExiting || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+    if (isExiting) return;
+    const { width, height } = rectSizeRef.current;
     
     // Normalize coordinates between -1 and 1 relative to center
-    const relativeX = e.clientX - rect.left - width / 2;
-    const relativeY = e.clientY - rect.top - height / 2;
+    const relativeX = e.clientX - width / 2;
+    const relativeY = e.clientY - height / 2;
     
     const normX = relativeX / (width / 2);
     const normY = relativeY / (height / 2);
@@ -203,7 +214,6 @@ export default function CinematicLoader({ onComplete }) {
 
   return (
     <motion.div
-      ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className="cinematic-loader-overlay fixed inset-0 z-[9999] flex items-center justify-center select-none overflow-hidden"
@@ -326,6 +336,7 @@ export default function CinematicLoader({ onComplete }) {
               }}
               style={{
                 transformOrigin: 'center center',
+                willChange: 'transform, opacity'
               }}
               transition={{ 
                 duration: 0.65, 
