@@ -1738,7 +1738,7 @@ export default function Home() {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="relative z-20 flex flex-col items-center justify-end md:-ml-16"
+                className="relative z-20 flex flex-col items-center justify-end md:-ml-[37%]"
               >
                 <motion.div style={{ x: chefX }} className="flex flex-col items-center justify-end relative w-full h-full">
                   <motion.div
