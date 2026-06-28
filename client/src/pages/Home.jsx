@@ -980,25 +980,32 @@ export default function Home() {
   const [searchHovered, setSearchHovered] = useState(false);
 
   useEffect(() => {
+    let wasPast = false;
+    let wasFloating = false;
+
     const handleScroll = () => {
-      const isPastThreshold = window.scrollY > 120;
-      setIsPastScrollThreshold(isPastThreshold);
+      const scrollPos = window.scrollY;
+      const isPastThreshold = scrollPos > 120;
+      
+      if (isPastThreshold !== wasPast) {
+        wasPast = isPastThreshold;
+        setIsPastScrollThreshold(isPastThreshold);
+      }
       
       const docHeight = document.documentElement.scrollHeight;
       const windowHeight = window.innerHeight;
-      const scrollPos = window.scrollY;
       const distanceToBottom = docHeight - windowHeight - scrollPos;
       
       // Hide location selector when within 380px of page bottom to avoid overlapping footer
       const isCloseToFooter = distanceToBottom < 380;
-      
-      if (isPastThreshold && !isCloseToFooter) {
-        setShowFloatingLocation(true);
-      } else {
-        setShowFloatingLocation(false);
+      const shouldShowFloating = isPastThreshold && !isCloseToFooter;
+
+      if (shouldShowFloating !== wasFloating) {
+        wasFloating = shouldShowFloating;
+        setShowFloatingLocation(shouldShowFloating);
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -1022,44 +1029,7 @@ export default function Home() {
 
   // 🧑‍🍳 Scroll-Driven Hero Folding & Chef Smile Animation
   const { scrollY } = useScroll();
-  const smoothScrollY = useMotionValue(scrollY.get());
-
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-    
-    const handleScrollYChange = (latest) => {
-      const isScrollingUp = latest < lastScrollY;
-      lastScrollY = latest;
-
-      if (latest <= 5) {
-        smoothScrollY.set(0);
-      } else if (isScrollingUp) {
-        animate(smoothScrollY, latest, {
-          type: "spring",
-          stiffness: 350,
-          damping: 30,
-          mass: 0.1
-        });
-      } else {
-        animate(smoothScrollY, latest, {
-          type: "spring",
-          stiffness: 100,
-          damping: 24,
-          mass: 1.0
-        });
-      }
-    };
-
-    const unsubscribe = scrollY.on ? scrollY.on("change", handleScrollYChange) : scrollY.onChange(handleScrollYChange);
-
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      } else if (unsubscribe && typeof unsubscribe.stop === 'function') {
-        unsubscribe.stop();
-      }
-    };
-  }, [scrollY, smoothScrollY]);
+  const smoothScrollY = useSpring(scrollY, { stiffness: 120, damping: 26, mass: 0.25 });
   const [showChef, setShowChef] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [forceChefSmile, setForceChefSmile] = useState(false);
@@ -1073,22 +1043,26 @@ export default function Home() {
 
   useEffect(() => {
     const scrollTimeoutRef = { current: null };
+    let isSmiling = false;
 
     const handleScroll = () => {
       const currentScroll = window.scrollY;
-      if (currentScroll > 15 && currentScroll < 850) {
-        setForceChefSmile(true);
-      } else {
-        setForceChefSmile(false);
+      const shouldSmile = currentScroll > 15 && currentScroll < 850;
+      
+      if (shouldSmile !== isSmiling) {
+        isSmiling = shouldSmile;
+        setForceChefSmile(shouldSmile);
       }
 
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
+      if (isSmiling) {
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+        scrollTimeoutRef.current = setTimeout(() => {
+          isSmiling = false;
+          setForceChefSmile(false);
+        }, 400);
       }
-
-      scrollTimeoutRef.current = setTimeout(() => {
-        setForceChefSmile(false);
-      }, 400); // Soft, natural reset 400ms after scroll events stop
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -1908,9 +1882,9 @@ export default function Home() {
                   <img 
                     src={pillar.image} 
                     alt={pillar.title}
-                    className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 h-full w-[1200px] object-cover transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] filter grayscale-[30%] brightness-[40%] group-hover:grayscale-0 group-hover:brightness-[80%] group-hover:scale-105"
+                    className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 h-full w-[1200px] object-cover [transition:transform_0.65s_cubic-bezier(0.16,1,0.3,1),_filter_0.65s_cubic-bezier(0.16,1,0.3,1)] filter grayscale-[30%] brightness-[40%] group-hover:grayscale-0 group-hover:brightness-[80%] group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:from-black/85 group-hover:via-black/25" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent z-10 [transition:background_0.65s_cubic-bezier(0.16,1,0.3,1)] group-hover:from-black/85 group-hover:via-black/25" />
                   <div className="noise-overlay z-20" />
                 </div>
 
@@ -1927,7 +1901,7 @@ export default function Home() {
                       {pillar.title}
                     </h3>
                     <div 
-                      className="transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
+                      className="[transition:opacity_0.65s_cubic-bezier(0.16,1,0.3,1),_max-height_0.65s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
                       style={{
                         opacity: hoveredPillar === index || hoveredPillar === null ? 1 : 0,
                         maxHeight: hoveredPillar === index || hoveredPillar === null ? "160px" : "0px",

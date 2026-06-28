@@ -2623,7 +2623,18 @@ html.dark .click-particle {
   top: var(--mobile-top);
   height: var(--mobile-height);
   width: 100%;
-  transition: top 0.7s cubic-bezier(0.16, 1, 0.3, 1), height 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+  transition: top 0.65s cubic-bezier(0.16, 1, 0.3, 1), height 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease;
+  will-change: top, height, transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* Optimize background image filter and zoom rendering safely without overriding layout transforms */
+.pillar-panel img {
+  will-change: transform, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .focus-indicator {
@@ -2635,7 +2646,7 @@ html.dark .click-particle {
   width: 100%;
   border-top: 1px solid rgba(255, 255, 255, 0.3);
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  transition: top 0.7s cubic-bezier(0.16, 1, 0.3, 1), height 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+  transition: top 0.65s cubic-bezier(0.16, 1, 0.3, 1), height 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease;
 }
 
 /* Light mode focus indicator borders */
@@ -2651,7 +2662,8 @@ html.light .focus-indicator {
     height: auto;
     left: var(--desktop-left);
     width: var(--desktop-width);
-    transition: left 0.7s cubic-bezier(0.16, 1, 0.3, 1), width 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+    transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1), width 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease;
+    will-change: left, width, transform, opacity;
   }
 
   .focus-indicator {
@@ -2664,7 +2676,7 @@ html.light .focus-indicator {
     border-bottom: none;
     border-left: 1px solid rgba(255, 255, 255, 0.3);
     border-right: 1px solid rgba(255, 255, 255, 0.3);
-    transition: left 0.7s cubic-bezier(0.16, 1, 0.3, 1), width 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+    transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1), width 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease;
   }
   
   html.light .focus-indicator {

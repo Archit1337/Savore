@@ -496,7 +496,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
     let startTime = performance.now();
 
     const tick = () => {
-      if (document.hidden) {
+      if (document.hidden || !window.savoreLoaderComplete || window.scrollY > 950) {
         animationFrameId = requestAnimationFrame(tick);
         return;
       }
@@ -626,7 +626,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
         
         // Connect nearby drifting food items with constellation chart lines
         if (foodsRef.current && foodsRef.current.length > 0) {
-          ctx.strokeStyle = 'rgba(24, 22, 21, 0.18)';
+          ctx.strokeStyle = isDark ? 'rgba(255, 210, 127, 0.16)' : 'rgba(24, 22, 21, 0.18)';
           ctx.lineWidth = 0.8;
           for (let i = 0; i < foodsRef.current.length; i++) {
             for (let j = i + 1; j < foodsRef.current.length; j++) {
@@ -1108,12 +1108,12 @@ function drawMiniFoodItem(ctx, type, size, isDark) {
   ctx.save();
   
   // Setup premium styling matching Savoré's outline constellation aesthetic (adaptive colors)
-  const strokeColor = isDark ? 'rgba(255, 210, 127, 0.65)' : 'rgba(24, 22, 21, 0.78)';
+  const strokeColor = isDark ? 'rgba(255, 212, 133, 0.85)' : 'rgba(24, 22, 21, 0.78)';
   const accentColor = isDark ? '#FF6A4D' : '#E05A47'; // Terracotta coral in light mode
   
   ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = isDark ? 1.3 : 1.6; // Bold, sharp lines in light mode
-  ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.60)'; // Silhouette back-fill
+  ctx.lineWidth = isDark ? 1.5 : 1.6; // Bold, sharp lines in both modes
+  ctx.fillStyle = isDark ? 'rgba(15, 12, 10, 0.72)' : 'rgba(255, 255, 255, 0.60)'; // Silhouette back-fill
   
   switch(type) {
     case 0: // 🍩 Donut (Glowing rings & tiny nodes)
