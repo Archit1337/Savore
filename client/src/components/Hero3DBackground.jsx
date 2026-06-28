@@ -21,6 +21,11 @@ export default function Hero3DBackground({ chefVisible = false }) {
   const sizzleRef = useRef({ intensity: 0 });
   const chefSizzleFadeRef = useRef(0);
 
+  // Arrays to hold space stars and floating mini food items that persist across renders
+  const starsRef = useRef([]);
+  const foodsRef = useRef([]);
+  const shootingStarRef = useRef({ active: false });
+
   // Detect chef visibility changes to trigger particle sizzle burst
   useEffect(() => {
     if (prevChefVisibleRef.current !== chefVisible) {
@@ -37,6 +42,56 @@ export default function Hero3DBackground({ chefVisible = false }) {
     if (!ctx) return;
 
     let animationFrameId;
+
+    // Seed stars array if not already initialized
+    if (starsRef.current.length === 0) {
+      const tempStars = [];
+      // 250 deep-space static stars (Milky Way background dust texture)
+      for (let i = 0; i < 250; i++) {
+        tempStars.push({
+          x: Math.random(),
+          y: Math.random(),
+          size: 0.15 + Math.random() * 0.45,
+          twinkleSpeed: 0, // completely static
+          phase: 0,
+          colorType: 1 // white
+        });
+      }
+      // 120 twinkling foreground stars (larger, colored)
+      for (let i = 0; i < 120; i++) {
+        tempStars.push({
+          x: Math.random(),
+          y: Math.random(),
+          size: 0.5 + Math.random() * 1.1,
+          twinkleSpeed: 0.015 + Math.random() * 0.035,
+          phase: Math.random() * Math.PI * 2,
+          colorType: Math.floor(Math.random() * 3) // 0 = gold, 1 = white, 2 = cool blue
+        });
+      }
+      starsRef.current = tempStars;
+    }
+
+    // Seed floating mini food items if not already initialized (using 3D depth system)
+    if (foodsRef.current.length === 0) {
+      const tempFoods = [];
+      for (let i = 0; i < 20; i++) {
+        const zDepth = 0.15 + Math.random() * 0.85; // 0.15 (far back) to 1.0 (very close)
+        tempFoods.push({
+          x: Math.random(),
+          y: Math.random(),
+          zDepth,
+          size: (6 + Math.random() * 6) * zDepth + 4, // Far items are tiny, near items are bigger
+          type: Math.floor(Math.random() * 7), // 7 distinct shape templates
+          angle: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.012 * zDepth,
+          driftX: (Math.random() - 0.5) * 0.0005 * zDepth,
+          driftY: (Math.random() - 0.5) * 0.0005 * zDepth,
+          // Foreground items are blurred to simulate a premium depth-of-field lens effect
+          blur: zDepth > 0.72 ? (zDepth - 0.72) * 8 : 0
+        });
+      }
+      foodsRef.current = tempFoods;
+    }
     let width = canvas.width = canvas.offsetWidth;
     let height = canvas.height = canvas.offsetHeight;
 
@@ -442,54 +497,137 @@ export default function Hero3DBackground({ chefVisible = false }) {
       // Sizzle multiplier scale
       const activeSizzleMultiplier = 1.0 + sizzle.intensity * 12.0;
 
-      // ── DRAW BACKGROUND RADIAL VIGNETTE ──
+      // ── DRAW DEEP SPACE VOID WITH CELESTIAL DETAILS ──
       ctx.clearRect(0, 0, width, height);
-      const grad = ctx.createRadialGradient(
-        width * 0.65 + mouse.x * 25,
-        height * 0.4 + mouse.y * 25,
-        100,
-        width * 0.5,
-        height * 0.5,
-        width * 0.8
-      );
-
-      if (isDark) {
-        grad.addColorStop(0, '#080a0f'); // Deep dark midnight center (darker backdrop)
-        grad.addColorStop(0.55, '#040508'); // Rich deep dark
-        grad.addColorStop(1, '#010203'); // Almost pitch black
-      } else {
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.65, '#faf6ee'); // Savoré Light warm cream
-        grad.addColorStop(1, '#f0e9d6');
-      }
-      ctx.fillStyle = grad;
+      // Base background color matching Savoré's theme palettes
+      ctx.fillStyle = isDark ? '#05070c' : '#faf9f5';
       ctx.fillRect(0, 0, width, height);
 
-      // ── DRAW AMBIENT GRADIENT WASHES (AURORA GLOWS) ──
-      const glows = [
-        { x: width * 0.28, y: height * 0.42, r: 380, color: isDark ? 'rgba(255, 106, 77, 0.010)' : 'rgba(255, 106, 77, 0.012)' }, // Left orange wash (ultra-subtle)
-        { x: width * 0.72, y: height * 0.40, r: 420, color: isDark ? 'rgba(255, 210, 127, 0.015)' : 'rgba(255, 210, 127, 0.015)' },  // Gold wash right behind chef (ultra-subtle)
-        { x: width * 0.50, y: height * 0.72, r: 320, color: isDark ? 'rgba(255, 106, 77, 0.006)' : 'rgba(255, 106, 77, 0.008)' }  // Bottom center ambient glow (ultra-subtle)
+      // Deep space atmospheric nebulas (extremely faint gas clouds)
+      const nebulas = [
+        { x: width * 0.3, y: height * 0.4, r: 400, color: isDark ? 'rgba(255, 106, 77, 0.03)' : 'rgba(255, 182, 193, 0.07)' },
+        { x: width * 0.7, y: height * 0.6, r: 500, color: isDark ? 'rgba(255, 210, 127, 0.035)' : 'rgba(245, 222, 179, 0.07)' },
+        { x: width * 0.5, y: height * 0.3, r: 350, color: isDark ? 'rgba(139, 92, 246, 0.025)' : 'rgba(230, 230, 250, 0.07)' }
       ];
-
-      glows.forEach((g) => {
-        // Slow drifting movement
-        const dx = Math.sin(time * 0.3 + g.r) * 35;
-        const dy = Math.cos(time * 0.28 + g.r) * 35;
-        
-        const aura = ctx.createRadialGradient(
-          g.x + dx + mouse.x * 20,
-          g.y + dy + mouse.y * 20,
-          10,
-          g.x + dx,
-          g.y + dy,
-          g.r
-        );
-        aura.addColorStop(0, g.color);
-        aura.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = aura;
-        ctx.fillRect(0, 0, width, height);
+      nebulas.forEach((neb, idx) => {
+        const driftX = Math.sin(time * 0.15 + idx) * 30;
+        const driftY = Math.cos(time * 0.12 + idx) * 30;
+        const grad = ctx.createRadialGradient(neb.x + driftX, neb.y + driftY, 0, neb.x + driftX, neb.y + driftY, neb.r);
+        grad.addColorStop(0, neb.color);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(neb.x + driftX, neb.y + driftY, neb.r, 0, Math.PI * 2);
+        ctx.fill();
       });
+
+      // ── Draw Twinkling & Static Stars (Sugar Crystals / Gold Flecks) ──
+      if (starsRef.current && starsRef.current.length > 0) {
+        starsRef.current.forEach((star) => {
+          // If twinkleSpeed is 0, star stays static (Milky Way background dust)
+          const twinkle = star.twinkleSpeed === 0 
+            ? 0.5 
+            : 0.2 + 0.8 * Math.sin(time * star.twinkleSpeed * 50 + star.phase);
+            
+          const starX = star.x * width;
+          const starY = star.y * height;
+          
+          ctx.beginPath();
+          ctx.arc(starX, starY, star.size, 0, Math.PI * 2);
+          
+          let starColor = 'rgba(255,255,255,';
+          if (star.colorType === 0) {
+            starColor = isDark ? 'rgba(255, 220, 150, ' : 'rgba(210, 150, 80, ';
+          } else if (star.colorType === 1) {
+            starColor = isDark ? 'rgba(255, 255, 255, ' : 'rgba(130, 120, 110, ';
+          } else {
+            starColor = isDark ? 'rgba(180, 220, 255, ' : 'rgba(110, 160, 220, ';
+          }
+          
+          ctx.fillStyle = starColor + (twinkle * (star.twinkleSpeed === 0 ? 0.45 : 0.75)) + ')';
+          ctx.fill();
+        });
+      }
+
+      // ── Draw Procedural Shooting Stars (Meteors) ──
+      if (isDark) {
+        // Occasionally trigger a shooting star randomly
+        if (Math.random() < 0.006 && !shootingStarRef.current.active) {
+          shootingStarRef.current = {
+            x: Math.random() * width * 0.6,
+            y: Math.random() * height * 0.3,
+            dx: 8 + Math.random() * 8,
+            dy: 4 + Math.random() * 5,
+            length: 90 + Math.random() * 80,
+            opacity: 0.85,
+            active: true
+          };
+        }
+        
+        const ss = shootingStarRef.current;
+        if (ss.active) {
+          ctx.save();
+          const grad = ctx.createLinearGradient(ss.x, ss.y, ss.x - ss.dx * 1.5, ss.y - ss.dy * 1.5);
+          grad.addColorStop(0, `rgba(255, 255, 255, ${ss.opacity})`);
+          grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.3;
+          ctx.beginPath();
+          ctx.moveTo(ss.x, ss.y);
+          ctx.lineTo(ss.x - ss.dx * 2, ss.y - ss.dy * 2);
+          ctx.stroke();
+          ctx.restore();
+
+          // Move meteor frame
+          ss.x += ss.dx;
+          ss.y += ss.dy;
+          ss.opacity -= 0.022; // Fade out slowly
+          
+          if (ss.opacity <= 0 || ss.x > width || ss.y > height) {
+            ss.active = false;
+          }
+        }
+      }
+
+      // ── Draw & Animate Floating Mini Food Items ──
+      if (foodsRef.current && foodsRef.current.length > 0) {
+        foodsRef.current.forEach((food) => {
+          // Update positions with slow drift
+          food.x += food.driftX;
+          food.y += food.driftY;
+          food.angle += food.rotSpeed;
+
+          // Screen wrapping
+          if (food.x < -0.1) food.x = 1.1;
+          if (food.x > 1.1) food.x = -0.1;
+          if (food.y < -0.1) food.y = 1.1;
+          if (food.y > 1.1) food.y = -0.1;
+
+          // Multi-plane parallax offset: foreground elements respond more to scroll/mouse
+          const parallaxX = mouse.x * 25 * food.zDepth;
+          const parallaxY = mouse.y * 25 * food.zDepth - (scroll.y * 120 * food.zDepth);
+
+          const foodX = food.x * width + parallaxX;
+          const foodY = food.y * height + parallaxY;
+
+          ctx.save();
+          ctx.translate(foodX, foodY);
+          ctx.rotate(food.angle);
+          
+          // Apply hardware-accelerated Depth of Field blur to foreground elements
+          if (food.blur > 0.5) {
+            ctx.filter = `blur(${food.blur}px)`;
+          }
+
+          // Render with elegant transparency based on depth
+          ctx.globalAlpha = isDark ? (0.15 + food.zDepth * 0.30) : (0.1 + food.zDepth * 0.22);
+          drawMiniFoodItem(ctx, food.type, food.size, isDark);
+          
+          ctx.restore();
+        });
+        ctx.globalAlpha = 1.0; // Reset canvas alpha
+        ctx.filter = 'none'; // Reset canvas filter
+      }
 
       // ── CHEF VISIBILITY SIZZLE/FADE LERP ──
       const targetSizzleFade = prevChefVisibleRef.current ? 1.0 : 0.0;
@@ -777,4 +915,169 @@ export default function Hero3DBackground({ chefVisible = false }) {
       />
     </div>
   );
+}
+
+// ── MINIMALIST STYLIZED CULINARY SPACE DEBRIS ENGINE ──
+function drawMiniFoodItem(ctx, type, size, isDark) {
+  ctx.save();
+  
+  // Setup premium styling matching Savoré's outline constellation aesthetic
+  const strokeColor = isDark ? 'rgba(255, 210, 127, 0.65)' : 'rgba(24, 22, 21, 0.45)';
+  const accentColor = isDark ? '#FF6A4D' : '#FF5A3C'; // Warm coral
+  
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.3;
+  ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)';
+  
+  switch(type) {
+    case 0: // 🍩 Donut (Glowing rings & tiny nodes)
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.28, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Accent stars/dots representing frosting sprinkles
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
+      ctx.arc(-size * 0.4, -size * 0.3, 1.5, 0, Math.PI * 2);
+      ctx.arc(size * 0.4, size * 0.2, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    case 1: // 🍕 Pizza (Minimalist structural triangle)
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.7, -size * 0.6);
+      ctx.lineTo(size * 0.7, -size * 0.6);
+      ctx.lineTo(0, size * 0.85);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+      
+      // Crust double line
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.7, -size * 0.48);
+      ctx.lineTo(size * 0.7, -size * 0.48);
+      ctx.stroke();
+      
+      // Accent pepperoni points
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
+      ctx.arc(0, -size * 0.1, 1.8, 0, Math.PI * 2);
+      ctx.arc(-size * 0.2, -size * 0.3, 1.5, 0, Math.PI * 2);
+      ctx.arc(size * 0.15, size * 0.2, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    case 2: // 🍣 Sushi (Nested geometric nodes)
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.85, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    case 3: // 🍔 Tiny Hamburger (Architectural layered line slices)
+      const h = size * 0.25;
+      // Bun Top Dome
+      ctx.beginPath();
+      ctx.arc(0, -h * 0.2, size * 0.75, Math.PI, 0);
+      ctx.stroke();
+      ctx.fill();
+      
+      // Slices
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.8, h * 0.1);
+      ctx.lineTo(size * 0.8, h * 0.1);
+      ctx.moveTo(-size * 0.8, h * 0.5);
+      ctx.lineTo(size * 0.8, h * 0.5);
+      ctx.stroke();
+      
+      // Bun Bottom
+      ctx.beginPath();
+      // Simple round rectangle using lines
+      ctx.arc(-size * 0.6, h * 1.1, size * 0.15, Math.PI * 0.5, Math.PI);
+      ctx.lineTo(-size * 0.75, h * 0.8);
+      ctx.lineTo(size * 0.75, h * 0.8);
+      ctx.arc(size * 0.6, h * 1.1, size * 0.15, 0, Math.PI * 0.5);
+      ctx.lineTo(-size * 0.6, h * 1.25);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+      break;
+
+    case 4: // 🍊 Orange Slice (Radial segment lines)
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.85, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fill();
+      
+      // Inner rind ring
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.72, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Spokes
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(size * 0.7 * Math.cos(angle), size * 0.7 * Math.sin(angle));
+        ctx.stroke();
+      }
+      break;
+
+    case 5: // 🥐 Croissant (Sweeping crescent lines)
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.8, Math.PI * 0.1, Math.PI * 1.9);
+      ctx.quadraticCurveTo(-size * 0.2, 0, 0, -size * 0.8);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+      
+      // Inner wrap details
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.55, Math.PI * 0.25, Math.PI * 1.75);
+      ctx.stroke();
+      break;
+
+    case 6: // 🍦 Soft Serve Ice Cream
+      // Cone
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.45, 0);
+      ctx.lineTo(size * 0.45, 0);
+      ctx.lineTo(0, size * 0.95);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+      
+      // Scoop
+      ctx.beginPath();
+      ctx.arc(0, -size * 0.15, size * 0.5, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.stroke();
+      ctx.fill();
+      
+      // Cherry Node
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
+      ctx.arc(0, -size * 0.7, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    default:
+      break;
+  }
+
+  ctx.restore();
 }
