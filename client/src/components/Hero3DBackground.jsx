@@ -600,10 +600,12 @@ export default function Hero3DBackground({ chefVisible = false }) {
         }
         
         // Faint coordinate text decals (RA / DEC grid lines)
-        ctx.fillStyle = 'rgba(24, 22, 21, 0.45)';
+        ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(24, 22, 21, 0.45)';
         ctx.font = '9px monospace';
         ctx.fillText('RA 04h 55m 23s', centerX - 580, centerY - 8);
-        ctx.fillText('DEC +30 44 12', centerX + 460, centerY - 8);
+        if (isDark) {
+          ctx.fillText('DEC +30 44 12', centerX + 460, centerY - 8);
+        }
         ctx.fillText('FOV 380 ARCSEC', centerX - 40, centerY - 480);
 
 
