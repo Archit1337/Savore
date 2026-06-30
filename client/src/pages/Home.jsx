@@ -152,6 +152,31 @@ const categoriesRevealVariant = {
   }
 };
 
+// Cascading entrance stagger variants
+const staggerGridContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12, // 120ms gap between each card entry
+      delayChildren: 0.05
+    }
+  }
+};
+
+const staggerCardItem = {
+  hidden: { opacity: 0, y: 35, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.75,
+      ease: [0.16, 1, 0.3, 1]
+    }
+  }
+};
+
 const batchContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -170,13 +195,22 @@ const batchContainerVariants = {
   }
 };
 
+// Stable spring configuration for the expanding FAB button to prevent render recalculation loops
+const FAB_SPRING_CONFIG = {
+  type: "spring", 
+  stiffness: 220, 
+  damping: 24,
+  mass: 0.8
+};
+
 const batchCardVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 35, scale: 0.96 },
   visible: { 
     opacity: 1, 
     y: 0, 
+    scale: 1,
     transition: { 
-      duration: 0.5, 
+      duration: 0.75, 
       ease: [0.16, 1, 0.3, 1] 
     } 
   },
@@ -1033,6 +1067,7 @@ export default function Home() {
   const [showChef, setShowChef] = useState(false);
   const [flameParticles, setFlameParticles] = useState([]);
   const [isCookingClicked, setIsCookingClicked] = useState(false);
+  const [isBtnHovered, setIsBtnHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [forceChefSmile, setForceChefSmile] = useState(false);
 
@@ -1938,10 +1973,10 @@ export default function Home() {
 
         {/* 🎥 SOCIAL REELS PREVIEW (TRENDING BITES) WITH VIEWPORT SPRING */}
         <motion.section 
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6 }}
           className="mt-[100px] text-left"
         >
           <div className="flex items-center justify-between mb-8">
@@ -1957,7 +1992,11 @@ export default function Home() {
             </button>
           </div>
 
-          <div 
+          <motion.div 
+            variants={staggerGridContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
             className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-7"
           >
             {loading ? (
@@ -1966,11 +2005,12 @@ export default function Home() {
               ))
             ) : reelsPreview.length > 0 ? (
               reelsPreview.slice(0, 3).map((reel) => (
-                <TrendingReelCard 
-                  key={reel._id} 
-                  reel={reel} 
-                  onClick={() => navigate('/reels', { state: { initialReelId: reel._id } })} 
-                />
+                <motion.div key={reel._id} variants={staggerCardItem}>
+                  <TrendingReelCard 
+                    reel={reel} 
+                    onClick={() => navigate('/reels', { state: { initialReelId: reel._id } })} 
+                  />
+                </motion.div>
               ))
             ) : (
               <div className="glass-primary flex-center h-[140px] text-[var(--text-secondary)] col-span-full">
@@ -1978,15 +2018,15 @@ export default function Home() {
                 No culinary reels available.
               </div>
             )}
-          </div>
+          </motion.div>
         </motion.section>
 
         {/* 🏪 CURATED ELITE RESTAURANTS SECTION WITH VIEWPORT REVEAL */}
         <motion.section 
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6 }}
           className="mt-[120px] text-left"
         >
           <div className="flex items-center justify-between mb-8">
@@ -2030,7 +2070,8 @@ export default function Home() {
                 key={activeBatchIndex}
                 variants={batchContainerVariants}
                 initial="hidden"
-                animate="visible"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-60px" }}
                 exit="exit"
                 className="grid grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-[30px]"
               >
@@ -2313,8 +2354,16 @@ export default function Home() {
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             className="fixed bottom-6 right-6 z-[90] pointer-events-auto"
           >
-            <button
+            <motion.button
               type="button"
+              onMouseEnter={() => setIsBtnHovered(true)}
+              onMouseLeave={() => setIsBtnHovered(false)}
+              animate={{ 
+                width: isCookingClicked || isBtnHovered ? 226 : 48
+              }}
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              transition={FAB_SPRING_CONFIG}
               onClick={() => {
                 if (isCookingClicked) return;
                 setIsCookingClicked(true);
@@ -2346,7 +2395,7 @@ export default function Home() {
                   setFlameParticles([]);
                 }, 600);
               }}
-              className={`relative overflow-hidden flex items-center justify-start rounded-full bg-surface/75 dark:bg-surface-bright/70 backdrop-blur-md border border-[var(--border-light)] hover:border-primary/50 text-text-primary shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] h-12 px-3.5 hover:scale-[1.03] hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1.15)] cursor-pointer group select-none ${isCookingClicked ? 'w-[226px]' : 'w-12 hover:w-[226px]'}`}
+              className="relative overflow-hidden flex items-center justify-start rounded-full bg-surface/75 dark:bg-surface-bright/70 backdrop-blur-md border border-[var(--border-light)] hover:border-primary/50 text-text-primary shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] h-12 px-3.5 cursor-pointer group select-none will-change-[width,transform] transform-gpu"
             >
               {/* Particle Flame Burst elements */}
               {flameParticles.map((p) => (
@@ -2365,7 +2414,7 @@ export default function Home() {
                     ease: "easeOut",
                     delay: p.delay,
                   }}
-                  className="absolute top-1/2 left-6 w-3 h-3 bg-gradient-to-t from-primary via-[#FF7B62] to-[#FFD066] rounded-full blur-[0.8px] pointer-events-none z-[100]"
+                  className="absolute top-1/2 left-6 w-3 h-3 bg-gradient-to-t from-primary via-[#FF7B62] to-[#FFD066] rounded-full blur-[0.8px] pointer-events-none z-[100] will-change-transform transform-gpu"
                   style={{
                     clipPath: "polygon(50% 0%, 100% 70%, 75% 100%, 25% 100%, 0% 70%)"
                   }}
@@ -2384,13 +2433,21 @@ export default function Home() {
               <div className="absolute inset-0 w-[40%] h-full bg-gradient-to-r from-transparent via-white/10 dark:via-white/15 to-transparent -skew-x-12 -translate-x-[150%] group-hover:translate-x-[350%] transition-transform duration-[1100ms] ease-in-out pointer-events-none" />
 
               {/* Hidden text container that expands and fades in on hover */}
-              <div className={`flex items-center whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1.15)] pointer-events-none ${isCookingClicked ? 'opacity-100 w-[162px] ml-3' : 'opacity-0 group-hover:opacity-100 w-0 group-hover:w-[162px] ml-0 group-hover:ml-3'}`}>
+              <motion.div 
+                animate={{
+                  opacity: isCookingClicked || isBtnHovered ? 1 : 0,
+                  width: isCookingClicked || isBtnHovered ? 162 : 0,
+                  marginLeft: isCookingClicked || isBtnHovered ? 12 : 0
+                }}
+                transition={FAB_SPRING_CONFIG}
+                className="flex items-center whitespace-nowrap overflow-hidden pointer-events-none"
+              >
                 <span className="font-bold tracking-[0.05em] text-[11.5px] uppercase text-text-primary group-hover:text-primary transition-colors">
                   Let Chef Savoré Cook!
                 </span>
                 <ChevronRight size={13} className="ml-1 text-primary opacity-80" />
-              </div>
-            </button>
+              </motion.div>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
