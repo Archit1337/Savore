@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Clock, ShoppingBag, Plus, Minus, AlertTriangle, ShieldCheck, Heart, ArrowLeft } from 'lucide-react';
+import { Star, Clock, ShoppingBag, Plus, Minus, AlertTriangle, ShieldCheck, Heart, ArrowLeft, Check } from 'lucide-react';
 import { LocationContext } from '../context/LocationContext';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
@@ -34,6 +34,7 @@ export default function RestaurantDetail() {
   const [crossRestError, setCrossRestError] = useState('');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [pendingItem, setPendingItem] = useState(null);
+  const [addedItems, setAddedItems] = useState({});
 
   useEffect(() => {
     const fetchRestaurantDetail = async () => {
@@ -105,6 +106,12 @@ export default function RestaurantDetail() {
       addToCart(foodItem, restaurant);
       chefMood.celebrate('item_added');
       showToast("Added to cart 🍕");
+
+      const id = foodItem._id;
+      setAddedItems(prev => ({ ...prev, [id]: true }));
+      setTimeout(() => {
+        setAddedItems(prev => ({ ...prev, [id]: false }));
+      }, 1200);
     } catch (err) {
       setCrossRestError(err.message);
       setPendingItem(foodItem);
@@ -124,6 +131,13 @@ export default function RestaurantDetail() {
           chefMood.celebrate('item_added');
         }
         showToast("Added to cart 🍕");
+
+        const id = pendingItem._id;
+        setAddedItems(prev => ({ ...prev, [id]: true }));
+        setTimeout(() => {
+          setAddedItems(prev => ({ ...prev, [id]: false }));
+        }, 1200);
+
         setPendingItem(null);
       } else {
         clearCart();
@@ -334,13 +348,37 @@ export default function RestaurantDetail() {
                             ) : (
                               <>
                                 <motion.button 
-                                  whileHover={{ scale: 1.03 }}
-                                  whileTap={{ scale: 0.97 }}
+                                  whileHover={{ scale: 1.03, y: -1 }}
+                                  whileTap={{ scale: 0.92 }}
                                   onClick={(e) => handleAddItem(item, e)}
-                                  className="btn btn-primary btn-pill px-[18px] py-[9px] text-[13.5px] font-medium"
+                                  className={`btn rounded-full px-[18px] py-[9px] text-[13.5px] font-medium transition-all duration-300 w-[148px] shrink-0 select-none cursor-pointer flex items-center justify-center gap-1.5 will-change-[transform,background-color,shadow] transform-gpu ${
+                                    addedItems[item._id] 
+                                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent shadow-[0_4px_12px_rgba(16,185,129,0.25)]' 
+                                      : 'btn-primary btn-pill text-white'
+                                  }`}
                                 >
-                                  <Plus size={14} />
-                                  {isOwnRestaurant ? 'Simulate Order' : 'Add To Order'}
+                                  <AnimatePresence mode="wait">
+                                    <motion.span
+                                      key={addedItems[item._id] ? 'added' : 'normal'}
+                                      initial={{ y: 8, opacity: 0 }}
+                                      animate={{ y: 0, opacity: 1 }}
+                                      exit={{ y: -8, opacity: 0 }}
+                                      transition={{ duration: 0.16, ease: "easeInOut" }}
+                                      className="flex items-center justify-center gap-1 w-full will-change-transform transform-gpu"
+                                    >
+                                      {addedItems[item._id] ? (
+                                        <>
+                                          <Check size={14} />
+                                          <span>Added!</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Plus size={14} />
+                                          <span>{isOwnRestaurant ? 'Simulate Order' : 'Add To Order'}</span>
+                                        </>
+                                      )}
+                                    </motion.span>
+                                  </AnimatePresence>
                                 </motion.button>
 
                                 {inCartItem && (

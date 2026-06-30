@@ -210,11 +210,14 @@ export default function Register() {
           {/* Submit Action */}
           <button 
             type="submit" 
-            className={`btn btn-primary w-full mt-3 py-3.5 px-5 rounded-[12px] ${loading ? 'btn-disabled' : ''}`}
+            className={`btn btn-primary w-full mt-3 py-3.5 px-5 rounded-[12px] relative overflow-hidden group select-none cursor-pointer border border-transparent text-white bg-primary ${loading ? 'btn-disabled' : ''}`}
             disabled={loading}
           >
-            <UserPlus size={16} />
-            {loading ? 'Registering Account...' : 'Create Account'}
+            <span className="absolute inset-0 w-full h-full bg-[var(--text-primary)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-0" />
+            <span className="relative z-10 group-hover:text-background-primary transition-colors duration-300 flex items-center justify-center gap-2">
+              <UserPlus size={16} />
+              {loading ? 'Registering Account...' : 'Create Account'}
+            </span>
           </button>
 
           {/* Divider */}

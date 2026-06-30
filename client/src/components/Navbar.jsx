@@ -238,36 +238,50 @@ export default function Navbar() {
         </button>
 
         {/* Shopping Cart Button */}
-        <Link 
-          to="/checkout"
-          id="shopping-cart-nav-icon"
-          className="btn-icon btn-circle"
+        <motion.div
+          variants={{
+            hover: { y: -2, scale: 1.05 },
+            tap: { scale: 0.92, y: 1 }
+          }}
+          whileHover="hover"
+          whileTap="tap"
+          transition={{ type: "spring", stiffness: 600, damping: 14 }}
+          className="btn-icon btn-circle p-0"
           style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-          title="Shopping Cart"
         >
-          <motion.div
-            animate={cartPulse ? { scale: [1, 1.28, 0.95, 1], rotate: [0, -6, 6, 0] } : { scale: 1 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="flex relative"
+          <Link 
+            to="/checkout"
+            id="shopping-cart-nav-icon"
+            className="w-full h-full flex items-center justify-center text-[var(--text-primary)] relative"
+            title="Shopping Cart"
           >
-            <ShoppingCart size={20} />
-            {cartPulse && (
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0.6 }}
-                animate={{ scale: 2.2, opacity: 0 }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-                className="absolute -top-0.5 -left-0.5 -right-0.5 -bottom-0.5 rounded-full border-2 border-primary pointer-events-none"
-              />
-            )}
-          </motion.div>
-          {itemsCount > 0 && (
-            <span 
-              className="absolute -top-1 -right-1 bg-primary text-white rounded-full text-[10px] font-extrabold w-[18px] h-[18px] flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)]"
+            <motion.div
+              animate={cartPulse ? { scale: [1, 1.28, 0.95, 1], rotate: [0, -6, 6, 0] } : { scale: 1 }}
+              variants={{
+                hover: { rotate: [0, -16, 12, -8, 4, 0], transition: { duration: 0.5, ease: "easeInOut" } },
+                tap: { scaleY: 0.8, scaleX: 1.15, transition: { type: "spring", stiffness: 600, damping: 12 } }
+              }}
+              className="flex relative"
             >
-              {itemsCount}
-            </span>
-          )}
-        </Link>
+              <ShoppingCart size={20} />
+              {cartPulse && (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0.6 }}
+                  animate={{ scale: 2.2, opacity: 0 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  className="absolute -top-0.5 -left-0.5 -right-0.5 -bottom-0.5 rounded-full border-2 border-primary pointer-events-none"
+                />
+              )}
+            </motion.div>
+            {itemsCount > 0 && (
+              <span 
+                className="absolute -top-1 -right-1 bg-primary text-white rounded-full text-[10px] font-extrabold w-[18px] h-[18px] flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)]"
+              >
+                {itemsCount}
+              </span>
+            )}
+          </Link>
+        </motion.div>
 
         {/* User Session profile dropdown / buttons */}
         {isAuthenticated ? (
@@ -334,16 +348,22 @@ export default function Navbar() {
             <Link 
               to="/login" 
               style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-              className="btn btn-secondary btn-pill"
+              className="btn btn-secondary btn-pill relative overflow-hidden group border-[1.5px] border-[var(--border-light)] hover:border-[var(--text-primary)] transition-colors duration-300 select-none cursor-pointer"
             >
-              Login
+              <span className="absolute inset-0 w-full h-full bg-[var(--text-primary)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-0" />
+              <span className="relative z-10 group-hover:text-background-primary transition-colors duration-300">
+                Login
+              </span>
             </Link>
             <Link 
               to="/register" 
               style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-              className="btn btn-primary btn-pill"
+              className="btn btn-primary btn-pill relative overflow-hidden group border border-transparent select-none cursor-pointer bg-primary text-white"
             >
-              Sign Up
+              <span className="absolute inset-0 w-full h-full bg-[var(--text-primary)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-0" />
+              <span className="relative z-10 group-hover:text-background-primary transition-colors duration-300">
+                Sign Up
+              </span>
             </Link>
           </div>
         )}
