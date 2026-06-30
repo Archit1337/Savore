@@ -1031,6 +1031,8 @@ export default function Home() {
   const { scrollY } = useScroll();
   const smoothScrollY = useSpring(scrollY, { stiffness: 120, damping: 26, mass: 0.25 });
   const [showChef, setShowChef] = useState(false);
+  const [flameParticles, setFlameParticles] = useState([]);
+  const [isCookingClicked, setIsCookingClicked] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [forceChefSmile, setForceChefSmile] = useState(false);
 
@@ -2302,17 +2304,80 @@ export default function Home() {
             <button
               type="button"
               onClick={() => {
-                setShowChef(true);
-                soundController.playWhoosh();
+                if (isCookingClicked) return;
+                setIsCookingClicked(true);
                 soundController.playSizzle();
+
+                // Generate 16 flame burst particles around the border
+                const particles = Array.from({ length: 16 }).map((_, i) => {
+                  const angle = (i / 16) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+                  // Distribute from the borders of the expanded pill
+                  const radiusX = Math.cos(angle) * (60 + Math.random() * 80);
+                  const radiusY = Math.sin(angle) * (30 + Math.random() * 40);
+                  return {
+                    id: Math.random() + i,
+                    x: radiusX,
+                    y: radiusY,
+                    scale: 0.4 + Math.random() * 0.8,
+                    delay: Math.random() * 0.08,
+                  };
+                });
+                setFlameParticles(particles);
+
+                setTimeout(() => {
+                  soundController.playWhoosh();
+                }, 280);
+
+                setTimeout(() => {
+                  setShowChef(true);
+                  setIsCookingClicked(false);
+                  setFlameParticles([]);
+                }, 600);
               }}
-              className="flex items-center gap-2.5 rounded-full bg-surface-bright/85 backdrop-blur-md border border-[var(--border-light)] text-[12.5px] font-bold text-text-primary shadow-2xl hover:border-primary/45 h-12 px-5 hover:scale-[1.03] hover:-translate-y-[1px] active:scale-[0.98] transition-all cursor-pointer group select-none"
+              className={`relative overflow-hidden flex items-center justify-start rounded-full bg-surface/75 dark:bg-surface-bright/70 backdrop-blur-md border border-[var(--border-light)] hover:border-primary/50 text-text-primary shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5)] h-12 px-3.5 hover:scale-[1.03] hover:-translate-y-[1px] active:scale-[0.97] transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1.15)] cursor-pointer group select-none ${isCookingClicked ? 'w-[226px]' : 'w-12 hover:w-[226px]'}`}
             >
-              <div className="relative flex items-center justify-center">
-                <Flame size={15} className="text-primary z-10 animate-bounce" />
-                <div className="absolute -inset-1.5 bg-primary/20 rounded-full blur-sm" />
+              {/* Particle Flame Burst elements */}
+              {flameParticles.map((p) => (
+                <motion.span
+                  key={p.id}
+                  initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+                  animate={{
+                    x: p.x,
+                    y: p.y - 25, // Float upwards slightly
+                    scale: [0.8 * p.scale, 1.4 * p.scale, 0],
+                    opacity: [1, 0.9, 0],
+                    rotate: [0, 120 * (Math.random() > 0.5 ? 1 : -1)]
+                  }}
+                  transition={{
+                    duration: 0.58,
+                    ease: "easeOut",
+                    delay: p.delay,
+                  }}
+                  className="absolute top-1/2 left-6 w-3 h-3 bg-gradient-to-t from-primary via-[#FF7B62] to-[#FFD066] rounded-full blur-[0.8px] pointer-events-none z-[100]"
+                  style={{
+                    clipPath: "polygon(50% 0%, 100% 70%, 75% 100%, 25% 100%, 0% 70%)"
+                  }}
+                />
+              ))}
+
+              {/* Radial gradient glow behind the icon */}
+              <div className="absolute top-1/2 left-6 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-primary/20 rounded-full blur-md opacity-70 group-hover:scale-125 transition-transform duration-500 pointer-events-none" />
+
+              {/* Icon slot (stays centered when collapsed) */}
+              <div className="flex-shrink-0 flex items-center justify-center w-5 h-5 z-10 pointer-events-none">
+                <Flame size={15} className={`text-primary fill-primary/10 transition-transform duration-300 ${isCookingClicked ? 'scale-125 animate-ping' : 'animate-pulse group-hover:scale-110'}`} />
               </div>
-              <span className="group-hover:text-primary transition-colors pr-1">Let Chef Savoré Cook!</span>
+
+              {/* Sliding glass sheen reflection on hover */}
+              <div className="absolute inset-0 w-[40%] h-full bg-gradient-to-r from-transparent via-white/10 dark:via-white/15 to-transparent -skew-x-12 -translate-x-[150%] group-hover:translate-x-[350%] transition-transform duration-[1100ms] ease-in-out pointer-events-none" />
+
+              {/* Hidden text container that expands and fades in on hover */}
+              <div className={`flex items-center whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1.15)] pointer-events-none ${isCookingClicked ? 'opacity-100 w-[162px] ml-3' : 'opacity-0 group-hover:opacity-100 w-0 group-hover:w-[162px] ml-0 group-hover:ml-3'}`}>
+                <span className="font-bold tracking-[0.05em] text-[11.5px] uppercase text-text-primary group-hover:text-primary transition-colors">
+                  Let Chef Savoré Cook!
+                </span>
+                <ChevronRight size={13} className="ml-1 text-primary opacity-80" />
+              </div>
             </button>
           </motion.div>
         )}

@@ -1745,8 +1745,8 @@ button.btn-icon:not(.btn-circle) {
 }
 
 html.light button.btn-icon:not(.btn-circle) {
-  background: rgba(24, 22, 21, 0.04) !important;
-  border: 1px solid rgba(24, 22, 21, 0.05) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(24, 22, 21, 0.08) !important;
   box-shadow: inset 1px 1px 3px rgba(24, 22, 21, 0.03), inset -1px -1px 3px rgba(255, 255, 255, 0.15) !important;
 }
 
@@ -2114,14 +2114,14 @@ html.light .glass-navbar-premium nav a:hover {
 
 /* Light mode overrides to remove the glowing halos from buttons in the navbar */
 html.light .glass-navbar-premium .btn-icon {
-  background: rgba(255, 255, 255, 0.45) !important;
-  border: 1px solid rgba(24, 22, 21, 0.06) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(24, 22, 21, 0.08) !important;
   box-shadow: 0 2px 6px rgba(24, 22, 21, 0.02) !important;
 }
 
 html.light .glass-navbar-premium .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.75) !important;
-  border: 1px solid rgba(255, 106, 77, 0.2) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 106, 77, 0.22) !important;
   box-shadow: 0 4px 12px rgba(24, 22, 21, 0.04) !important;
   transform: translateY(-1px) !important;
 }
