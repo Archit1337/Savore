@@ -1854,14 +1854,11 @@ export default function Home() {
 
             {/* Accordion Panels */}
             {PILLARS_DATA.map((pillar, index) => (
-              <motion.div
+              <div
                 key={index}
                 onMouseEnter={() => setHoveredPillar(index)}
                 onMouseLeave={() => setHoveredPillar(null)}
                 style={{ 
-                  y: index === 0 ? col1YSpring : index === 1 ? col2YSpring : col3YSpring, 
-                  rotate: index === 0 ? col1RotateSpring : index === 1 ? col2RotateSpring : col3RotateSpring, 
-                  opacity: colOpacity,
                   '--desktop-left': hoveredPillar === null 
                     ? `${(100 / 3) * index}%` 
                     : `${(index <= hoveredPillar ? 20 * index : 20 * (index - 1) + 60)}%`,
@@ -1875,51 +1872,66 @@ export default function Home() {
                     ? `${100 / 3}%` 
                     : `${(hoveredPillar === index ? 60 : 20)}%`,
                 }}
-                className={`pillar-panel flex flex-col justify-end p-8 text-left cursor-pointer overflow-hidden group relative z-10 ${
+                className={`pillar-panel cursor-pointer overflow-hidden group relative z-10 ${
                   hoveredPillar !== null && hoveredPillar !== index ? 'opacity-40' : 'opacity-100'
                 }`}
               >
-                {/* 🖼️ Cinematic Image Background */}
-                <div className="absolute inset-0 z-0">
-                  <img 
-                    src={pillar.image} 
-                    alt={pillar.title}
-                    className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 h-full w-[1200px] object-cover [transition:transform_0.65s_cubic-bezier(0.16,1,0.3,1),_filter_0.65s_cubic-bezier(0.16,1,0.3,1)] filter grayscale-[30%] brightness-[40%] group-hover:grayscale-0 group-hover:brightness-[80%] group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent z-10 [transition:background_0.65s_cubic-bezier(0.16,1,0.3,1)] group-hover:from-black/85 group-hover:via-black/25" />
-                  <div className="noise-overlay z-20" />
-                </div>
+                <motion.div
+                  style={{
+                    y: index === 0 ? col1YSpring : index === 1 ? col2YSpring : col3YSpring,
+                    rotate: index === 0 ? col1RotateSpring : index === 1 ? col2RotateSpring : col3RotateSpring,
+                    opacity: colOpacity,
+                  }}
+                  className="w-full h-full flex flex-col justify-end p-8 relative z-10"
+                >
+                  {/* 🖼️ Cinematic Image Background */}
+                  <div className="absolute inset-0 z-0">
+                    <img 
+                      src={pillar.image} 
+                      alt={pillar.title}
+                      className="absolute top-0 bottom-0 left-1/2 h-full w-[1200px] object-cover filter grayscale-[25%] brightness-[60%] dark:brightness-[40%] group-hover:grayscale-0 group-hover:brightness-[85%] dark:group-hover:brightness-[80%]"
+                    />
+                    
+                    {/* Default Overlay: Soft photographic dark shadow at the bottom for text legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent z-10 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-0" />
+                    
+                    {/* Hover Overlay: Darkens slightly on focus for expanded description readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent z-10 opacity-0 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-100" />
 
-                {/* 📝 Content Overlay */}
-                <div className="relative z-30 flex flex-col h-full justify-between">
-                  <div>
-                    <span className="text-[40px] md:text-[48px] font-extralight tracking-tighter text-white/50 font-serif block leading-none transition-colors duration-500 group-hover:text-[var(--primary)]">
-                      {pillar.num}
-                    </span>
+                    <div className="noise-overlay z-20" />
                   </div>
-                  
-                  <div className="mt-auto max-w-[280px]">
-                    <h3 className="text-[18px] md:text-[20px] font-medium tracking-[0.05em] uppercase text-white shrink-0 whitespace-nowrap">
-                      {pillar.title}
-                    </h3>
-                    <div 
-                      className="[transition:opacity_0.65s_cubic-bezier(0.16,1,0.3,1),_max-height_0.65s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
-                      style={{
-                        opacity: hoveredPillar === index || hoveredPillar === null ? 1 : 0,
-                        maxHeight: hoveredPillar === index || hoveredPillar === null ? "160px" : "0px",
-                        pointerEvents: hoveredPillar === index || hoveredPillar === null ? "auto" : "none"
-                      }}
-                    >
-                      <p className="text-[13px] md:text-[14px] text-gray-300 leading-relaxed font-light mt-3">
-                        {pillar.desc}
-                      </p>
+
+                  {/* 📝 Content Overlay */}
+                  <div className="relative z-30 flex flex-col h-full justify-between">
+                    <div>
+                      <span className="text-[40px] md:text-[48px] font-extralight tracking-tighter text-white/40 font-serif block leading-none transition-colors duration-500 group-hover:text-primary">
+                        {pillar.num}
+                      </span>
+                    </div>
+                    
+                    <div className="mt-auto max-w-[280px]">
+                      <h3 className="text-[18px] md:text-[20px] font-medium tracking-[0.05em] uppercase text-white shrink-0 whitespace-nowrap">
+                        {pillar.title}
+                      </h3>
+                      <div 
+                        className="[transition:opacity_0.65s_cubic-bezier(0.16,1,0.3,1),_max-height_0.65s_cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
+                        style={{
+                          opacity: hoveredPillar === index || hoveredPillar === null ? 1 : 0,
+                          maxHeight: hoveredPillar === index || hoveredPillar === null ? "160px" : "0px",
+                          pointerEvents: hoveredPillar === index || hoveredPillar === null ? "auto" : "none"
+                        }}
+                      >
+                        <p className="text-[13px] md:text-[14px] text-gray-200 leading-relaxed font-light mt-3">
+                          {pillar.desc}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Film grain separator (not on last panel) */}
                 {index < PILLARS_DATA.length - 1 && <div className="film-grain-separator" />}
-              </motion.div>
+              </div>
             ))}
           </motion.div>
         </div>
