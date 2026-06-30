@@ -491,16 +491,15 @@ export default function Hero3DBackground({ chefVisible = false }) {
       const sin = Math.sin(angle);
       return { x: x * cos + z * sin, y, z: -x * sin + z * cos };
     };
-
     // Render loop
     let startTime = performance.now();
 
     const tick = () => {
       if (document.hidden || !window.savoreLoaderComplete || window.scrollY > 950) {
+        startTime = performance.now(); // Keep resetting startTime while loading or off-screen to start Shape 0 clean
         animationFrameId = requestAnimationFrame(tick);
         return;
       }
-
       // Smooth inputs (lerp)
       const mouse = mouseRef.current;
       mouse.x += (mouse.targetX - mouse.x) * 0.07;
@@ -997,7 +996,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
       // ── DRAW MESH CONNECTION LINES (Hologram grid) ──
       ctx.lineWidth = 0.75;
-      ctx.strokeStyle = '#FF6A4D'; // Glowing orange mesh lines
+      ctx.strokeStyle = isDark ? '#FF6A4D' : '#E65A3D'; // Richer terracotta orange for Light Mode contrast
       
       lines.forEach(([u, v]) => {
         const p1 = projected[u];
@@ -1010,7 +1009,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
           const fade = Math.max(0, 1.2 - avgZ / 580) * Math.max(0, 1.0 - (scroll.y - 0.7) * 3) * globalFade;
           
           if (fade > 0.01) {
-            ctx.globalAlpha = isDark ? fade * 0.14 : fade * 0.08;
+            ctx.globalAlpha = isDark ? fade * 0.14 : fade * 0.22; // Boosted line opacity in Light Mode from 0.08
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
@@ -1051,14 +1050,14 @@ export default function Hero3DBackground({ chefVisible = false }) {
           }
         } else {
           if (pt.colorType === 0) {
-            ctx.globalAlpha = opacity * 0.45;
-            ctx.fillStyle = '#FF6A4D';
+            ctx.globalAlpha = opacity * 0.85; // Boosted opacity for Light Mode
+            ctx.fillStyle = '#E65A3D'; // Richer terracotta orange
           } else if (pt.colorType === 1) {
-            ctx.globalAlpha = opacity * 0.50;
-            ctx.fillStyle = '#DC9B41';
+            ctx.globalAlpha = opacity * 0.80; // Boosted opacity for Light Mode
+            ctx.fillStyle = '#A66F22'; // Deeper bronze amber
           } else {
-            ctx.globalAlpha = opacity * 0.28;
-            ctx.fillStyle = '#827869';
+            ctx.globalAlpha = opacity * 0.60; // Boosted opacity for Light Mode
+            ctx.fillStyle = '#4E4840'; // Deeper warm charcoal grey
           }
         }
         ctx.fill();
