@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingBag, MapPin, CreditCard, ChevronRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck, QrCode } from 'lucide-react';
+import { ShoppingBag, MapPin, CreditCard, ChevronRight, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck, QrCode, Minus, Plus, Trash2 } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { LocationContext } from '../context/LocationContext';
 import { AuthContext } from '../context/AuthContext';
@@ -227,7 +227,7 @@ const isAddressMatchingCity = (addressStr, city) => {
 export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cartItems, restaurant, subtotal, deliveryFee, tax, total, deleteItemRow } = useContext(CartContext);
+  const { cartItems, restaurant, subtotal, deliveryFee, tax, total, deleteItemRow, removeFromCart, addToCart } = useContext(CartContext);
   const { user, isAuthenticated } = useContext(AuthContext);
   const { placeOrder, activeOrder, getOrderDetails, setActiveOrder, updateOrderStatus } = useContext(OrderContext);
   const { activeCity, savedAddresses, addSavedAddress } = useContext(LocationContext);
@@ -580,19 +580,43 @@ export default function Checkout() {
                     <div>
                       <h4 className="text-[16px] font-semibold">{item.name}</h4>
                       <p className="text-[13px] text-text-muted mt-1">
-                        Qty: {item.quantity} x {formatPrice(item.price)}
+                        {formatPrice(item.price)} each
                       </p>
                     </div>
-                    <div className="text-right">
-                      <strong className="text-[16px] block mb-1.5">
+                    <div className="flex flex-col items-end gap-2">
+                      <strong className="text-[16px]">
                         {formatPrice(item.price * item.quantity)}
                       </strong>
-                      <button 
-                        onClick={() => deleteItemRow(item.foodItem)}
-                        className="bg-none border-none text-[var(--error,#ffb4ab)] text-[12px] cursor-pointer font-semibold"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Quantity Stepper */}
+                        <div className="flex items-center gap-0 border border-[var(--border-light)] rounded-xl overflow-hidden">
+                          <button
+                            onClick={() => removeFromCart(item.foodItem)}
+                            className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-white/[0.06] text-text-secondary hover:text-primary transition-colors cursor-pointer border-none"
+                            title="Decrease quantity"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="w-8 h-8 flex items-center justify-center text-[13px] font-bold text-text-primary select-none border-x border-[var(--border-light)]">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => addToCart({ _id: item.foodItem, name: item.name, price: item.price, image: item.image }, restaurant, 1)}
+                            className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-white/[0.06] text-text-secondary hover:text-primary transition-colors cursor-pointer border-none"
+                            title="Increase quantity"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        {/* Delete entire row */}
+                        <button 
+                          onClick={() => deleteItemRow(item.foodItem)}
+                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-transparent hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-colors cursor-pointer border border-[var(--border-light)]"
+                          title="Remove item"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
