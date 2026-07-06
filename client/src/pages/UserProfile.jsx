@@ -805,12 +805,12 @@ export default function UserProfile() {
 
               {/* Description bio */}
               <p className="text-[13px] text-text-secondary mt-4 max-w-[240px] leading-relaxed italic border-t border-border-light/40 pt-4 w-full text-center">
-                {user.role === 'admin' ? (
+                {(socialHistory.bio || user.bio) ? (
+                  `"${socialHistory.bio || user.bio}"`
+                ) : user.role === 'admin' ? (
                   'System security administrator access level.'
                 ) : user.role === 'restaurant' ? (
                   'Partner kitchen manager settings and telemetry.'
-                ) : socialHistory.bio ? (
-                  `"${socialHistory.bio}"`
                 ) : (
                   'No bio registered yet.'
                 )}
