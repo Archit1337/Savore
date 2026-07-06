@@ -54,6 +54,7 @@ export default function AdminDashboard() {
 
   const [flaggedReels, setFlaggedReels] = useState([]);
   const [reelsLoading, setReelsLoading] = useState(false);
+  const [expandedReelCommentsId, setExpandedReelCommentsId] = useState(null);
 
   // Load Dashboard statistics
   const fetchStats = async () => {
@@ -283,6 +284,29 @@ export default function AdminDashboard() {
       setErrorMsg('Failed to remove this reel from database.');
     } finally {
       setActionProcessing(false);
+    }
+  };
+
+  const [commentDeleteTarget, setCommentDeleteTarget] = useState(null);
+
+  const handleDeleteCommentClick = (reelId, commentId) => {
+    setCommentDeleteTarget({ reelId, commentId });
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentDeleteTarget) return;
+    const { reelId, commentId } = commentDeleteTarget;
+    setActionProcessing(true);
+    try {
+      const res = await api.delete(`/reels/${reelId}/comments/${commentId}`);
+      if (res.data && res.data.success) {
+        await fetchFlaggedReels(1);
+      }
+    } catch (err) {
+      setErrorMsg('Failed to delete comment.');
+    } finally {
+      setActionProcessing(false);
+      setCommentDeleteTarget(null);
     }
   };
 
@@ -999,35 +1023,79 @@ export default function AdminDashboard() {
                     {flaggedReels.map((reel) => (
                       <div 
                         key={reel._id} 
-                        className="bg-[var(--surface-container)] border border-[var(--border-light)] p-5 rounded-2xl flex justify-between items-center flex-wrap gap-4 text-left"
+                        className="bg-[var(--surface-container)] border border-[var(--border-light)] p-5 rounded-2xl flex flex-col gap-4 text-left"
                       >
-                        <div>
-                          <span className="bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-md inline-block mb-2 uppercase">
-                            {reel.reports?.length || 0} Platform Reports Flagged
-                          </span>
-                          <h4 className="text-sm font-bold text-text-primary leading-relaxed">
-                            "{reel.caption}"
-                          </h4>
-                          <span className="text-[11px] text-text-muted mt-1 block">Uploaded by: <strong>{reel.restaurant?.name || 'Kitchen'}</strong></span>
+                        <div className="flex justify-between items-center flex-wrap gap-4">
+                          <div>
+                            <span className="bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-md inline-block mb-2 uppercase">
+                              {reel.reports?.length || 0} Platform Reports Flagged
+                            </span>
+                            <h4 className="text-sm font-bold text-text-primary leading-relaxed">
+                              "{reel.caption}"
+                            </h4>
+                            <span className="text-[11px] text-text-muted mt-1 block">Uploaded by: <strong>{reel.restaurant?.name || 'Kitchen'}</strong></span>
+                          </div>
+
+                          <div className="flex gap-2.5">
+                            <button 
+                              onClick={() => setExpandedReelCommentsId(expandedReelCommentsId === reel._id ? null : reel._id)}
+                              className="btn btn-secondary px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                            >
+                              {expandedReelCommentsId === reel._id ? 'Hide Comments' : `Audit Comments (${reel.comments?.length || 0})`}
+                            </button>
+                            <button 
+                              onClick={() => handleDismissReelReports(reel._id)} 
+                              disabled={actionProcessing}
+                              className="btn btn-secondary px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                            >
+                              Dismiss Reports
+                            </button>
+                            <button 
+                              onClick={() => handleRemoveReel(reel._id)} 
+                              disabled={actionProcessing}
+                              className="btn btn-primary px-4 py-2 rounded-xl text-xs font-semibold bg-red-500 border-none hover:bg-red-600 flex items-center cursor-pointer"
+                            >
+                              <Trash2 size={12} className="mr-1.5" />
+                              <span>Remove Reel</span>
+                            </button>
+                          </div>
                         </div>
 
-                        <div className="flex gap-2.5">
-                          <button 
-                            onClick={() => handleDismissReelReports(reel._id)} 
-                            disabled={actionProcessing}
-                            className="btn btn-secondary px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
-                          >
-                            Dismiss Reports
-                          </button>
-                          <button 
-                            onClick={() => handleRemoveReel(reel._id)} 
-                            disabled={actionProcessing}
-                            className="btn btn-primary px-4 py-2 rounded-xl text-xs font-semibold bg-red-500 border-none hover:bg-red-600 flex items-center cursor-pointer"
-                          >
-                            <Trash2 size={12} className="mr-1.5" />
-                            <span>Remove Reel</span>
-                          </button>
-                        </div>
+                        {expandedReelCommentsId === reel._id && (
+                          <div className="mt-2 pt-4 border-t border-[var(--border-light)] flex flex-col gap-3">
+                            <h5 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-1">Reel Comments ({reel.comments?.length || 0})</h5>
+                            {reel.comments && reel.comments.length > 0 ? (
+                              <div className="flex flex-col gap-2.5 max-h-60 overflow-y-auto pr-1">
+                                {reel.comments.map((comment) => (
+                                  <div key={comment._id} className="flex justify-between items-center bg-black/10 dark:bg-white/[0.01] p-3 rounded-xl gap-4">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <SafeAvatar 
+                                        src={resolveMediaUrl(comment.user?.profilePicture)} 
+                                        alt={comment.user?.username || 'Diner'} 
+                                        size={22}
+                                        className="shrink-0"
+                                      />
+                                      <div className="min-w-0 text-[12px]">
+                                        <span className="font-semibold text-text-primary mr-2">@{comment.user?.username || 'Diner'}:</span>
+                                        <span className="text-text-secondary break-words">{comment.text}</span>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => handleDeleteCommentClick(reel._id, comment._id)}
+                                      disabled={actionProcessing}
+                                      className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors shrink-0 cursor-pointer"
+                                      title="Delete comment"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-text-muted italic py-2">No comments have been posted on this reel yet.</div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1041,6 +1109,44 @@ export default function AdminDashboard() {
 
           </>
         )}
+
+      {/* COMMENT DELETION CONFIRMATION MODAL */}
+      {commentDeleteTarget && (
+        <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none bg-black/65 backdrop-blur-xs transition-opacity duration-300">
+          <div 
+            onClick={() => setCommentDeleteTarget(null)}
+            className="absolute inset-0 cursor-pointer"
+          />
+          
+          <div
+            className="bg-[#12161c] border border-white/10 rounded-[24px] p-6 max-w-[380px] w-full relative z-10 text-center shadow-2xl text-[var(--text-primary)] transition-transform duration-300 transform scale-100"
+          >
+            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+              <ShieldAlert size={22} className="animate-pulse" />
+            </div>
+            <h4 className="text-md font-bold text-white mb-2">Delete Comment?</h4>
+            <p className="text-xs text-text-secondary leading-relaxed mb-6">
+              Are you sure you want to permanently delete this comment? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCommentDeleteTarget(null)}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/[0.04] cursor-pointer bg-transparent"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteComment}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)]"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>

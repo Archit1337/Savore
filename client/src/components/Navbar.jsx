@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, Sun, Moon, Film, User, LogOut, LayoutDashboard, Globe } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ShoppingCart, Sun, Moon, Film, User, LogOut, LayoutDashboard, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeContext } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
@@ -131,6 +131,20 @@ export default function Navbar() {
 
   const [cartPulse, setCartPulse] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isProfileHovered, setIsProfileHovered] = useState(false);
+
+  useEffect(() => {
+    if (!profileDropdownOpen) return;
+    const handleOutsideClick = (e) => {
+      const container = document.getElementById('profile-menu-container');
+      if (container && !container.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [profileDropdownOpen]);
 
   useEffect(() => {
     const handleCartPulse = () => {
@@ -165,22 +179,52 @@ export default function Navbar() {
 
   return (
     <header 
-      className={`glass-panel glass-navbar-premium ${isScrolled ? 'shrunk' : ''} ${isReelsPage ? 'reels-navbar-fixed' : ''} flex items-center justify-between relative overflow-hidden`}
+      className={`glass-panel glass-navbar-premium ${isScrolled ? 'shrunk' : ''} ${isReelsPage ? 'reels-navbar-fixed' : ''} flex items-center justify-between relative`}
     >
+      <style>{`
+        .profile-capsule-trigger {
+          width: 38px;
+          height: 38px;
+          padding: 4px;
+          transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, border-color 0.2s !important;
+        }
+        .profile-capsule-trigger.expanded {
+          width: 145px;
+          padding-right: 12px;
+        }
+        .profile-text-wrapper {
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.15s ease, visibility 0.15s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding-left: 8px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .profile-capsule-trigger.expanded .profile-text-wrapper {
+          opacity: 1;
+          visibility: visible;
+          transition-delay: 0.08s;
+        }
+      `}</style>
       {/* Looping video background */}
       {!isReelsPage && (
-        <video
-          src="/ratatouille.mp4"
-          className={`absolute inset-0 w-full h-full object-cover pointer-events-none z-0 transition-all duration-300 [transform:translate3d(0,0,0)] [will-change:transform] ${
-            isDark 
-              ? 'opacity-[0.32] mix-blend-overlay' 
-              : 'opacity-[0.48] mix-blend-multiply'
-          }`}
-          muted
-          loop
-          playsInline
-          autoPlay
-        />
+        <div className="absolute inset-0 rounded-[inherit] overflow-hidden pointer-events-none z-0">
+          <video
+            src="/ratatouille.mp4"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 [transform:translate3d(0,0,0)] [will-change:transform] ${
+              isDark 
+                ? 'opacity-[0.32] mix-blend-overlay' 
+                : 'opacity-[0.48] mix-blend-multiply'
+            }`}
+            muted
+            loop
+            playsInline
+            autoPlay
+          />
+        </div>
       )}
 
       {/* Brand Logo */}
@@ -286,62 +330,124 @@ export default function Navbar() {
         {/* User Session profile dropdown / buttons */}
         {isAuthenticated ? (
           <div className="flex items-center gap-2.5" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}>
-            {/* Dashboard shortcut based on roles */}
-            {user.role !== 'customer' && (
-              <motion.div
-                whileHover="hover"
-                whileTap={{ scale: 0.96 }}
-                style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-                className="inline-flex"
+
+
+            <div 
+              id="profile-menu-container" 
+              className="relative"
+              style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
+            >
+              {/* Collapsible Trigger Capsule */}
+              <div 
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                onMouseEnter={() => setIsProfileHovered(true)}
+                onMouseLeave={() => setIsProfileHovered(false)}
+                className={`profile-capsule-trigger flex items-center bg-black/5 dark:bg-white/[0.04] hover:bg-black/10 dark:hover:bg-white/[0.08] border border-black/10 dark:border-white/10 shadow-sm rounded-full cursor-pointer select-none active:scale-[0.98] overflow-hidden relative shrink-0 ${
+                  isProfileHovered || profileDropdownOpen ? 'expanded' : ''
+                }`}
               >
-                <Link 
-                  to={user.role === 'admin' ? '/admin' : '/dashboard'}
-                  className="flex items-center gap-1.5 no-underline text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full border transition-all duration-300 
-                    bg-black/5 dark:bg-white/10 
-                    border-black/10 dark:border-white/10 
-                    text-[var(--text-primary)] 
-                    hover:bg-primary hover:text-white hover:border-primary 
-                    dark:hover:bg-primary dark:hover:text-white dark:hover:border-primary 
-                    shadow-sm"
-                >
+                <SafeAvatar 
+                  src={resolveMediaUrl(user.profilePicture)} 
+                  alt={user.username}
+                  size={28}
+                  className="border border-primary rounded-full object-cover shrink-0 w-7 h-7"
+                />
+                
+                {/* Expandable Content wrapper */}
+                <div className="profile-text-wrapper">
+                  <span className="text-[13px] font-semibold text-text-primary whitespace-nowrap overflow-hidden text-ellipsis max-w-[70px]">
+                    {user.username}
+                  </span>
                   <motion.span
-                    variants={{
-                      hover: { rotate: 12, scale: 1.1 }
-                    }}
-                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    className="flex items-center"
+                    animate={{ rotate: profileDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
+                    className="text-text-muted flex items-center shrink-0"
                   >
-                    <LayoutDashboard size={13} />
+                    <ChevronDown size={14} />
                   </motion.span>
-                  <span>Dashboard</span>
-                </Link>
-              </motion.div>
-            )}
+                </div>
+              </div>
 
-            <Link 
-              to="/profile" 
-              style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-              className="flex items-center gap-1.5 no-underline hover:opacity-90 active:scale-[0.98] transition-all"
-            >
-              <SafeAvatar 
-                src={resolveMediaUrl(user.profilePicture)} 
-                alt={user.username}
-                size={28}
-                className="border border-primary"
-              />
-              <span className="text-sm font-semibold text-text-primary hover:text-primary transition-colors">
-                {user.username}
-              </span>
-            </Link>
 
-            <button 
-              onClick={handleLogout}
-              style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}
-              className="bg-none border-none text-[var(--text-primary)] hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 cursor-pointer flex items-center justify-center p-2 rounded-full transition-all duration-300 active:scale-95"
-              title="Logout"
-            >
-              <LogOut size={16} />
-            </button>
+              {/* Dropdown Menu */}
+              <AnimatePresence>
+                {profileDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute right-0 top-full mt-3.5 w-64 rounded-[20px] border border-black/10 dark:border-white/15 bg-white/95 dark:bg-[#12161c]/95 backdrop-blur-md p-4 shadow-2xl z-50 text-left"
+                    style={{ transformOrigin: 'top right' }}
+                  >
+                    {/* User Card Header */}
+                    <div className="flex gap-3 items-center mb-3.5 pb-3 border-b border-black/10 dark:border-white/10">
+                      <SafeAvatar 
+                        src={resolveMediaUrl(user.profilePicture)} 
+                        alt={user.username}
+                        size={40}
+                        className="border border-primary rounded-full object-cover shrink-0 w-10 h-10"
+                      />
+                      <div className="overflow-hidden">
+                        <h4 className="text-[14px] font-bold text-text-primary truncate leading-tight">
+                          {user.username}
+                        </h4>
+                        <p className="text-[11.5px] text-text-muted truncate leading-relaxed">
+                          {user.email}
+                        </p>
+                        {/* Custom Role Badge */}
+                        <span className={`inline-flex items-center text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider mt-2 leading-none border ${
+                          user.role === 'admin' ? 'bg-red-500/15 text-red-500 border-red-500/25' :
+                          user.role === 'restaurant' ? 'bg-orange-500/15 text-primary border-primary/25' :
+                          'bg-green-500/15 text-green-400 border-green-500/25'
+                        }`}>
+                          {user.role === 'admin' ? 'Admin' : user.role === 'restaurant' ? 'Merchant' : 'Foodie'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Navigation Items */}
+                    <div className="flex flex-col gap-1 text-[13px] font-semibold text-text-secondary">
+                      <Link 
+                        to="/profile" 
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-primary transition-all duration-200 no-underline text-inherit"
+                      >
+                        <User size={15} className="text-text-muted" />
+                        <span>Profile Settings</span>
+                      </Link>
+
+                      {user.role !== 'customer' && (
+                        <Link 
+                          to={user.role === 'admin' ? '/admin' : '/dashboard'}
+                          onClick={() => setProfileDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-primary/10 hover:text-primary transition-all duration-200 no-underline text-inherit"
+                        >
+                          <LayoutDashboard size={15} className="text-primary" />
+                          <span>{user.role === 'admin' ? 'Admin Panel' : 'Merchant Portal'}</span>
+                        </Link>
+                      )}
+
+                    </div>
+
+                    {/* Separator */}
+                    <div className="my-2 border-b border-black/10 dark:border-white/10" />
+
+                    {/* Logout Action */}
+                    <button 
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-red-500/10 text-red-500 transition-all duration-200 bg-transparent border-none text-[13px] font-semibold cursor-pointer text-left"
+                    >
+                      <LogOut size={15} />
+                      <span>Sign Out</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         ) : (
           <div className="flex gap-2" style={isReelsPage ? { pointerEvents: 'auto', zIndex: 100002, position: 'relative' } : {}}>

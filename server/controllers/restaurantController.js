@@ -308,6 +308,8 @@ const getOwnerAnalytics = async (req, res, next) => {
       };
     });
 
+    const menuItemsCount = await FoodItem.countDocuments({ restaurant: restaurant._id });
+
     res.json({
       success: true,
       data: {
@@ -318,6 +320,7 @@ const getOwnerAnalytics = async (req, res, next) => {
         conversionRate: parseFloat(conversionRate),
         monthlyRevenue: last6Months,
         weeklySpikes: formattedWeeklySpikes,
+        menuItemsCount,
         isOpen: restaurant.isOpen,
       },
     });

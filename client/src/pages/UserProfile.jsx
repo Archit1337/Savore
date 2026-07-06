@@ -8,7 +8,8 @@ import {
   Lock, Edit3, Camera, LogOut, CheckCircle, 
   ArrowRight, Compass, Eye, ShieldAlert, Sparkles,
   Home as HomeIcon, Briefcase, Building, Plus, Trash2, Edit,
-  Film, X
+  Film, X, LayoutDashboard, Crown, Store, BarChart3, Users, 
+  Activity, Layers, ShieldCheck
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
@@ -32,7 +33,6 @@ const getAddressIcon = (type) => {
       return <MapPin size={14} />;
   }
 };
-
 
 export default function UserProfile() {
   const navigate = useNavigate();
@@ -59,6 +59,7 @@ export default function UserProfile() {
   });
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  
   // Edit settings form state
   const [editFullName, setEditFullName] = useState('');
   const [editName, setEditName] = useState('');
@@ -86,6 +87,12 @@ export default function UserProfile() {
   // Danger Zone deletion states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Role-specific states
+  const [adminStats, setAdminStats] = useState(null);
+  const [merchantAnalytics, setMerchantAnalytics] = useState(null);
+  const [restaurantDetails, setRestaurantDetails] = useState(null);
+  const [roleStatsLoading, setRoleStatsLoading] = useState(false);
 
   const handleDeleteAccount = async () => {
     soundController?.playClick();
@@ -163,6 +170,35 @@ export default function UserProfile() {
     }
   };
 
+  // Fetch role-specific stats
+  const fetchRoleSpecificTelemetry = async () => {
+    if (!isAuthenticated || !user) return;
+    setRoleStatsLoading(true);
+    try {
+      if (user.role === 'admin') {
+        const res = await api.get('/admin/stats');
+        if (res.data && res.data.success) {
+          setAdminStats(res.data.data);
+        }
+      } else if (user.role === 'restaurant') {
+        const [analyticsRes, detailsRes] = await Promise.all([
+          api.get('/restaurants/owner/analytics'),
+          api.get('/restaurants/owner/details')
+        ]);
+        if (analyticsRes.data && analyticsRes.data.success) {
+          setMerchantAnalytics(analyticsRes.data.data);
+        }
+        if (detailsRes.data && detailsRes.data.success) {
+          setRestaurantDetails(detailsRes.data.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load role-specific statistics:', err.message);
+    } finally {
+      setRoleStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -170,14 +206,65 @@ export default function UserProfile() {
     }
     fetchProfileTelemetry();
     fetchOrders();
-  }, [isAuthenticated, navigate]);
+    fetchRoleSpecificTelemetry();
+  }, [isAuthenticated, navigate, user?.role]);
+
+  const [commentDeleteTarget, setCommentDeleteTarget] = useState(null);
+
+  const handleDeleteCommentClick = (reelId, commentId) => {
+    setCommentDeleteTarget({ reelId, commentId });
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentDeleteTarget) return;
+    const { reelId, commentId } = commentDeleteTarget;
+    try {
+      const res = await api.delete(`/reels/${reelId}/comments/${commentId}`);
+      if (res.data && res.data.success) {
+        await fetchProfileTelemetry();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete comment.');
+    } finally {
+      setCommentDeleteTarget(null);
+    }
+  };
+
+  // Set initial active tab based on role
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        setActiveTab('admin_overview');
+      } else if (user.role === 'restaurant') {
+        setActiveTab('merchant_overview');
+      } else {
+        setActiveTab('orders');
+      }
+    }
+  }, [user?.role]);
 
   // Compute Foodie Rank Badge
   const getFoodieBadge = () => {
     const ordersCount = orders.length;
-    if (ordersCount === 0) return { title: 'Taste Explorer', emoji: '🧭', color: 'text-text-muted border-text-muted/20 bg-text-muted/5' };
-    if (ordersCount < 5) return { title: 'Epicurean Apprentice', emoji: '🍳', color: 'text-primary border-primary/20 bg-primary/5' };
-    return { title: 'Taste Connoisseur', emoji: '👑', color: 'text-[#FF6A4D] border-[#FF6A4D]/20 bg-[#FF6A4D]/5 shadow-[0_0_10px_rgba(255,106,77,0.15)]' };
+    if (ordersCount === 0) {
+      return { 
+        title: 'Taste Explorer', 
+        emoji: '🧭', 
+        class: 'text-text-secondary bg-white/[0.02] hover:bg-white/[0.04]'
+      };
+    }
+    if (ordersCount < 5) {
+      return { 
+        title: 'Epicurean Apprentice', 
+        emoji: '🍳', 
+        class: 'text-amber-400/90 bg-amber-500/5 hover:bg-amber-500/10'
+      };
+    }
+    return { 
+      title: 'Taste Connoisseur', 
+      emoji: '👑', 
+      class: 'text-primary bg-primary/5 hover:bg-primary/10'
+    };
   };
 
   // Handle avatar file selection & preview
@@ -443,33 +530,212 @@ export default function UserProfile() {
   const foodieBadge = getFoodieBadge();
   const joinDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'May 2026';
 
+  const getTabsForRole = () => {
+    switch (user?.role) {
+      case 'admin':
+        return [
+          { id: 'admin_overview', label: 'Overview', icon: LayoutDashboard },
+          { id: 'admin_partnership', label: 'Approvals', icon: Briefcase },
+          { id: 'settings', label: 'Settings', icon: Settings }
+        ];
+      case 'restaurant':
+        return [
+          { id: 'merchant_overview', label: 'Summary', icon: LayoutDashboard },
+          { id: 'settings', label: 'Settings', icon: Settings }
+        ];
+      default:
+        return [
+          { id: 'orders', label: 'Orders', icon: ShoppingBag },
+          { id: 'liked', label: 'Liked', icon: Heart },
+          { id: 'comments', label: 'Comments', icon: MessageSquare },
+          { id: 'restaurants', label: 'Saved', icon: Compass },
+          { id: 'addresses', label: 'Addresses', icon: MapPin },
+          { id: 'settings', label: 'Settings', icon: Settings }
+        ];
+    }
+  };
+
+  const renderHeaderBadge = () => {
+    if (user?.role === 'admin') {
+      return (
+        <motion.div 
+          whileHover={{ scale: 1.05 }}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-red-500/15 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.08)] relative overflow-hidden"
+        >
+          <Crown size={12} className="animate-pulse text-red-500" />
+          <span>Administrator</span>
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+              animation: 'profileShimmer 2.5s infinite linear',
+              width: '50%',
+            }}
+          />
+        </motion.div>
+      );
+    }
+    if (user?.role === 'restaurant') {
+      return (
+        <motion.div 
+          whileHover={{ scale: 1.05 }}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-orange-500/15 text-primary shadow-[0_0_15px_rgba(255,106,77,0.08)] relative overflow-hidden"
+        >
+          <Store size={12} className="animate-pulse text-primary" />
+          <span>Savoré Partner</span>
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+              animation: 'profileShimmer 2.5s infinite linear',
+              width: '50%',
+            }}
+          />
+        </motion.div>
+      );
+    }
+
+    const badge = getFoodieBadge();
+    return (
+      <motion.div 
+        whileHover={{ scale: 1.05 }}
+        className={`foodie-badge-animated flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider relative overflow-hidden transition-all duration-300 ${badge.class}`}
+      >
+        <span className="inline-block text-xs">{badge.emoji}</span>
+
+        <span>{badge.title}</span>
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+            animation: 'profileShimmer 3s infinite linear',
+            width: '50%',
+          }}
+        />
+      </motion.div>
+    );
+  };
+
+  const renderHeaderMetrics = () => {
+    if (user?.role === 'admin') {
+      return (
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+            <span className="text-xs text-text-secondary font-semibold">Platform Users</span>
+            <strong className="text-sm font-extrabold text-text-primary">{adminStats?.usersCount ?? '—'}</strong>
+          </div>
+          <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+            <span className="text-xs text-text-secondary font-semibold">Active Kitchens</span>
+            <strong className="text-sm font-extrabold text-text-primary">{adminStats?.restaurantsCount ?? '—'}</strong>
+          </div>
+          <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+            <span className="text-xs text-text-secondary font-semibold">Gross Sales</span>
+            <strong className="text-sm font-extrabold text-text-primary">
+              {adminStats?.totalGrossRevenue ? formatPrice(adminStats.totalGrossRevenue) : '—'}
+            </strong>
+          </div>
+        </div>
+      );
+    }
+    if (user?.role === 'restaurant') {
+      return (
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+            <span className="text-xs text-text-secondary font-semibold">Kitchen Rating</span>
+            <strong className="text-sm font-extrabold text-text-primary">
+              {restaurantDetails?.rating ? `${restaurantDetails.rating.toFixed(1)} ⭐` : 'N/A'}
+            </strong>
+          </div>
+          <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+            <span className="text-xs text-text-secondary font-semibold">Menu Items</span>
+            <strong className="text-sm font-extrabold text-text-primary">{merchantAnalytics?.menuItemsCount ?? '—'}</strong>
+          </div>
+          <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+            <span className="text-xs text-text-secondary font-semibold">Total Revenue</span>
+            <strong className="text-sm font-extrabold text-text-primary">
+              {merchantAnalytics?.totalRevenue ? formatPrice(merchantAnalytics.totalRevenue) : '—'}
+            </strong>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+          <span className="text-xs text-text-secondary font-semibold">Orders Journey</span>
+          <strong className="text-sm font-extrabold text-text-primary">{orders.length}</strong>
+        </div>
+        <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+          <span className="text-xs text-text-secondary font-semibold">Liked Recipes</span>
+          <strong className="text-sm font-extrabold text-text-primary">{socialHistory.likedReels.length}</strong>
+        </div>
+        <div className="flex justify-between items-center bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 px-4 py-2.5 rounded-xl">
+          <span className="text-xs text-text-secondary font-semibold">Saved Places</span>
+          <strong className="text-sm font-extrabold text-text-primary">{socialHistory.savedRestaurants.length}</strong>
+        </div>
+      </div>
+    );
+  };
+
   if (!user) return null;
 
   return (
-    <div className="container px-6 text-left fade-in" style={{ marginTop: '-4.5rem', paddingTop: '0.5rem', paddingBottom: '7rem' }}>
+    <div className="container px-4 sm:px-6 mx-auto pb-24 text-left fade-in pt-0 -mt-12 md:-mt-14">
+      <style>{`
+        @keyframes profileShimmer {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(150%); }
+        }
+        .foodie-badge-animated {
+          animation: softBreathe 4s infinite ease-in-out;
+        }
+        .foodie-badge-animated:hover {
+          animation: flameGlow 1.5s infinite ease-in-out !important;
+        }
+        @keyframes softBreathe {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.025); opacity: 1; }
+        }
+        @keyframes flameGlow {
+          0%, 100% {
+            box-shadow: 
+              0 0 10px rgba(255, 90, 60, 0.15), 
+              0 -2px 6px rgba(255, 106, 77, 0.08), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.02);
+          }
+          50% {
+            box-shadow: 
+              0 0 18px rgba(255, 90, 60, 0.35), 
+              0 -4px 12px rgba(255, 106, 77, 0.22), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.05);
+          }
+        }
+      `}</style>
       
-      {/* 1. PREMIUM DUAL-THEME PROFILE HEADER */}
-      <div className="relative glass-panel rounded-[28px] overflow-hidden mb-10 border-[1.5px] border-[var(--border-glow)] shadow-[var(--shadow-glow)]">
-        {/* Soft gradient banner underlay */}
-        <div className="h-36 bg-[linear-gradient(135deg,_rgba(255,106,77,0.12)_0%,_rgba(7,10,14,0.45)_100%)] dark:bg-[linear-gradient(135deg,_rgba(255,106,77,0.08)_0%,_rgba(0,0,0,0.65)_100%)] w-full relative overflow-hidden">
-          <div className="absolute inset-0 backdrop-filter blur-xl opacity-60 pointer-events-none" />
-          {(avatarPreview || (user.profilePicture && !user.profilePicture.includes('null') && !user.profilePicture.includes('undefined'))) && (
-            <img 
-              src={avatarPreview || resolveMediaUrl(user.profilePicture)} 
-              alt="Profile Cover Banner" 
-              className="absolute inset-0 w-full h-full object-cover filter blur-[8px] opacity-40 dark:opacity-20 scale-110 transition-all duration-500"
-            />
-          )}
-        </div>
-
-        {/* Profile Meta Section */}
-        <div className="p-8 -mt-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 flex-wrap relative z-10">
+      {/* 2-COLUMN SPLIT DASHBOARD LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-8 items-start">
+        
+        {/* LEFT COLUMN: STICKY METADATA PROFILE CARD */}
+        <aside className="lg:sticky lg:top-24 flex flex-col gap-6 w-full z-10">
           
-          <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-center text-center sm:text-left">
+          <div className="glass-panel bg-white/5 dark:bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-[32px] overflow-hidden shadow-2xl relative [transform:translate3d(0,0,0)] [will-change:transform]">
             
-            {/* Avatar upload wrapper with dynamic preview, save/cancel & remove controls */}
-            <div className="flex flex-col items-center gap-2 select-none shrink-0">
-              <div className="relative group rounded-full overflow-hidden w-24 h-24 border-3 border-primary shadow-xl bg-background-primary cursor-pointer">
+            {/* Full-card Blurred Ambient Avatar Backdrop */}
+            {(avatarPreview || (user.profilePicture && !user.profilePicture.includes('null') && !user.profilePicture.includes('undefined'))) && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 [transform:translate3d(0,0,0)]">
+                <img 
+                  src={avatarPreview || resolveMediaUrl(user.profilePicture)} 
+                  alt="Card Ambient Backdrop" 
+                  className="w-full h-full object-cover filter blur-[45px] opacity-15 dark:opacity-25 scale-125 [transform:translate3d(0,0,0)] [will-change:transform]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/10 to-black/25 dark:from-black/10 dark:via-black/20 dark:to-black/45" />
+              </div>
+            )}
+
+            {/* Profile Avatar & Info Overlay */}
+            <div className="px-6 pb-6 pt-10 flex flex-col items-center text-center relative z-10">
+              
+              <div className="relative group rounded-full overflow-hidden w-28 h-28 border-4 border-primary ring-4 ring-white/5 dark:ring-black/25 shadow-xl bg-background-primary cursor-pointer mb-4">
                 {avatarLoading ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/45">
                     <Sparkles size={20} className="animate-stir text-primary" />
@@ -478,7 +744,7 @@ export default function UserProfile() {
                   <SafeAvatar 
                     src={avatarPreview || resolveMediaUrl(user.profilePicture)} 
                     alt={user.username}
-                    size={96}
+                    size={112}
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   />
                 )}
@@ -495,9 +761,9 @@ export default function UserProfile() {
                 )}
               </div>
 
-              {/* Preview action triggers */}
+              {/* Action Preview options */}
               {avatarPreview && !avatarLoading && (
-                <div className="flex gap-2 mt-1">
+                <div className="flex gap-2 mb-3">
                   <button
                     type="button"
                     onClick={handleSaveAvatar}
@@ -516,891 +782,1077 @@ export default function UserProfile() {
                 </div>
               )}
 
-              {/* Reset / Remove Photo action triggers */}
+              {/* Reset/Remove Action */}
               {!avatarPreview && user.profilePicture && !avatarLoading && (
                 <button
                   type="button"
                   onClick={handleRemoveAvatar}
-                  className="text-[11px] font-bold text-red-500 hover:text-red-400 bg-transparent border-none cursor-pointer hover:underline"
+                  className="text-[11px] font-bold text-red-500 hover:text-red-400 bg-transparent border-none cursor-pointer hover:underline mb-3"
                 >
                   Remove Photo
                 </button>
               )}
-            </div>
 
-            {/* Main credentials info */}
-            <div>
-              <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
-                <h1 className="text-2xl font-extrabold tracking-tight text-text-primary">{user.username}</h1>
-                
-                {/* Foodie Badge */}
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-[12px] border text-[11.5px] font-extrabold capitalize ${foodieBadge.color}`}>
-                  <span>{foodieBadge.emoji}</span>
-                  <span>{foodieBadge.title}</span>
-                </div>
+              {/* Identity & Badges */}
+              <h2 className="text-xl font-extrabold text-text-primary leading-tight flex items-center gap-1.5 flex-wrap justify-center">
+                {user.username}
+              </h2>
+              <span className="text-xs text-text-secondary mt-1">@{user.username?.toLowerCase()}</span>
+
+              <div className="mt-3">
+                {renderHeaderBadge()}
               </div>
-              <p className="text-[14px] text-text-secondary mt-1">@{user.username?.toLowerCase()}</p>
-              
-              {/* Short Bio */}
-              {socialHistory.bio ? (
-                <p className="text-[14px] text-text-muted mt-2.5 max-w-[480px] font-medium leading-relaxed italic">
-                  "{socialHistory.bio}"
-                </p>
-              ) : (
-                <p className="text-[13px] text-text-secondary mt-2.5 italic">
-                  No foodie bio registered. Complete your profile in account settings!
-                </p>
-              )}
+
+              {/* Description bio */}
+              <p className="text-[13px] text-text-secondary mt-4 max-w-[240px] leading-relaxed italic border-t border-border-light/40 pt-4 w-full text-center">
+                {user.role === 'admin' ? (
+                  'System security administrator access level.'
+                ) : user.role === 'restaurant' ? (
+                  'Partner kitchen manager settings and telemetry.'
+                ) : socialHistory.bio ? (
+                  `"${socialHistory.bio}"`
+                ) : (
+                  'No bio registered yet.'
+                )}
+              </p>
 
               {/* Join Date */}
-              <div className="flex items-center gap-1.5 text-text-secondary text-[12.5px] mt-3 font-semibold justify-center sm:justify-start">
-                <Calendar size={14} className="text-primary" />
-                <span>Gastronome since {joinDate}</span>
+              <div className="flex items-center gap-1.5 text-text-secondary text-[11.5px] mt-4 font-semibold justify-center">
+                <Calendar size={13} className="text-primary" />
+                <span>Joined {joinDate}</span>
               </div>
+
             </div>
 
           </div>
 
-          {/* Social Count stats */}
-          <div className="flex gap-6 pr-2">
-            <div className="text-center md:text-left">
-              <span className="text-[11px] text-text-muted font-extrabold uppercase tracking-wider block">Orders</span>
-              <strong className="text-2xl font-extrabold text-text-primary mt-0.5 block">{orders.length}</strong>
-            </div>
-            <div className="h-8 w-[1.5px] bg-border-light my-auto opacity-45" />
-            <div className="text-center md:text-left">
-              <span className="text-[11px] text-text-muted font-extrabold uppercase tracking-wider block">Liked Videos</span>
-              <strong className="text-2xl font-extrabold text-text-primary mt-0.5 block">{socialHistory.likedReels.length}</strong>
-            </div>
-            <div className="h-8 w-[1.5px] bg-border-light my-auto opacity-45" />
-            <div className="text-center md:text-left">
-              <span className="text-[11px] text-text-muted font-extrabold uppercase tracking-wider block">Saved Places</span>
-              <strong className="text-2xl font-extrabold text-text-primary mt-0.5 block">{socialHistory.savedRestaurants.length}</strong>
+          {/* Quick Metrics sidebar box */}
+          <div className="glass-panel bg-white/5 dark:bg-white/[0.02] border border-black/10 dark:border-white/10 rounded-[24px] p-5 shadow-lg">
+            <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-3.5 text-center">Telemetry Metrics</h4>
+            {renderHeaderMetrics()}
+          </div>
+
+        </aside>
+
+        {/* RIGHT COLUMN: MAIN TABS & EDIT FORMS CONTROLLER */}
+        <main className="flex flex-col gap-6 w-full min-w-0">
+          
+          {/* Tabs navigation (Sleek Underline Style) */}
+          <div className="flex overflow-x-auto select-none w-full relative mb-1 no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="flex gap-8 px-2">
+              {getTabsForRole().map(tab => {
+                const IconComp = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      soundController?.playClick();
+                      setActiveTab(tab.id);
+                      setFormError('');
+                      setFormSuccess('');
+                      setPassError('');
+                      setPassSuccess('');
+                    }}
+                    className={`relative flex items-center gap-2 py-4 text-[13.5px] font-bold transition-all shrink-0 ${
+                      isActive 
+                        ? 'text-primary' 
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <IconComp size={15} className={isActive ? 'text-primary' : 'text-text-muted'} />
+                    {tab.label}
+                    
+                    {/* Active Underline Indicator */}
+                    {isActive && (
+                      <motion.div 
+                        layoutId="profileActiveTabIndicator"
+                        className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-primary rounded-t-full shadow-[0_-2px_10px_rgba(255,106,77,0.4)] z-10"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-        </div>
-
-      </div>
-
-      {/* 2. TABS SELECTOR PANEL */}
-      <div className="flex gap-2 overflow-x-auto pb-4 mb-8 border-b border-border-light select-none max-w-full">
-        {[
-          { id: 'orders', label: 'Recent Orders', icon: ShoppingBag },
-          { id: 'liked', label: 'Liked Reels', icon: Heart },
-          { id: 'comments', label: 'My Comments', icon: MessageSquare },
-          { id: 'restaurants', label: 'Saved Kitchens', icon: Compass },
-          { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
-          { id: 'settings', label: 'Account Settings', icon: Settings }
-        ].map(tab => {
-          const IconComp = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                soundController?.playClick();
-                setActiveTab(tab.id);
-                setFormError('');
-                setFormSuccess('');
-                setPassError('');
-                setPassSuccess('');
-              }}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-bold shrink-0 transition-all ${
-                activeTab === tab.id 
-                  ? 'bg-primary text-white shadow-md' 
-                  : 'bg-white/[0.03] text-text-secondary hover:text-text-primary hover:bg-white/[0.06] border border-border-light'
-              }`}
-            >
-              <IconComp size={14} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 3. TABS CONTENT REGIONS */}
-      <div className="min-h-[40vh]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          >
-            
-            {/* TAB 1: ORDER HISTORY HISTORY */}
-            {activeTab === 'orders' && (
-              <div className="glass-panel p-8 rounded-[24px]">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
-                  <ShoppingBag size={20} className="text-primary" />
-                  Your Order Journey
-                </h3>
-
-                {ordersLoading ? (
-                  <div className="py-12 text-center">
-                    <Sparkles className="animate-stir text-text-muted" size={24} />
-                  </div>
-                ) : orders.length > 0 ? (
-                  <div className="flex flex-col gap-5">
-                    {orders.map(ord => (
-                      <div 
-                        key={ord._id} 
-                        className="bg-white/[0.01] dark:bg-[#12161c]/30 border border-border-light rounded-2xl p-6 grid grid-cols-1 md:grid-cols-[1.5fr_1.2fr_0.8fr] gap-6 items-center"
-                      >
-                        <div>
-
-                          <div className="flex items-center gap-3">
-                            <h4 className="text-[16px] font-bold text-text-primary">
-                              {ord.restaurant?.name || 'Savoré Partner'}
-                            </h4>
-                            <span className="text-text-muted text-[11px] font-semibold">{new Date(ord.createdAt).toLocaleDateString()}</span>
-                          </div>
-                          
-                          <p className="text-[13px] text-text-secondary mt-1.5 leading-relaxed">
-                            <strong>Dishes:</strong> {ord.items.map(i => `${i.quantity}x ${i.foodItem?.name || 'Chef Specialty'}`).join(', ')}
-                          </p>
-                          <p className="text-[12.5px] text-text-muted mt-1 leading-relaxed">
-                            <strong>Deliver to:</strong> {ord.deliveryAddress}
-                          </p>
-                        </div>
-
-                        <div>
-                          <div className="flex flex-col gap-1 text-[13.5px] text-text-secondary">
-                            <div>Payment: <strong className="uppercase">{ord.paymentMethod}</strong></div>
-                            <div className="flex items-center">
-                              Status: 
-                              <span className={`ml-2 px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold uppercase ${
-                                ord.paymentStatus === 'paid' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-primary'
-                              }`}>
-                                {ord.paymentStatus}
-                              </span>
-                            </div>
-                            <div>Subtotal: <strong>{formatPrice(ord.subtotal)}</strong></div>
-                          </div>
-                        </div>
-
-                        <div className="text-right flex flex-col items-end gap-3.5">
-                          <div>
-                            <span className="text-[11px] text-text-muted uppercase tracking-wider block font-bold mb-1">Tracker</span>
-                            <span className={`px-3 py-1 rounded-[12px] text-[12px] font-bold tracking-wide capitalize ${
-                              ord.status === 'delivered' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                              ord.status === 'cancelled' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-                              'bg-orange-500/10 text-primary border border-primary/20'
-                            }`}>
-                              {ord.status.replace(/_/g, ' ')}
-                            </span>
-                          </div>
-
-                          <button
-                            onClick={() => handleOrderAgain(ord)}
-                            className="btn btn-pill bg-primary hover:bg-primary-hover text-white text-[12.5px] font-bold flex items-center gap-1.5"
-                          >
-                            Order Again
-                            <ArrowRight size={13} />
-                          </button>
-                        </div>
-
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-text-secondary text-sm">You haven't ordered any premium meals yet.</p>
-                    <Link to="/discover" className="btn btn-pill bg-primary text-white inline-flex items-center gap-1.5 mt-5">
-                      Explore Food Options
-                    </Link>
-                  </div>
-                )}
-
-              </div>
-            )}
-
-            {/* TAB 2: LIKED REELS GRID */}
-            {activeTab === 'liked' && (
-              <div className="glass-panel p-8 rounded-[24px]">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
-                  <Heart size={20} className="text-primary" />
-                  Your Liked Food Reels
-                </h3>
-
-                {socialHistory.likedReels.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                    {socialHistory.likedReels.map(reel => (
-                      <div 
-                        key={reel._id} 
-                        className="group bg-white/[0.02] border border-border-light rounded-2xl overflow-hidden shadow-sm hover:-translate-y-1 transition-all duration-300 relative cursor-pointer"
-                        onClick={() => navigate('/reels')}
-                      >
-                        {/* Dynamic Overlay play icon on hover */}
-                        <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                          <div className="bg-primary text-white p-3.5 rounded-full shadow-lg scale-90 group-hover:scale-100 transition-transform">
-                            <Eye size={20} />
-                          </div>
-                        </div>
-
-                        {/* Simulated/Mock media canvas */}
-                        <div className="h-64 bg-slate-900 flex items-center justify-center relative">
-                          <Film size={36} className="text-text-muted/40" />
-                          <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2 py-0.5 font-bold uppercase tracking-[0.05em]">
-                            {reel.restaurant?.name || 'Savoré Partner'}
-                          </span>
-                        </div>
-
-                        {/* Caption Info */}
-                        <div className="p-4 text-left bg-white/[0.01]">
-                          <p className="text-sm font-bold text-text-primary line-clamp-1">{reel.caption || 'Recipe Clip'}</p>
-                          <div className="flex items-center gap-3 text-[12.5px] text-text-secondary mt-1.5 font-semibold">
-                            <span>❤️ {reel.likes?.length || 1} Likes</span>
-                            <span>👁️ {reel.views || 0} Views</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-text-secondary text-sm">
-                    No liked recipe Reels found. Swipe and double-tap on our Reels page!
-                  </div>
-                )}
-
-              </div>
-            )}
-
-            {/* TAB 3: COMMENTS LOG */}
-            {activeTab === 'comments' && (
-              <div className="glass-panel p-8 rounded-[24px]">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
-                  <MessageSquare size={20} className="text-primary" />
-                  Your Conversational Comments
-                </h3>
-
-                {socialHistory.comments.length > 0 ? (
-                  <div className="flex flex-col gap-4">
-                    {socialHistory.comments.map(c => (
-                      <div 
-                        key={c.commentId} 
-                        className="bg-white/[0.01] dark:bg-[#12161c]/30 border border-border-light rounded-2xl p-5 text-left"
-                      >
-                        <div className="flex justify-between items-center flex-wrap gap-2">
-                          <span className="text-[12.5px] text-text-secondary font-semibold">
-                            Comment on <strong>{c.restaurantName}</strong>'s video
-                          </span>
-                          <span className="text-[11.5px] text-text-muted">{new Date(c.createdAt).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-[14.5px] text-text-primary mt-2 font-medium italic">
-                          "{c.text}"
-                        </p>
-                        <div className="mt-3.5 flex items-center gap-1.5 text-text-secondary text-[12px] font-semibold">
-                          <span>Target Post:</span>
-                          <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate('/reels')}>
-                            {c.reelCaption || 'View Original Video'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-text-secondary text-sm">
-                    No comments found. Share your thoughts on the Reels page!
-                  </div>
-                )}
-
-              </div>
-            )}
-
-            {/* TAB 4: SAVED RESTAURANTS */}
-            {activeTab === 'restaurants' && (
-              <div className="glass-panel p-8 rounded-[24px]">
+          {/* Active Tab Screen Content wrapper */}
+          <div className="min-h-[45vh]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              >
                 
-                {/* Favorite Dishes Subgrid */}
-                {socialHistory.favoriteDishes.length > 0 && (
-                  <div className="mb-10">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
-                      <Award size={20} className="text-primary" />
-                      Favorite Dishes
+                {/* ROLE TAB: ADMIN SYSTEM OVERVIEW */}
+                {activeTab === 'admin_overview' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary border-b border-border-light pb-3">
+                      <Activity size={20} className="text-red-500" />
+                      Savoré Platform Diagnostics
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                      {socialHistory.favoriteDishes.map(dish => (
-                        <div key={dish._id} className="bg-[var(--surface-bright)] border border-border-light rounded-2xl p-4 flex gap-3.5 items-center hover:scale-[1.01] transition-all">
-                          <div className="w-16 h-16 rounded-xl bg-slate-900 overflow-hidden shrink-0">
-                            <SafeAvatar src={resolveMediaUrl(dish.image)} alt={dish.name} size={64} roundedClass="rounded-xl" className="w-full h-full object-cover" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-text-primary leading-tight">{dish.name}</h4>
-                            <span className="text-xs text-text-secondary block mt-0.5">{dish.restaurant?.name || 'Savoré Kitchen'}</span>
-                            <strong className="text-xs text-primary block mt-1">{formatPrice(dish.price)}</strong>
-                          </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 mb-8">
+                      <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left">
+                        <span className="text-xs text-text-muted uppercase tracking-wider font-bold">Total Platform Users</span>
+                        <strong className="text-3xl font-extrabold text-text-primary block mt-1">{adminStats?.usersCount ?? 0}</strong>
+                        <div className="flex items-center gap-1 mt-2 text-[11px] text-green-500">
+                          <Users size={11} /> <span>Registered Accounts</span>
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left">
+                        <span className="text-xs text-text-muted uppercase tracking-wider font-bold">Active Restaurants</span>
+                        <strong className="text-3xl font-extrabold text-text-primary block mt-1">{adminStats?.restaurantsCount ?? 0}</strong>
+                        <div className="flex items-center gap-1 mt-2 text-[11px] text-primary">
+                          <Store size={11} /> <span>Partner Kitchens</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left">
+                        <span className="text-xs text-text-muted uppercase tracking-wider font-bold">Total Platform Orders</span>
+                        <strong className="text-3xl font-extrabold text-text-primary block mt-1">{adminStats?.totalOrders ?? 0}</strong>
+                        <div className="flex items-center gap-1 mt-2 text-[11px] text-[#FF6A4D]">
+                          <ShoppingBag size={11} /> <span>Fulfilled Transactions</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left">
+                        <span className="text-xs text-text-muted uppercase tracking-wider font-bold">Gross System Revenue</span>
+                        <strong className="text-3xl font-extrabold text-text-primary block mt-1">
+                          {adminStats?.totalGrossRevenue ? formatPrice(adminStats.totalGrossRevenue) : '₹0'}
+                        </strong>
+                        <div className="flex items-center gap-1 mt-2 text-[11px] text-green-500">
+                          <BarChart3 size={11} /> <span>Gross Transactions</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6 bg-red-500/[0.02] rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+                      <div>
+                        <h4 className="text-md font-bold text-text-primary flex items-center justify-center md:justify-start gap-1.5">
+                          <ShieldCheck size={16} className="text-red-500" />
+                          Administrative Control Center
+                        </h4>
+                        <p className="text-xs text-text-secondary mt-1">
+                          Launch the main panel to review audit logs, suspend rogue accounts, adjust transaction caps, and approve listings.
+                        </p>
+                      </div>
+                      <Link 
+                        to="/admin" 
+                        className="btn btn-pill bg-red-500 hover:bg-red-600 text-white font-bold text-xs py-2.5 px-5 flex items-center gap-1.5 hover:shadow-[0_0_15px_rgba(239,68,68,0.25)] transition-all shrink-0"
+                      >
+                        Open Admin Dashboard
+                        <ArrowRight size={14} />
+                      </Link>
                     </div>
                   </div>
                 )}
 
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
-                  <Compass size={20} className="text-primary" />
-                  Your Saved Restaurants & Kitchens
-                </h3>
+                {/* ROLE TAB: ADMIN PARTNERSHIP APPROVALS */}
+                {activeTab === 'admin_partnership' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary border-b border-border-light pb-3">
+                      <Briefcase size={20} className="text-red-500" />
+                      Partnership Approvals
+                    </h3>
 
-                {socialHistory.savedRestaurants.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {socialHistory.savedRestaurants.map(rest => (
-                      <div 
-                        key={rest._id} 
-                        className="bg-[var(--surface-bright)] dark:bg-[#12161c]/30 border border-border-light rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.01] transition-all"
+                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white/[0.01] dark:bg-[#12161c]/30 border border-border-light rounded-2xl p-8 max-w-[600px] mx-auto">
+                      <Store size={44} className="text-text-muted mb-4 opacity-40" />
+                      <h4 className="text-lg font-bold text-text-primary mb-2">Pending Kitchen Registrations</h4>
+                      <p className="text-xs text-text-secondary leading-relaxed max-w-[420px] mb-6">
+                        We currently have <strong>{adminStats?.pendingApprovals ?? 0}</strong> restaurant partnership requests awaiting administrative verification and safety checks.
+                      </p>
+                      <Link 
+                        to="/admin" 
+                        className="btn btn-pill bg-red-500 hover:bg-red-600 text-white font-bold text-xs py-2.5 px-6 flex items-center gap-1.5 transition-all"
                       >
-                        <div className="flex gap-4">
-                          <div className="w-20 h-20 rounded-2xl bg-slate-900 overflow-hidden shrink-0 border border-border-light">
-                            <SafeAvatar src={resolveMediaUrl(rest.coverImage)} alt={rest.name} size={80} roundedClass="rounded-2xl" className="w-full h-full object-cover" />
+                        Manage Approvals inside Admin Center
+                        <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* ROLE TAB: RESTAURANT MERCHANT OVERVIEW */}
+                {activeTab === 'merchant_overview' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary border-b border-border-light pb-3">
+                      <Store size={20} className="text-primary" />
+                      Kitchen Summary
+                    </h3>
+
+                    {restaurantDetails ? (
+                      <div className="flex flex-col gap-6">
+                        {/* Cover Preview Card */}
+                        <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-6 flex flex-col md:flex-row gap-5 items-center md:items-start text-center md:text-left">
+                          <div className="w-24 h-24 rounded-2xl bg-slate-900 overflow-hidden shrink-0 shadow-md">
+                            <SafeAvatar src={resolveMediaUrl(restaurantDetails.coverImage)} alt={restaurantDetails.name} size={96} roundedClass="rounded-2xl" className="w-full h-full object-cover" />
                           </div>
-                          <div className="text-left">
-                            <h4 className="text-base font-bold text-text-primary leading-snug">{rest.name}</h4>
-                            <p className="text-xs text-text-secondary mt-1 line-clamp-2 leading-relaxed">{rest.description}</p>
-                            <div className="flex items-center gap-2 text-[11.5px] font-semibold text-text-muted mt-2">
-                              <span>⭐ {rest.rating?.toFixed(1)}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap">
+                              <h4 className="text-lg font-extrabold text-text-primary leading-tight">{restaurantDetails.name}</h4>
+                              <span className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase ${
+                                restaurantDetails.isOpen ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
+                              }`}>
+                                {restaurantDetails.isOpen ? 'Open' : 'Closed'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">{restaurantDetails.description || 'No kitchen description available.'}</p>
+                            <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap text-xs text-text-muted mt-3 font-semibold">
+                              <span>⭐ {restaurantDetails.rating?.toFixed(1) || '5.0'}</span>
                               <span>•</span>
-                              <span>🛵 {rest.deliveryTime} mins</span>
+                              <span>🛵 {restaurantDetails.deliveryTime || 30} mins</span>
                               <span>•</span>
-                              <span>{rest.timings || '11 AM - 11 PM'}</span>
+                              <span>💸 Delivery: {formatPrice(restaurantDetails.deliveryFee || 0)}</span>
+                              <span>•</span>
+                              <span>🕒 {restaurantDetails.timings || '11 AM - 11 PM'}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center mt-5 border-t border-border-light/45 pt-4">
-                          <button
-                            onClick={() => handleToggleFavorite(rest._id)}
-                            className="text-xs font-bold text-red-500 hover:text-red-400 bg-transparent shrink-0"
-                          >
-                            Remove Favorite
-                          </button>
-                          
+                        {/* Stats Summary Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                          <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left">
+                            <span className="text-xs text-text-muted font-bold block uppercase tracking-wider">Completed Orders</span>
+                            <strong className="text-2xl font-extrabold text-text-primary block mt-1">{merchantAnalytics?.completedOrders ?? 0}</strong>
+                          </div>
+                          <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left">
+                            <span className="text-xs text-text-muted font-bold block uppercase tracking-wider">Active Queue</span>
+                            <strong className="text-2xl font-extrabold text-text-primary block mt-1">{merchantAnalytics?.activeOrders ?? 0}</strong>
+                          </div>
+                          <div className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left">
+                            <span className="text-xs text-text-muted font-bold block uppercase tracking-wider">SaaS Revenue</span>
+                            <strong className="text-2xl font-extrabold text-text-primary block mt-1">
+                              {merchantAnalytics?.totalRevenue ? formatPrice(merchantAnalytics.totalRevenue) : '₹0'}
+                            </strong>
+                          </div>
+                        </div>
+
+                        {/* Redirect link panel */}
+                        <div className="p-6 bg-primary/[0.02] rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left mt-2">
+                          <div>
+                            <h4 className="text-md font-bold text-text-primary flex items-center justify-center sm:justify-start gap-1.5">
+                              <BarChart3 size={16} className="text-primary" />
+                              Merchant Dashboard Portal
+                            </h4>
+                            <p className="text-xs text-text-secondary mt-1">
+                              Open your dashboard to adjust the menu catalog, review daily gross revenue spike charts, and track active delivery couriers.
+                            </p>
+                          </div>
                           <Link 
-                            to={`/restaurant/${rest._id}`}
-                            className="btn btn-pill bg-white/[0.05] hover:bg-white/[0.1] text-text-primary text-[12px] font-bold flex items-center gap-1 border border-border-light"
+                            to="/dashboard" 
+                            className="btn btn-pill bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2.5 px-5 flex items-center gap-1.5 transition-all shrink-0"
                           >
-                            Visit Menu
-                            <ArrowRight size={12} />
+                            Launch Dashboard
+                            <ArrowRight size={14} />
                           </Link>
                         </div>
-
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-text-secondary text-sm">
-                    No saved restaurants found. Browse kitchen menus and click the favorite badge!
-                  </div>
-                )}
-
-              </div>
-            )}
-
-            {/* TAB: SAVED ADDRESSES TAB */}
-            {activeTab === 'addresses' && (
-              <div className="glass-panel p-8 rounded-[24px]">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold flex items-center gap-2 text-text-primary">
-                    <MapPin size={20} className="text-primary" />
-                    Saved Delivery Addresses
-                  </h3>
-                  <button
-                    onClick={handleOpenAddAddressModal}
-                    className="btn btn-pill bg-primary hover:bg-primary-hover text-white text-[12.5px] font-bold flex items-center gap-1.5"
-                  >
-                    <Plus size={14} /> Add New Address
-                  </button>
-                </div>
-
-                {savedAddresses.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {savedAddresses.map((addr) => (
-                      <div 
-                        key={addr._id}
-                        className={`bg-white/[0.01] dark:bg-[#12161c]/30 border rounded-2xl p-5 flex flex-col justify-between hover:-translate-y-[1px] transition-all duration-300 ${
-                          addr.isDefault 
-                            ? 'border-primary/40 bg-primary/5 shadow-md shadow-primary/5' 
-                            : 'border-border-light hover:bg-white/[0.03]'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="flex items-center gap-1.5 font-extrabold uppercase text-[12px] text-text-primary">
-                              <span className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
-                                {getAddressIcon(addr.addressType)}
-                              </span>
-                              {addr.addressType}
-                            </span>
-                            {addr.isDefault ? (
-                              <span className="text-[9px] font-bold px-2 py-0.5 bg-green-500/10 text-green-500 border border-green-500/20 rounded-md uppercase">Default</span>
-                            ) : (
-                              <button
-                                onClick={() => toggleDefaultAddress(addr._id)}
-                                className="text-[10px] font-bold text-text-muted hover:text-primary transition-all border border-border-light px-2 py-0.5 rounded-md hover:bg-white/[0.04]"
-                              >
-                                Set Default
-                              </button>
-                            )}
-                          </div>
-                          
-                          <p className="text-[14px] text-text-primary font-semibold mt-2 leading-relaxed">
-                            {addr.houseNumber ? `${addr.houseNumber}, ` : ''}{addr.street}
-                          </p>
-                          <p className="text-[13px] text-text-secondary mt-1">
-                            {addr.area}{addr.landmark ? ` (Near ${addr.landmark})` : ''}
-                          </p>
-                          <p className="text-[12px] text-text-muted mt-1 leading-normal font-semibold">
-                            {addr.city}, {addr.state} - {addr.pincode}
-                          </p>
-                        </div>
-
-                        <div className="flex gap-3 justify-end items-center mt-5 border-t border-border-light/45 pt-4">
-                          <button
-                            onClick={() => handleOpenEditAddressModal(addr)}
-                            className="text-xs font-bold text-text-secondary hover:text-text-primary flex items-center gap-1 bg-transparent hover:bg-white/[0.04] px-2.5 py-1.5 rounded-xl transition-all border border-border-light"
-                          >
-                            <Edit size={12} /> Edit
-                          </button>
-                          
-                          <button
-                            onClick={() => deleteSavedAddress(addr._id)}
-                            className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1 bg-transparent hover:bg-red-500/5 px-2.5 py-1.5 rounded-xl transition-all border border-red-500/20"
-                          >
-                            <Trash2 size={12} /> Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-text-secondary text-sm">
-                    No saved addresses found. Register your Home/Work delivery details for one-tap express checkouts!
-                  </div>
-                )}
-
-                {/* SAVED ADDRESS ADD/EDIT MODAL OVERLAY */}
-                {createPortal(
-                  <AnimatePresence>
-                    {addressModalOpen && (
-                      <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none">
-                        <motion.div 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={() => setAddressModalOpen(false)}
-                          className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer animate-fade-in"
-                        />
-                        
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                          className="bg-[var(--surface-bright)] border border-border-light rounded-[24px] p-7 max-w-[540px] w-full relative z-10 text-left shadow-2xl overflow-y-auto max-h-[85vh] text-[var(--text-primary)]"
-                        >
-                          <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
-                            <h3 className="text-base font-bold flex items-center gap-2">
-                              <MapPin size={16} className="text-primary" />
-                              {isEditingAddress ? 'Edit Delivery Address' : 'Add New Delivery Address'}
-                            </h3>
-                            <button onClick={() => setAddressModalOpen(false)} className="btn-icon btn-circle w-7 h-7">
-                              <X size={13} />
-                            </button>
-                          </div>
-
-                          {addressFormError && (
-                            <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
-                              <ShieldAlert size={15} />
-                              <span>{addressFormError}</span>
-                            </div>
-                          )}
-
-                          {addressFormSuccess && (
-                            <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
-                              <CheckCircle size={15} />
-                              <span>{addressFormSuccess}</span>
-                            </div>
-                          )}
-
-                          <form onSubmit={handleAddressSubmit} className="flex flex-col gap-[26px]">
-                            {/* Address Type segmented buttons */}
-                            <div>
-                              <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Address Type</label>
-                              <div className="grid grid-cols-4 gap-2">
-                                {['Home', 'Work', 'Apartment', 'Other'].map((type) => (
-                                  <button
-                                    type="button"
-                                    key={type}
-                                    onClick={() => setAddrType(type)}
-                                    className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                                      addrType === type 
-                                        ? 'bg-primary border-primary text-white shadow-sm' 
-                                        : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
-                                    }`}
-                                    style={{ padding: '10px 4px' }}
-                                  >
-                                    {type}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">House / Flat No.</label>
-                                <input 
-                                  type="text" 
-                                  className="glass-input h-11 text-[13.5px]" 
-                                  placeholder="e.g. Flat 402, 4th Floor"
-                                  value={addrHouseNumber}
-                                  onChange={(e) => setAddrHouseNumber(e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Street / Road *</label>
-                                <input 
-                                  type="text" 
-                                  className="glass-input h-11 text-[13.5px]" 
-                                  placeholder="e.g. Hill Road, Bandra West"
-                                  value={addrStreet}
-                                  onChange={(e) => setAddrStreet(e.target.value)}
-                                  required
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Locality / Area *</label>
-                                <input 
-                                  type="text" 
-                                  className="glass-input h-11 text-[13.5px]" 
-                                  placeholder="e.g. Bandra West"
-                                  value={addrArea}
-                                  onChange={(e) => setAddrArea(e.target.value)}
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Landmark (Optional)</label>
-                                <input 
-                                  type="text" 
-                                  className="glass-input h-11 text-[13.5px]" 
-                                  placeholder="e.g. Near Mehboob Studio"
-                                  value={addrLandmark}
-                                  onChange={(e) => setAddrLandmark(e.target.value)}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Indian City *</label>
-                                <select 
-                                  className="glass-input h-11 text-[13.5px] !py-0 !px-2.5 rounded-xl cursor-pointer"
-                                  value={addrCity}
-                                  onChange={(e) => setAddrCity(e.target.value)}
-                                  required
-                                >
-                                  {CITIES.map(c => (
-                                    <option key={c} value={c} className="bg-[var(--surface-bright)] text-[var(--text-primary)]">{c}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">State *</label>
-                                <input 
-                                  type="text" 
-                                  className="glass-input h-11 text-[13.5px]" 
-                                  placeholder="e.g. Maharashtra"
-                                  value={addrState}
-                                  onChange={(e) => setAddrState(e.target.value)}
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Pincode *</label>
-                                <input 
-                                  type="text" 
-                                  className="glass-input h-11 text-[13.5px]" 
-                                  placeholder="6 digits (e.g. 400050)"
-                                  value={addrPincode}
-                                  onChange={(e) => setAddrPincode(e.target.value)}
-                                  required
-                                />
-                              </div>
-                            </div>
-
-                            {/* Default toggle switch */}
-                            <div className="flex items-center gap-2 mt-2">
-                              <input 
-                                type="checkbox" 
-                                id="addrIsDefault"
-                                checked={addrIsDefault}
-                                onChange={(e) => setAddrIsDefault(e.target.checked)}
-                                className="w-4 h-4 accent-primary rounded cursor-pointer"
-                              />
-                              <label htmlFor="addrIsDefault" className="text-xs font-semibold text-text-primary cursor-pointer select-none">
-                                Set as primary active delivery target
-                              </label>
-                            </div>
-
-                            <button 
-                              type="submit" 
-                              className={`w-full h-12 bg-primary text-white border-none rounded-xl font-bold flex items-center justify-center gap-2 mt-6 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${
-                                addressFormLoading ? 'opacity-75 pointer-events-none' : ''
-                              }`}
-                            >
-                              {addressFormLoading ? 'Saving...' : 'Save Address Info'}
-                            </button>
-                          </form>
-                        </motion.div>
+                    ) : (
+                      <div className="text-center py-12 text-text-secondary text-sm">
+                        No active restaurant details found linked to this partner account.
                       </div>
                     )}
-                  </AnimatePresence>,
-                  document.body
+                  </div>
                 )}
-              </div>
-            )}
-
-            {/* TAB 5: ACCOUNT SETTINGS PANEL */}
-            {activeTab === 'settings' && (
-              <div className="flex flex-col gap-6">
                 
-                {/* Account Details Form */}
-                <div className="glass-panel p-8 rounded-[24px]">
-                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
-                    <User size={20} className="text-primary" />
-                    Personal Details
-                  </h3>
+                {/* TAB 1: ORDER HISTORY */}
+                {activeTab === 'orders' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
+                      <ShoppingBag size={20} className="text-primary" />
+                      Your Order Journey
+                    </h3>
 
-                  {formError && (
-                    <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
-                      <ShieldAlert size={15} />
-                      <span>{formError}</span>
-                    </div>
-                  )}
+                    {ordersLoading ? (
+                      <div className="py-12 text-center">
+                        <Sparkles className="animate-stir text-text-muted animate-spin" size={24} />
+                      </div>
+                    ) : orders.length > 0 ? (
+                      <div className="flex flex-col gap-5">
+                        {orders.map(ord => (
+                          <div 
+                            key={ord._id} 
+                            className="bg-white/[0.01] dark:bg-[#12161c]/30 border border-border-light rounded-2xl p-6 grid grid-cols-1 md:grid-cols-[1.5fr_1.2fr_0.8fr] gap-6 items-center"
+                          >
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <h4 className="text-[16px] font-bold text-text-primary">
+                                  {ord.restaurant?.name || 'Savoré Partner'}
+                                </h4>
+                                <span className="text-text-muted text-[11px] font-semibold">{new Date(ord.createdAt).toLocaleDateString()}</span>
+                              </div>
+                              
+                              <p className="text-[13px] text-text-secondary mt-1.5 leading-relaxed text-left">
+                                <strong>Dishes:</strong> {ord.items.map(i => `${i.quantity}x ${i.foodItem?.name || 'Chef Specialty'}`).join(', ')}
+                              </p>
+                              <p className="text-[12.5px] text-text-muted mt-1 leading-relaxed text-left">
+                                <strong>Deliver to:</strong> {ord.deliveryAddress}
+                              </p>
+                            </div>
 
-                  {formSuccess && (
-                    <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
-                      <CheckCircle size={15} />
-                      <span>{formSuccess}</span>
-                    </div>
-                  )}
+                            <div>
+                              <div className="flex flex-col gap-1 text-[13.5px] text-text-secondary text-left">
+                                <div>Payment: <strong className="uppercase">{ord.paymentMethod}</strong></div>
+                                <div className="flex items-center">
+                                  Status: 
+                                  <span className={`ml-2 px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold uppercase ${
+                                    ord.paymentStatus === 'paid' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-orange-500/10 text-primary border border-primary/20'
+                                  }`}>
+                                    {ord.paymentStatus}
+                                  </span>
+                                </div>
+                                <div>Subtotal: <strong>{formatPrice(ord.subtotal)}</strong></div>
+                              </div>
+                            </div>
 
-                  <form onSubmit={handleDetailsSubmit} className="flex flex-col gap-5">
+                            <div className="text-right flex flex-col items-end gap-3.5">
+                              <div>
+                                <span className="text-[11px] text-text-muted uppercase tracking-wider block font-bold mb-1">Tracker</span>
+                                <span className={`px-3 py-1 rounded-[12px] text-[12px] font-bold tracking-wide capitalize ${
+                                  ord.status === 'delivered' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                                  ord.status === 'cancelled' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                                  'bg-orange-500/10 text-primary border border-primary/20'
+                                }`}>
+                                  {ord.status.replace(/_/g, ' ')}
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => handleOrderAgain(ord)}
+                                className="btn btn-pill bg-primary hover:bg-primary-hover text-white text-[12.5px] font-bold flex items-center gap-1.5"
+                              >
+                                Order Again
+                                <ArrowRight size={13} />
+                              </button>
+                            </div>
+
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-20 px-6 text-center flex flex-col items-center relative overflow-hidden bg-white/[0.02] dark:bg-black/20 rounded-[28px] border border-dashed border-black/10 dark:border-white/10 shadow-inner mt-4">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 bg-primary/10 rounded-full blur-[60px] pointer-events-none" />
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-5 shadow-[0_0_20px_rgba(255,106,77,0.15)] relative z-10">
+                          <ShoppingBag size={28} />
+                        </div>
+                        <h4 className="text-xl font-extrabold text-text-primary mb-2.5 relative z-10 tracking-tight">No Culinary Journeys Yet</h4>
+                        <p className="text-text-secondary text-[13.5px] max-w-[320px] mb-8 relative z-10 leading-relaxed">
+                          Your palate awaits. Discover and savor the finest dishes from top-rated kitchens in your area.
+                        </p>
+                        <Link to="/discover" className="btn btn-primary btn-pill relative z-10 shadow-[0_8px_20px_rgba(255,106,77,0.25)] px-7 py-3 font-extrabold text-[13px]">
+                          Explore Premium Menu
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 2: LIKED REELS GRID */}
+                {activeTab === 'liked' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
+                      <Heart size={20} className="text-primary" />
+                      Your Liked Food Reels
+                    </h3>
+
+                    {socialHistory.likedReels.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                        {socialHistory.likedReels.map(reel => (
+                          <div 
+                            key={reel._id} 
+                            className="group bg-white/[0.02] border border-border-light rounded-2xl overflow-hidden shadow-sm hover:-translate-y-1 transition-all duration-300 relative cursor-pointer"
+                            onClick={() => navigate('/reels')}
+                          >
+                            {/* Dynamic Overlay play icon on hover */}
+                            <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                              <div className="bg-primary text-white p-3.5 rounded-full shadow-lg scale-90 group-hover:scale-100 transition-transform">
+                                <Eye size={20} />
+                              </div>
+                            </div>
+
+                            {/* Simulated/Mock media canvas */}
+                            <div className="h-64 bg-slate-900 flex items-center justify-center relative">
+                              <Film size={36} className="text-text-muted/40" />
+                              <span className="absolute bottom-3 left-3 bg-black/60 text-white rounded-lg text-[10px] px-2 py-0.5 font-bold uppercase tracking-[0.05em]">
+                                {reel.restaurant?.name || 'Savoré Partner'}
+                              </span>
+                            </div>
+
+                            {/* Caption Info */}
+                            <div className="p-4 text-left bg-white/[0.01]">
+                              <p className="text-sm font-bold text-text-primary line-clamp-1">{reel.caption || 'Recipe Clip'}</p>
+                              <div className="flex items-center gap-3 text-[12.5px] text-text-secondary mt-1.5 font-semibold">
+                                <span>❤️ {reel.likes?.length || 1} Likes</span>
+                                <span>👁️ {reel.views || 0} Views</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-text-secondary text-sm">
+                        No liked recipe Reels found. Swipe and double-tap on our Reels page!
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+                {/* TAB 3: COMMENTS LOG */}
+                {activeTab === 'comments' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
+                      <MessageSquare size={20} className="text-primary" />
+                      Your Conversational Comments
+                    </h3>
+
+                    {socialHistory.comments.length > 0 ? (
+                      <div className="flex flex-col gap-4">
+                        {socialHistory.comments.map(c => (
+                          <div 
+                            key={c.commentId} 
+                            className="bg-white/[0.01] dark:bg-[#12161c]/30 rounded-2xl p-5 text-left"
+                          >
+                            <div className="flex justify-between items-start gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-center flex-wrap gap-2">
+                                  <span className="text-[12.5px] text-text-secondary font-semibold">
+                                    Comment on <strong>{c.restaurantName}</strong>'s video
+                                  </span>
+                                  <span className="text-[11.5px] text-text-muted">{new Date(c.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-[14.5px] text-text-primary mt-2 font-medium italic">
+                                  "{c.text}"
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteCommentClick(c.reelId, c.commentId)}
+                                className="p-2 rounded-xl text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-all shrink-0 cursor-pointer"
+                                title="Delete comment"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                            <div className="mt-3.5 flex items-center gap-1.5 text-text-secondary text-[12px] font-semibold">
+                              <span>Target Post:</span>
+                              <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate('/reels')}>
+                                {c.reelCaption || 'View Original Video'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-text-secondary text-sm">
+                        No comments found. Share your thoughts on the Reels page!
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+                {/* TAB 4: SAVED RESTAURANTS */}
+                {activeTab === 'restaurants' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Full Name</label>
-                        <input 
-                          type="text" 
-                          className="glass-input" 
-                          placeholder="Your Full Name"
-                          value={editFullName}
-                          onChange={(e) => setEditFullName(e.target.value)}
-                        />
+                    {/* Favorite Dishes Subgrid */}
+                    {socialHistory.favoriteDishes.length > 0 && (
+                      <div className="mb-10">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
+                          <Award size={20} className="text-primary" />
+                          Favorite Dishes
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                          {socialHistory.favoriteDishes.map(dish => (
+                            <div key={dish._id} className="bg-[var(--surface-bright)] border border-border-light rounded-2xl p-4 flex gap-3.5 items-center hover:scale-[1.01] transition-all">
+                              <div className="w-16 h-16 rounded-xl bg-slate-900 overflow-hidden shrink-0">
+                                <SafeAvatar src={resolveMediaUrl(dish.image)} alt={dish.name} size={64} roundedClass="rounded-xl" className="w-full h-full object-cover" />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="text-sm font-bold text-text-primary leading-tight">{dish.name}</h4>
+                                <span className="text-xs text-text-secondary block mt-0.5">{dish.restaurant?.name || 'Savoré Kitchen'}</span>
+                                <strong className="text-xs text-primary block mt-1">{formatPrice(dish.price)}</strong>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Username / Handle *</label>
-                        <input 
-                          type="text" 
-                          className="glass-input" 
-                          placeholder="Your unique handle"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Email Address *</label>
-                        <input 
-                          type="email" 
-                          className="glass-input" 
-                          placeholder="your.email@example.com"
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
+                    )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Phone Number</label>
-                        <input 
-                          type="tel" 
-                          className="glass-input" 
-                          placeholder="+91 99999 99999"
-                          value={editPhone}
-                          onChange={(e) => setEditPhone(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Short Foodie Vibe / Bio</label>
-                        <input 
-                          type="text" 
-                          className="glass-input" 
-                          placeholder="Coffee seeker, spicy ramen champion..."
-                          value={editBio}
-                          onChange={(e) => setEditBio(e.target.value)}
-                        />
-                      </div>
-                    </div>
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
+                      <Compass size={20} className="text-primary" />
+                      Your Saved Restaurants & Kitchens
+                    </h3>
 
-                    <div>
-                      <label className="block text-[12px] font-semibold text-text-secondary mb-2">Delivery Address</label>
-                      <textarea 
-                        rows="2"
-                        className="glass-input resize-none rounded-xl" 
-                        placeholder="123 Cozy Street, Bandra West, Mumbai, 400050"
-                        value={editAddress}
-                        onChange={(e) => setEditAddress(e.target.value)}
-                      />
-                    </div>
-
-
-                    {/* Personal Foodie Preferences Segmented Control */}
-                    <div className="border-t border-border-light/35 pt-6 mt-6">
-                      <h4 className="text-[14px] font-bold text-text-primary mb-4 flex items-center gap-1.5">
-                        <Sparkles size={14} className="text-primary animate-stir" />
-                        Personal Food Preferences & Tastes
-                      </h4>
+                    {socialHistory.savedRestaurants.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Dietary Classification</label>
-                          <div className="grid grid-cols-5 gap-1.5">
-                            {['Any', 'Vegetarian', 'Vegan', 'Halal', 'Gluten-Free'].map((diet) => (
+                        {socialHistory.savedRestaurants.map(rest => (
+                          <div 
+                            key={rest._id} 
+                            className="bg-[var(--surface-bright)] dark:bg-[#12161c]/30 border border-border-light rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.01] transition-all"
+                          >
+                            <div className="flex gap-4">
+                              <div className="w-20 h-20 rounded-2xl bg-slate-900 overflow-hidden shrink-0 border border-border-light">
+                                <SafeAvatar src={resolveMediaUrl(rest.coverImage)} alt={rest.name} size={80} roundedClass="rounded-2xl" className="w-full h-full object-cover" />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="text-base font-bold text-text-primary leading-snug">{rest.name}</h4>
+                                <p className="text-xs text-text-secondary mt-1 line-clamp-2 leading-relaxed">{rest.description}</p>
+                                <div className="flex items-center gap-2 text-[11.5px] font-semibold text-text-muted mt-2">
+                                  <span>⭐ {rest.rating?.toFixed(1)}</span>
+                                  <span>•</span>
+                                  <span>🛵 {rest.deliveryTime} mins</span>
+                                  <span>•</span>
+                                  <span>{rest.timings || '11 AM - 11 PM'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-5 border-t border-border-light/45 pt-4">
                               <button
-                                type="button"
-                                key={diet}
-                                onClick={() => setEditPreferences(prev => ({ ...prev, dietary: diet }))}
-                                className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all border cursor-pointer ${
-                                  editPreferences.dietary === diet 
-                                    ? 'bg-primary border-primary text-white shadow-sm' 
-                                    : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
-                                }`}
+                                onClick={() => handleToggleFavorite(rest._id)}
+                                className="text-xs font-bold text-red-500 hover:text-red-400 bg-transparent cursor-pointer border-none shrink-0"
                               >
-                                {diet}
+                                Remove Favorite
                               </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Spice Tolerance Level</label>
-                          <div className="grid grid-cols-4 gap-1.5">
-                            {['Mild', 'Medium', 'Hot', 'Extra Hot'].map((level) => (
-                              <button
-                                type="button"
-                                key={level}
-                                onClick={() => setEditPreferences(prev => ({ ...prev, spicyLevel: level }))}
-                                className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all border cursor-pointer ${
-                                  editPreferences.spicyLevel === level 
-                                    ? 'bg-primary border-primary text-white shadow-sm' 
-                                    : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
-                                }`}
+                              
+                              <Link 
+                                to={`/restaurant/${rest._id}`}
+                                className="btn btn-pill bg-white/[0.05] hover:bg-white/[0.1] text-text-primary text-[12px] font-bold flex items-center gap-1 border border-border-light"
                               >
-                                {level}
-                              </button>
-                            ))}
+                                Visit Menu
+                                <ArrowRight size={12} />
+                              </Link>
+                            </div>
+
                           </div>
-                        </div>
+                        ))}
                       </div>
+                    ) : (
+                      <div className="text-center py-12 text-text-secondary text-sm">
+                        No saved restaurants found. Browse kitchen menus and click the favorite badge!
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+                {/* TAB: SAVED ADDRESSES TAB */}
+                {activeTab === 'addresses' && (
+                  <div className="glass-panel p-8 rounded-[24px]">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-text-primary">
+                        <MapPin size={20} className="text-primary" />
+                        Saved Delivery Addresses
+                      </h3>
+                      <button
+                        onClick={handleOpenAddAddressModal}
+                        className="btn btn-pill bg-primary hover:bg-primary-hover text-white text-[12.5px] font-bold flex items-center gap-1.5"
+                      >
+                        <Plus size={14} /> Add New Address
+                      </button>
                     </div>
 
-                    <button 
-                      type="submit" 
-                      className={`btn btn-primary h-11 flex items-center justify-center gap-2 mt-4 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${formLoading ? 'btn-disabled' : ''}`}
-                      disabled={formLoading}
-                    >
-                      {formLoading ? 'Saving Telemetry...' : 'Save Settings Details'}
-                    </button>
+                    {savedAddresses.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {savedAddresses.map((addr) => (
+                          <div 
+                            key={addr._id}
+                            className={`bg-white/[0.01] dark:bg-[#12161c]/30 border rounded-2xl p-5 flex flex-col justify-between hover:-translate-y-[1px] transition-all duration-300 ${
+                              addr.isDefault 
+                                ? 'border-primary/40 bg-primary/5 shadow-md shadow-primary/5' 
+                                : 'border-border-light hover:bg-white/[0.03]'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex justify-between items-center mb-3">
+                                <span className="flex items-center gap-1.5 font-extrabold uppercase text-[12px] text-text-primary">
+                                  <span className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 shrink-0 flex items-center">
+                                    {getAddressIcon(addr.addressType)}
+                                  </span>
+                                  {addr.addressType}
+                                </span>
+                                {addr.isDefault ? (
+                                  <span className="text-[9px] font-bold px-2 py-0.5 bg-green-500/10 text-green-500 border border-green-500/20 rounded-md uppercase">Default</span>
+                                ) : (
+                                  <button
+                                    onClick={() => toggleDefaultAddress(addr._id)}
+                                    className="text-[10px] font-bold text-text-muted hover:text-primary transition-all border border-border-light px-2 py-0.5 rounded-md hover:bg-white/[0.04] cursor-pointer"
+                                  >
+                                    Set Default
+                                  </button>
+                                )}
+                              </div>
+                              
+                              <p className="text-[14px] text-text-primary font-semibold mt-2 leading-relaxed text-left">
+                                {addr.houseNumber ? `${addr.houseNumber}, ` : ''}{addr.street}
+                              </p>
+                              <p className="text-[13px] text-text-secondary mt-1 text-left">
+                                {addr.area}{addr.landmark ? ` (Near ${addr.landmark})` : ''}
+                              </p>
+                              <p className="text-[12px] text-text-muted mt-1 leading-normal font-semibold text-left">
+                                {addr.city}, {addr.state} - {addr.pincode}
+                              </p>
+                            </div>
 
-                  </form>
-                </div>
+                            <div className="flex gap-3 justify-end items-center mt-5 border-t border-border-light/45 pt-4">
+                              <button
+                                onClick={() => handleOpenEditAddressModal(addr)}
+                                className="text-xs font-bold text-text-secondary hover:text-text-primary flex items-center gap-1 bg-transparent hover:bg-white/[0.04] px-2.5 py-1.5 rounded-xl transition-all border border-border-light cursor-pointer"
+                              >
+                                <Edit size={12} /> Edit
+                              </button>
+                              
+                              <button
+                                onClick={() => deleteSavedAddress(addr._id)}
+                                className="text-xs font-bold text-red-500 hover:text-red-400 flex items-center gap-1 bg-transparent hover:bg-red-500/5 px-2.5 py-1.5 rounded-xl transition-all border border-red-500/20 cursor-pointer"
+                              >
+                                <Trash2 size={12} /> Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-text-secondary text-sm">
+                        No saved addresses found. Register your Home/Work delivery details for one-tap express checkouts!
+                      </div>
+                    )}
 
-                {/* Password Change Card */}
-                <div className="glass-panel p-8 rounded-[24px]">
-                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
-                    <Lock size={20} className="text-primary" />
-                    Security & Password Gate
-                  </h3>
+                    {/* SAVED ADDRESS ADD/EDIT MODAL OVERLAY */}
+                    {createPortal(
+                      <AnimatePresence>
+                        {addressModalOpen && (
+                          <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none">
+                            <motion.div 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              onClick={() => setAddressModalOpen(false)}
+                              className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer animate-fade-in"
+                            />
+                            
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                              className="bg-[var(--surface-bright)] border border-border-light rounded-[24px] p-7 max-w-[540px] w-full relative z-10 text-left shadow-2xl overflow-y-auto max-h-[85vh] text-[var(--text-primary)]"
+                            >
+                              <div className="flex justify-between items-center mb-5 border-b border-border-light/45 pb-3">
+                                <h3 className="text-base font-bold flex items-center gap-2">
+                                  <MapPin size={16} className="text-primary" />
+                                  {isEditingAddress ? 'Edit Delivery Address' : 'Add New Delivery Address'}
+                                </h3>
+                                <button onClick={() => setAddressModalOpen(false)} className="btn-icon btn-circle w-7 h-7 flex items-center justify-center cursor-pointer">
+                                  <X size={13} />
+                                </button>
+                              </div>
 
-                  {passError && (
-                    <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
-                      <ShieldAlert size={15} />
-                      <span>{passError}</span>
-                    </div>
-                  )}
+                              {addressFormError && (
+                                <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
+                                  <ShieldAlert size={15} />
+                                  <span>{addressFormError}</span>
+                                </div>
+                              )}
 
-                  {passSuccess && (
-                    <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
-                      <CheckCircle size={15} />
-                      <span>{passSuccess}</span>
-                    </div>
-                  )}
+                              {addressFormSuccess && (
+                                <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-5 text-[13px] flex items-center gap-2">
+                                  <CheckCircle size={15} />
+                                  <span>{addressFormSuccess}</span>
+                                </div>
+                              )}
 
-                  <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-5">
+                              <form onSubmit={handleAddressSubmit} className="flex flex-col gap-[26px]">
+                                {/* Address Type segmented buttons */}
+                                <div>
+                                  <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Address Type</label>
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {['Home', 'Work', 'Apartment', 'Other'].map((type) => (
+                                      <button
+                                        type="button"
+                                        key={type}
+                                        onClick={() => setAddrType(type)}
+                                        className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                          addrType === type 
+                                            ? 'bg-primary border-primary text-white shadow-sm' 
+                                            : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
+                                        }`}
+                                        style={{ padding: '10px 4px' }}
+                                      >
+                                        {type}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">House / Flat No.</label>
+                                    <input 
+                                      type="text" 
+                                      className="glass-input h-11 text-[13.5px]" 
+                                      placeholder="e.g. Flat 402, 4th Floor"
+                                      value={addrHouseNumber}
+                                      onChange={(e) => setAddrHouseNumber(e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Street / Road *</label>
+                                    <input 
+                                      type="text" 
+                                      className="glass-input h-11 text-[13.5px]" 
+                                      placeholder="e.g. Hill Road, Bandra West"
+                                      value={addrStreet}
+                                      onChange={(e) => setAddrStreet(e.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Locality / Area *</label>
+                                    <input 
+                                      type="text" 
+                                      className="glass-input h-11 text-[13.5px]" 
+                                      placeholder="e.g. Bandra West"
+                                      value={addrArea}
+                                      onChange={(e) => setAddrArea(e.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Landmark (Optional)</label>
+                                    <input 
+                                      type="text" 
+                                      className="glass-input h-11 text-[13.5px]" 
+                                      placeholder="e.g. Near Mehboob Studio"
+                                      value={addrLandmark}
+                                      onChange={(e) => setAddrLandmark(e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Indian City *</label>
+                                    <select 
+                                      className="glass-input h-11 text-[13.5px] !py-0 !px-2.5 rounded-xl cursor-pointer"
+                                      value={addrCity}
+                                      onChange={(e) => setAddrCity(e.target.value)}
+                                      required
+                                    >
+                                      {CITIES.map(c => (
+                                        <option key={c} value={c} className="bg-[var(--surface-bright)] text-[var(--text-primary)]">{c}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">State *</label>
+                                    <input 
+                                      type="text" 
+                                      className="glass-input h-11 text-[13.5px]" 
+                                      placeholder="e.g. Maharashtra"
+                                      value={addrState}
+                                      onChange={(e) => setAddrState(e.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-text-secondary mb-[10px]">Pincode *</label>
+                                    <input 
+                                      type="text" 
+                                      className="glass-input h-11 text-[13.5px]" 
+                                      placeholder="6 digits (e.g. 400050)"
+                                      value={addrPincode}
+                                      onChange={(e) => setAddrPincode(e.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Default toggle switch */}
+                                <div className="flex items-center gap-2 mt-2">
+                                  <input 
+                                    type="checkbox" 
+                                    id="addrIsDefault"
+                                    checked={addrIsDefault}
+                                    onChange={(e) => setAddrIsDefault(e.target.checked)}
+                                    className="w-4 h-4 accent-primary rounded cursor-pointer"
+                                  />
+                                  <label htmlFor="addrIsDefault" className="text-xs font-semibold text-text-primary cursor-pointer select-none">
+                                    Set as primary active delivery target
+                                  </label>
+                                </div>
+
+                                <button 
+                                  type="submit" 
+                                  className={`w-full h-12 bg-primary text-white border-none rounded-xl font-bold flex items-center justify-center gap-2 mt-6 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${
+                                    addressFormLoading ? 'opacity-75 pointer-events-none' : ''
+                                  }`}
+                                >
+                                  {addressFormLoading ? 'Saving...' : 'Save Address Info'}
+                                </button>
+                              </form>
+                            </motion.div>
+                          </div>
+                        )}
+                      </AnimatePresence>,
+                      document.body
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 5: ACCOUNT SETTINGS PANEL */}
+                {activeTab === 'settings' && (
+                  <div className="flex flex-col gap-6">
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">Current Active Password</label>
-                        <input 
-                          type="password" 
-                          className="glass-input" 
-                          placeholder="••••••••"
-                          value={currPassword}
-                          onChange={(e) => setCurrPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-semibold text-text-secondary mb-2">New Security Handshake Password</label>
-                        <input 
-                          type="password" 
-                          className="glass-input" 
-                          placeholder="••••••••"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          required
-                        />
-                      </div>
+                    {/* Account Details Form */}
+                    <div className="glass-panel p-8 rounded-[24px]">
+                      <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
+                        <User size={20} className="text-primary" />
+                        Personal Details
+                      </h3>
+
+                      {formError && (
+                        <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
+                          <ShieldAlert size={15} />
+                          <span>{formError}</span>
+                        </div>
+                      )}
+
+                      {formSuccess && (
+                        <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
+                          <CheckCircle size={15} />
+                          <span>{formSuccess}</span>
+                        </div>
+                      )}
+
+                      <form onSubmit={handleDetailsSubmit} className="flex flex-col gap-5">
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                          <div>
+                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">Full Name</label>
+                            <input 
+                              type="text" 
+                              className="glass-input" 
+                              placeholder="Your Full Name"
+                              value={editFullName}
+                              onChange={(e) => setEditFullName(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">Username / Handle *</label>
+                            <input 
+                              type="text" 
+                              className="glass-input" 
+                              placeholder="Your unique handle"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">Email Address *</label>
+                            <input 
+                              type="email" 
+                              className="glass-input" 
+                              placeholder="your.email@example.com"
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <div>
+                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">Phone Number</label>
+                            <input 
+                              type="tel" 
+                              className="glass-input" 
+                              placeholder="+91 99999 99999"
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">Short Bio / Description</label>
+                            <input 
+                              type="text" 
+                              className="glass-input" 
+                              placeholder="Coffee seeker, spicy ramen champion..."
+                              value={editBio}
+                              onChange={(e) => setEditBio(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[12px] font-semibold text-text-secondary mb-2">Primary Address</label>
+                          <textarea 
+                            rows="2"
+                            className="glass-input resize-none rounded-xl" 
+                            placeholder="123 Cozy Street, Bandra West, Mumbai, 400050"
+                            value={editAddress}
+                            onChange={(e) => setEditAddress(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Personal Preferences Segmented Control (only relevant for customers) */}
+                        {user.role === 'customer' && (
+                          <div className="border-t border-border-light/35 pt-6 mt-6">
+                            <h4 className="text-[14px] font-bold text-text-primary mb-4 flex items-center gap-1.5">
+                              <Sparkles size={14} className="text-primary animate-stir" />
+                              Personal Food Preferences & Tastes
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-2">Dietary Classification</label>
+                                <div className="grid grid-cols-5 gap-1.5">
+                                  {['Any', 'Vegetarian', 'Vegan', 'Halal', 'Gluten-Free'].map((diet) => (
+                                    <button
+                                      type="button"
+                                      key={diet}
+                                      onClick={() => setEditPreferences(prev => ({ ...prev, dietary: diet }))}
+                                      className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all border cursor-pointer ${
+                                        editPreferences.dietary === diet 
+                                          ? 'bg-primary border-primary text-white shadow-sm' 
+                                          : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
+                                      }`}
+                                    >
+                                      {diet}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[12px] font-semibold text-text-secondary mb-2">Spice Tolerance Level</label>
+                                <div className="grid grid-cols-4 gap-1.5">
+                                  {['Mild', 'Medium', 'Hot', 'Extra Hot'].map((level) => (
+                                    <button
+                                      type="button"
+                                      key={level}
+                                      onClick={() => setEditPreferences(prev => ({ ...prev, spicyLevel: level }))}
+                                      className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all border cursor-pointer ${
+                                        editPreferences.spicyLevel === level 
+                                          ? 'bg-primary border-primary text-white shadow-sm' 
+                                          : 'bg-white/[0.02] border-border-light text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
+                                      }`}
+                                    >
+                                      {level}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <button 
+                          type="submit" 
+                          className={`btn btn-primary h-11 flex items-center justify-center gap-2 mt-4 cursor-pointer hover:bg-primary-hover active:scale-[0.98] transition-all ${formLoading ? 'btn-disabled' : ''}`}
+                          disabled={formLoading}
+                        >
+                          {formLoading ? 'Saving Telemetry...' : 'Save Settings Details'}
+                        </button>
+
+                      </form>
                     </div>
 
-                    <button 
-                      type="submit" 
-                      className={`btn btn-pill bg-white/[0.05] border border-border-light hover:bg-white/[0.1] text-text-primary h-11 flex items-center justify-center mt-2 ${passLoading ? 'btn-disabled' : ''}`}
-                      disabled={passLoading}
-                    >
-                      {passLoading ? 'Encrypting Code...' : 'Update Password Credentials'}
-                    </button>
+                    {/* Password Change Card */}
+                    <div className="glass-panel p-8 rounded-[24px]">
+                      <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-text-primary">
+                        <Lock size={20} className="text-primary" />
+                        Security & Password Gate
+                      </h3>
 
-                  </form>
-                </div>
+                      {passError && (
+                        <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
+                          <ShieldAlert size={15} />
+                          <span>{passError}</span>
+                        </div>
+                      )}
 
-                {/* Danger Zone Account Deletion */}
-                <div className="glass-panel p-8 rounded-[24px] border border-red-500/20 bg-red-500/[0.02] shadow-[0_0_15px_rgba(239,68,68,0.05)]">
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-500 text-left">
-                    <ShieldAlert size={20} />
-                    Danger Zone
-                  </h3>
-                  <p className="text-sm text-text-secondary mb-6 leading-relaxed text-left">
-                    Permanently delete your entire Savoré gastronomical profile. This will instantly wipe all active orders, saved kitchen lists, comments history, and role credentials. This action is irreversible.
-                  </p>
+                      {passSuccess && (
+                        <div className="bg-green-500/10 border border-green-500 text-green-500 rounded-xl p-3.5 mb-6 text-[13px] flex items-center gap-2">
+                          <CheckCircle size={15} />
+                          <span>{passSuccess}</span>
+                        </div>
+                      )}
 
-                  <button 
-                    type="button" 
-                    onClick={() => { soundController?.playClick(); setDeleteModalOpen(true); }}
-                    className="btn bg-red-500 hover:bg-red-600 text-white font-extrabold text-xs py-3 px-6 rounded-xl border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)] transition-all active:scale-[0.98]"
-                  >
-                    Delete Account Permanently
-                  </button>
-                </div>
+                      <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-5">
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <div>
+                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">Current Active Password</label>
+                            <input 
+                              type="password" 
+                              className="glass-input" 
+                              placeholder="••••••••"
+                              value={currPassword}
+                              onChange={(e) => setCurrPassword(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[12px] font-semibold text-text-secondary mb-2">New Security Handshake Password</label>
+                            <input 
+                              type="password" 
+                              className="glass-input" 
+                              placeholder="••••••••"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
 
-              </div>
-            )}
+                        <button 
+                          type="submit" 
+                          className={`btn btn-pill bg-white/[0.05] border border-border-light hover:bg-white/[0.1] text-text-primary h-11 flex items-center justify-center mt-2 ${passLoading ? 'btn-disabled' : ''}`}
+                          disabled={passLoading}
+                        >
+                          {passLoading ? 'Encrypting Code...' : 'Update Password Credentials'}
+                        </button>
 
-          </motion.div>
-        </AnimatePresence>
+                      </form>
+                    </div>
+
+                    {/* Danger Zone Account Deletion */}
+                    <div className="glass-panel p-8 rounded-[24px] border border-red-500/20 bg-red-500/[0.02] shadow-[0_0_15px_rgba(239,68,68,0.05)]">
+                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-500 text-left">
+                        <ShieldAlert size={20} />
+                        Danger Zone
+                      </h3>
+                      <p className="text-sm text-text-secondary mb-6 leading-relaxed text-left">
+                        Permanently delete your entire Savoré profile. This will instantly wipe all active orders, comments history, and role credentials. This action is irreversible.
+                      </p>
+
+                      <button 
+                        type="button" 
+                        onClick={() => { soundController?.playClick(); setDeleteModalOpen(true); }}
+                        className="btn bg-red-500 hover:bg-red-600 text-white font-extrabold text-xs py-3 px-6 rounded-xl border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)] transition-all active:scale-[0.98]"
+                      >
+                        Delete Account Permanently
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+        </main>
+
       </div>
 
       {/* 4. DANGER ZONE CONFIRMATION MODAL OVERLAY */}
@@ -1450,6 +1902,56 @@ export default function UserProfile() {
                     }`}
                   >
                     {deleteLoading ? 'Purging Profile...' : 'Confirm Permanent Deletion'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* 5. COMMENT DELETION CONFIRMATION MODAL */}
+      {createPortal(
+        <AnimatePresence>
+          {commentDeleteTarget && (
+            <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none animate-fade-in">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setCommentDeleteTarget(null)}
+                className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer"
+              />
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-[var(--surface-bright)] border border-red-500/20 rounded-[24px] p-6 max-w-[380px] w-full relative z-10 text-center shadow-2xl overflow-y-auto text-[var(--text-primary)]"
+              >
+                <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                  <ShieldAlert size={22} className="animate-pulse" />
+                </div>
+                <h4 className="text-md font-bold text-text-primary mb-2">Delete Comment?</h4>
+                <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                  Are you sure you want to permanently delete this comment? This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { soundController?.playClick(); setCommentDeleteTarget(null); }}
+                    className="flex-1 py-2.5 rounded-xl border border-border-light text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-white/[0.04] cursor-pointer bg-transparent"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDeleteComment}
+                    className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)]"
+                  >
+                    Delete
                   </button>
                 </div>
               </motion.div>

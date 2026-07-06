@@ -268,6 +268,13 @@ const getFlaggedReels = async (req, res, next) => {
 
     const flaggedReels = await Reel.find(filter)
       .populate('restaurant', 'name')
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'user',
+          select: 'username profilePicture',
+        },
+      })
       .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(limit);

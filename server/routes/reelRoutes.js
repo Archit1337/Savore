@@ -26,6 +26,7 @@ const {
   updateReel,
   deleteReel,
   reportReel,
+  deleteCommentFromReel,
 } = require('../controllers/reelController');
 const { protect, requireRole } = require('../middleware/authMiddleware');
 const { uploadVideo } = require('../middleware/uploadMiddleware');
@@ -50,6 +51,9 @@ router.post('/:id/like', protect, toggleLikeReel);
 
 // Add comment to reel
 router.post('/:id/comments', protect, addCommentToReel);
+
+// Delete comment from reel
+router.delete('/:reelId/comments/:commentId', protect, deleteCommentFromReel);
 
 // Report/Flag reel for content moderation
 router.post('/:id/report', protect, reportLimiter, reportReel);

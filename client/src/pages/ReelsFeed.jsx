@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageSquare, Volume2, VolumeX, Send, ArrowLeft, ArrowUp, ArrowDown, ShoppingBag, AlertTriangle, RefreshCw, Check, Sparkles, Search, X, ChevronDown, ShieldAlert, EyeOff, UserX, Copyright, HelpCircle, Utensils } from 'lucide-react';
+import { Heart, MessageSquare, Volume2, VolumeX, Send, ArrowLeft, ArrowUp, ArrowDown, ShoppingBag, AlertTriangle, RefreshCw, Check, Sparkles, Search, X, ChevronDown, ShieldAlert, EyeOff, UserX, Copyright, HelpCircle, Utensils, Trash2 } from 'lucide-react';
 import { ReelsContext } from '../context/ReelsContext';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
@@ -29,6 +29,7 @@ export default function ReelsFeed() {
     preloadRegionFeed,
     toggleLikeReel, 
     commentOnReel, 
+    deleteCommentFromReel,
     logReelView, 
     logReelOrderClick,
     reportReel
@@ -363,6 +364,24 @@ export default function ReelsFeed() {
     if (commentText.trim()) {
       await commentOnReel(activeReel._id, commentText.trim());
       setCommentText('');
+    }
+  };
+
+  const [commentDeleteTarget, setCommentDeleteTarget] = useState(null);
+
+  const handleDeleteCommentClick = (commentId) => {
+    setCommentDeleteTarget(commentId);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentDeleteTarget) return;
+    try {
+      await deleteCommentFromReel(activeReel._id, commentDeleteTarget);
+      showToast('Comment deleted successfully', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Failed to delete comment', 'error');
+    } finally {
+      setCommentDeleteTarget(null);
     }
   };
 
@@ -1074,22 +1093,40 @@ export default function ReelsFeed() {
               {/* Inline Comments List */}
               <div className="flex-1 overflow-y-auto flex flex-col gap-3.5 pr-1 mb-4 custom-scrollbar">
                 {activeReel.comments && activeReel.comments.length > 0 ? (
-                  activeReel.comments.map((comment) => (
-                    <div key={comment._id} className="flex gap-2.5 text-[12px] items-start">
-                      <SafeAvatar 
-                        src={resolveMediaUrl(comment.user?.profilePicture)} 
-                        alt={comment.user?.username || 'Diner'} 
-                        size={26}
-                        className="border border-[var(--border-light)] shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-text-primary truncate mb-0.5">
-                          @{comment.user?.username || 'Diner'}
+                  activeReel.comments.map((comment) => {
+                    const isCommentAuthor = user && (comment.user?._id === user._id || comment.user === user._id);
+                    const isReelOwner = user?.role === 'restaurant' && activeReel.restaurantDetails?.owner === user._id;
+                    const isAdminUser = user?.role === 'admin';
+                    const canDelete = isCommentAuthor || isReelOwner || isAdminUser;
+
+                    return (
+                      <div key={comment._id} className="flex gap-2.5 text-[12px] items-start group/comment">
+                        <SafeAvatar 
+                          src={resolveMediaUrl(comment.user?.profilePicture)} 
+                          alt={comment.user?.username || 'Diner'} 
+                          size={26}
+                          className="border border-[var(--border-light)] shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-0.5">
+                            <span className="font-semibold text-text-primary truncate">
+                              @{comment.user?.username || 'Diner'}
+                            </span>
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDeleteCommentClick(comment._id)}
+                                className="p-1 rounded text-text-muted hover:text-red-500 opacity-0 group-hover/comment:opacity-100 transition-opacity cursor-pointer shrink-0"
+                                title="Delete comment"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-text-secondary leading-relaxed break-words pr-2">{comment.text}</p>
                         </div>
-                        <p className="text-text-secondary leading-relaxed break-words">{comment.text}</p>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-center py-10 text-text-muted text-[12.5px]">
                     Be the first to comment on this recipe!
@@ -1159,22 +1196,40 @@ export default function ReelsFeed() {
               {/* Comments Scroller */}
               <div className="flex-1 overflow-y-auto flex flex-col gap-3.5 pb-3 relative z-10">
                 {activeReel.comments && activeReel.comments.length > 0 ? (
-                  activeReel.comments.map((comment) => (
-                    <div key={comment._id} className="flex gap-2.5 text-[13px]">
-                      <SafeAvatar 
-                        src={resolveMediaUrl(comment.user?.profilePicture)} 
-                        alt={comment.user?.username || 'Diner'} 
-                        size={28}
-                        className="border border-solid border-[var(--border-light)]"
-                      />
-                      <div className="flex-1">
-                        <div className="font-normal text-text-primary mb-0.5">
-                          @{comment.user?.username || 'Diner'}
+                  activeReel.comments.map((comment) => {
+                    const isCommentAuthor = user && (comment.user?._id === user._id || comment.user === user._id);
+                    const isReelOwner = user?.role === 'restaurant' && activeReel.restaurantDetails?.owner === user._id;
+                    const isAdminUser = user?.role === 'admin';
+                    const canDelete = isCommentAuthor || isReelOwner || isAdminUser;
+
+                    return (
+                      <div key={comment._id} className="flex gap-2.5 text-[13px] items-start">
+                        <SafeAvatar 
+                          src={resolveMediaUrl(comment.user?.profilePicture)} 
+                          alt={comment.user?.username || 'Diner'} 
+                          size={28}
+                          className="border border-solid border-[var(--border-light)] shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-0.5">
+                            <span className="font-semibold text-text-primary truncate">
+                              @{comment.user?.username || 'Diner'}
+                            </span>
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDeleteCommentClick(comment._id)}
+                                className="p-1 rounded text-text-muted hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                                title="Delete comment"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-text-secondary leading-relaxed break-words pr-1">{comment.text}</p>
                         </div>
-                        <p className="text-text-secondary leading-relaxed">{comment.text}</p>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="text-center py-7.5 text-text-muted text-[13px]">
                     Be the first to comment on this recipe!
@@ -1366,6 +1421,53 @@ export default function ReelsFeed() {
             </motion.div>
           )}
         </AnimatePresence>
+
+      {/* COMMENT DELETION CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {commentDeleteTarget && (
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none animate-fade-in pointer-events-auto">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCommentDeleteTarget(null)}
+              className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-[#12161c] border border-white/10 rounded-[24px] p-6 max-w-[380px] w-full relative z-10 text-center shadow-2xl text-[var(--text-primary)]"
+            >
+              <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                <ShieldAlert size={22} className="animate-pulse" />
+              </div>
+              <h4 className="text-md font-bold text-white mb-2">Delete Comment?</h4>
+              <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                Are you sure you want to permanently delete this comment? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCommentDeleteTarget(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/[0.04] cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteComment}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)]"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       </div>
     </>

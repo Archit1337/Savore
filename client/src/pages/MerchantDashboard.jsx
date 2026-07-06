@@ -654,6 +654,27 @@ export default function MerchantDashboard() {
     }
   };
 
+  const [commentDeleteTarget, setCommentDeleteTarget] = useState(null);
+
+  const handleDeleteCommentClick = (reelId, commentId) => {
+    setCommentDeleteTarget({ reelId, commentId });
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentDeleteTarget) return;
+    const { reelId, commentId } = commentDeleteTarget;
+    try {
+      const res = await api.delete(`/reels/${reelId}/comments/${commentId}`);
+      if (res.data && res.data.success) {
+        await fetchCommentsData(commentsPage);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete comment.');
+    } finally {
+      setCommentDeleteTarget(null);
+    }
+  };
+
   // Complete profile configurations fetching
   const fetchRestaurantDetails = async () => {
     if (!hasRestaurant) return;
@@ -2440,7 +2461,16 @@ export default function MerchantDashboard() {
                                 @{c.user?.username || 'Valued Patron'}
                               </span>
                             </div>
-                            <span className="text-[11.5px] text-text-muted font-semibold">{new Date(c.createdAt).toLocaleDateString()}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[11.5px] text-text-muted font-semibold">{new Date(c.createdAt).toLocaleDateString()}</span>
+                              <button
+                                onClick={() => handleDeleteCommentClick(c.reelId, c._id)}
+                                className="p-1.5 rounded-xl text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                                title="Delete customer review"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
 
                           <p className="text-[13.5px] text-text-secondary mt-3.5 font-medium italic pl-3 leading-relaxed border-l-2 border-primary/20">
@@ -3174,6 +3204,53 @@ export default function MerchantDashboard() {
                   className="flex-1 py-2 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold transition-all cursor-pointer text-center hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-primary/15"
                 >
                   Close Receipt
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* COMMENT DELETION CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {commentDeleteTarget && (
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] p-6 select-none animate-fade-in">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCommentDeleteTarget(null)}
+              className="absolute inset-0 bg-black/65 backdrop-blur-xs cursor-pointer"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-[#12161c] border border-white/10 rounded-[24px] p-6 max-w-[380px] w-full relative z-10 text-center shadow-2xl text-[var(--text-primary)]"
+            >
+              <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                <ShieldAlert size={22} className="animate-pulse" />
+              </div>
+              <h4 className="text-md font-bold text-white mb-2">Delete Comment?</h4>
+              <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                Are you sure you want to permanently delete this comment? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCommentDeleteTarget(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/[0.04] cursor-pointer bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteComment}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold border-none cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.25)]"
+                >
+                  Delete
                 </button>
               </div>
             </motion.div>

@@ -694,11 +694,71 @@ const reportReel = async (req, res, next) => {
   }
 };
 
+// @desc    Delete a comment from a vertical video reel
+// @route   DELETE /api/reels/:reelId/comments/:commentId
+// @access  Private
+const deleteCommentFromReel = async (req, res, next) => {
+  try {
+    const { reelId, commentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(reelId) || !mongoose.Types.ObjectId.isValid(commentId)) {
+      res.status(400);
+      return next(new Error('Invalid reel or comment ID'));
+    }
+
+    const reel = await Reel.findById(reelId);
+    if (!reel) {
+      res.status(404);
+      return next(new Error('Reel not found'));
+    }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      res.status(404);
+      return next(new Error('Comment not found'));
+    }
+
+    // Access control check
+    let isAuthorized = false;
+
+    if (req.user.role === 'admin') {
+      isAuthorized = true;
+    } else if (comment.user.toString() === req.user.id) {
+      isAuthorized = true;
+    } else if (req.user.role === 'restaurant') {
+      const restaurant = await Restaurant.findOne({ owner: req.user.id });
+      if (restaurant && reel.restaurant.toString() === restaurant._id.toString()) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      res.status(403);
+      return next(new Error('You are not authorized to delete this comment'));
+    }
+
+    // Remove from reel comments array
+    reel.comments = reel.comments.filter(c => c.toString() !== commentId);
+    await reel.save();
+
+    // Delete comment document
+    await Comment.findByIdAndDelete(commentId);
+
+    res.json({
+      success: true,
+      message: 'Comment deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   uploadReel,
   getReelsFeed,
   toggleLikeReel,
   addCommentToReel,
+  deleteCommentFromReel,
   trackReelView,
   trackReelOrderClick,
   trackReelImpression,

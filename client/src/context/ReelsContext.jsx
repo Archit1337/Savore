@@ -432,6 +432,27 @@ export const ReelsProvider = ({ children }) => {
     }
   };
 
+  const deleteCommentFromReel = async (reelId, commentId) => {
+    const cleanId = getBaseReelId(reelId);
+    try {
+      const res = await api.delete(`/reels/${cleanId}/comments/${commentId}`);
+      if (res.data && res.data.success) {
+        rawSetReelsState((prev) =>
+          prev.map((r) =>
+            getBaseReelId(r._id) === cleanId
+              ? { ...r, comments: (r.comments || []).filter((c) => c._id !== commentId) }
+              : r
+          )
+        );
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to delete comment:', err.message);
+      throw err;
+    }
+  };
+
   const value = {
     reels,
     feeds,
@@ -444,6 +465,7 @@ export const ReelsProvider = ({ children }) => {
     preloadRegionFeed,
     toggleLikeReel,
     commentOnReel,
+    deleteCommentFromReel,
     logReelView,
     logReelOrderClick,
     reportReel,
