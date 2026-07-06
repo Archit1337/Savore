@@ -53,6 +53,39 @@ class SoundController {
     }
   }
 
+  playAddSuccess() {
+    if (!this.isEnabled || !this.canPlay('add_success', 200)) return;
+    try {
+      this.initContext();
+      const now = this.ctx.currentTime;
+      
+      const osc1 = this.ctx.createOscillator();
+      const gain1 = this.ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1046.50, now); // C6 (Warm root)
+      gain1.gain.setValueAtTime(0.035, now);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      osc1.connect(gain1);
+      gain1.connect(this.ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.12);
+
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1318.51, now + 0.04); // E6 (Bright major third)
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.025, now + 0.04 + 0.01);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.04 + 0.18);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(now + 0.04);
+      osc2.stop(now + 0.04 + 0.18);
+    } catch (e) {
+      console.warn("Add success sound failed:", e);
+    }
+  }
+
   playPop() {
     if (!this.isEnabled || !this.canPlay('pop', 200)) return;
     try {

@@ -568,13 +568,12 @@ export default function PaymentGateway() {
                 Keep Payment
               </button>
               <button 
-                onClick={async () => {
+                onClick={() => {
                   setCancelling(true);
-                  try {
-                    await api.put(`/orders/${orderId}/status`, { status: 'cancelled' });
-                  } catch (err) {
-                    console.warn('Failed to cancel order:', err.message);
-                  }
+                  // Fire cancellation in the background to prevent blocking UI navigation with network latency
+                  api.put(`/orders/${orderId}/status`, { status: 'cancelled' })
+                    .catch((err) => console.warn('Failed to cancel order in background:', err.message));
+                  
                   setActiveOrder(null);
                   setShowCancelModal(false);
                   navigate('/checkout', { state: { fromPaymentCancel: true } });

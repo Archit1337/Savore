@@ -317,7 +317,7 @@ export const ChefMoodProvider = ({ children }) => {
     
     // Play correct synthesized sounds
     if (eventContext === 'item_added') {
-      soundController.playPop();
+      soundController.playAddSuccess();
       setBubbleText("Great choice! Added to your order! 🔥🍲");
     } else if (eventContext === 'reel_liked') {
       soundController.playClick();

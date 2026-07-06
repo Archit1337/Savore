@@ -57,7 +57,7 @@ const orderSchema = z.object({
       price: z.number().nonnegative('Price cannot be negative'),
     })
   ).min(1, 'Order must contain at least one item'),
-  paymentMethod: z.enum(['COD', 'CARD', 'ONLINE', 'SIMULATED']),
+  paymentMethod: z.enum(['COD', 'CARD', 'ONLINE', 'SIMULATED', 'UPI']),
   deliveryAddress: z.string().min(1, 'Delivery address is required'),
 });
 

@@ -256,7 +256,7 @@ export default function Navbar() {
             title="Shopping Cart"
           >
             <motion.div
-              animate={cartPulse ? { scale: [1, 1.28, 0.95, 1], rotate: [0, -6, 6, 0] } : { scale: 1 }}
+              animate={cartPulse ? { scale: [1, 1.28, 0.95, 1], rotate: [0, -6, 6, 0] } : { scale: 1, rotate: 0 }}
               variants={{
                 hover: { rotate: [0, -16, 12, -8, 4, 0], transition: { duration: 0.5, ease: "easeInOut" } },
                 tap: { scaleY: 0.8, scaleX: 1.15, transition: { type: "spring", stiffness: 600, damping: 12 } }
