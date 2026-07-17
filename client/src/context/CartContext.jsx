@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { LocationContext } from './LocationContext';
 import { AuthContext } from './AuthContext';
 
@@ -7,35 +7,123 @@ export const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const { activeCity } = useContext(LocationContext);
   const { user, isAuthenticated } = useContext(AuthContext) || { user: null, isAuthenticated: false };
-  const [cartItems, setCartItems] = useState(() => {
-    try {
-      const savedCart = localStorage.getItem('savore_cart');
-      return savedCart ? JSON.parse(savedCart) : [];
-    } catch (err) {
-      console.error('⚠️ Failed to parse saved cart state, resetting to empty list:', err.message);
-      return [];
-    }
-  });
 
-  const [restaurant, setRestaurant] = useState(() => {
-    try {
-      const savedRest = localStorage.getItem('savore_cart_restaurant');
-      return savedRest ? JSON.parse(savedRest) : null;
-    } catch (err) {
-      console.error('⚠️ Failed to parse saved cart restaurant state, resetting to null:', err.message);
-      return null;
-    }
-  });
+  // Helper functions to compute storage keys based on user ID
+  const getCartKey = (u) => (u && u._id ? `savore_cart_${u._id}` : 'savore_cart_guest');
+  const getRestKey = (u) => (u && u._id ? `savore_cart_rest_${u._id}` : 'savore_cart_rest_guest');
 
-  // Save cart to local storage whenever it changes
+  // Active user ID ref to track identity transitions
+  const prevUserIdRef = useRef(user?._id);
+
+  // Initial load helper for specified user identity
+  const loadCartForUser = (targetUser) => {
+    try {
+      const cartKey = getCartKey(targetUser);
+      const restKey = getRestKey(targetUser);
+
+      const savedCart = localStorage.getItem(cartKey);
+      const savedRest = localStorage.getItem(restKey);
+
+      return {
+        items: savedCart ? JSON.parse(savedCart) : [],
+        restaurant: savedRest ? JSON.parse(savedRest) : null,
+      };
+    } catch (err) {
+      console.error('⚠️ Failed to load cart state:', err.message);
+      return { items: [], restaurant: null };
+    }
+  };
+
+  const [cartItems, setCartItems] = useState(() => loadCartForUser(user).items);
+  const [restaurant, setRestaurant] = useState(() => loadCartForUser(user).restaurant);
+
+  // React to User Session Changes (Login, Logout, Account Switch)
   useEffect(() => {
-    localStorage.setItem('savore_cart', JSON.stringify(cartItems));
-    if (restaurant) {
-      localStorage.setItem('savore_cart_restaurant', JSON.stringify(restaurant));
-    } else {
+    const currentUserId = user?._id;
+    const prevUserId = prevUserIdRef.current;
+
+    // Only run when identity actually changes
+    if (currentUserId !== prevUserId) {
+      // Case 1: Guest user logs in -> Seamlessly merge guest cart into user account
+      if (!prevUserId && currentUserId) {
+        try {
+          const guestCartRaw = localStorage.getItem('savore_cart_guest');
+          const guestRestRaw = localStorage.getItem('savore_cart_rest_guest');
+
+          const guestItems = guestCartRaw ? JSON.parse(guestCartRaw) : [];
+          const guestRest = guestRestRaw ? JSON.parse(guestRestRaw) : null;
+
+          const userCart = loadCartForUser(user);
+
+          if (guestItems.length > 0) {
+            if (userCart.items.length === 0) {
+              // User has empty cart -> absorb guest cart completely
+              setCartItems(guestItems);
+              setRestaurant(guestRest);
+            } else if (userCart.restaurant?._id === guestRest?._id) {
+              // User has existing cart from SAME restaurant -> merge items
+              const mergedItems = [...userCart.items];
+              guestItems.forEach((gItem) => {
+                const idx = mergedItems.findIndex((uItem) => uItem.foodItem === gItem.foodItem);
+                if (idx > -1) {
+                  mergedItems[idx].quantity += gItem.quantity;
+                } else {
+                  mergedItems.push(gItem);
+                }
+              });
+              setCartItems(mergedItems);
+              setRestaurant(userCart.restaurant);
+            } else {
+              // User has cart from DIFFERENT restaurant -> retain user's existing cart
+              setCartItems(userCart.items);
+              setRestaurant(userCart.restaurant);
+            }
+
+            // Clear temporary guest cart after migration
+            localStorage.removeItem('savore_cart_guest');
+            localStorage.removeItem('savore_cart_rest_guest');
+          } else {
+            // No guest items -> load user's saved cart directly
+            setCartItems(userCart.items);
+            setRestaurant(userCart.restaurant);
+          }
+        } catch (err) {
+          console.error('⚠️ Error migrating guest cart to user cart:', err.message);
+          const fallback = loadCartForUser(user);
+          setCartItems(fallback.items);
+          setRestaurant(fallback.restaurant);
+        }
+      } else {
+        // Case 2: Logout or Account Switch -> Load targeted user's cart directly
+        const freshCart = loadCartForUser(user);
+        setCartItems(freshCart.items);
+        setRestaurant(freshCart.restaurant);
+      }
+
+      // Clean up any legacy global non-scoped keys if present
+      localStorage.removeItem('savore_cart');
       localStorage.removeItem('savore_cart_restaurant');
+
+      prevUserIdRef.current = currentUserId;
     }
-  }, [cartItems, restaurant]);
+  }, [user?._id]);
+
+  // Persist current cartItems & restaurant state to active user's storage key
+  useEffect(() => {
+    try {
+      const cartKey = getCartKey(user);
+      const restKey = getRestKey(user);
+
+      localStorage.setItem(cartKey, JSON.stringify(cartItems));
+      if (restaurant) {
+        localStorage.setItem(restKey, JSON.stringify(restaurant));
+      } else {
+        localStorage.removeItem(restKey);
+      }
+    } catch (err) {
+      console.error('⚠️ Failed to persist cart state to localStorage:', err.message);
+    }
+  }, [cartItems, restaurant, user?._id]);
 
   // Add Item to Cart
   const addToCart = (foodItem, targetRestaurant, quantity = 1) => {
