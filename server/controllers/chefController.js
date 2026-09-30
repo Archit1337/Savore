@@ -23,8 +23,153 @@ const safeParseJSON = (raw) => {
   }
 };
 
-// ── Gemini API timeout — raised to 14s (gemini-2.5-flash needs time for JSON mode) ──
-const GEMINI_TIMEOUT_MS = 14000;
+// ── Provider Timeouts ──
+const GROQ_TIMEOUT_MS = 4000;
+const GEMINI_TIMEOUT_MS = 6000;
+
+/**
+ * Calls Groq Cloud (Llama 3.1 8B Instant) via native fetch.
+ * Provides sub-500ms ultra-fast inference for instantaneous speech bubble response.
+ */
+const callGroq = async (systemPrompt, history = [], userPrompt = '') => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey || apiKey.trim() === '') return null;
+
+  const messages = [
+    { role: 'system', content: systemPrompt }
+  ];
+
+  if (history && history.length > 0) {
+    history.forEach(msg => {
+      messages.push({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text || ''
+      });
+    });
+  }
+
+  messages.push({ role: 'user', content: userPrompt });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
+
+  try {
+    console.log(`⚡ [Groq LPU] Querying qwen/qwen3.8-27b for sub-500ms Chef mascot response...`);
+    const startTime = Date.now();
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'qwen/qwen3.8-27b',
+        messages,
+        response_format: { type: 'json_object' },
+        temperature: 0.65,
+        max_tokens: 450
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`⚠️  [Groq LPU Error] HTTP ${response.status}: ${errText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const rawContent = data?.choices?.[0]?.message?.content || '';
+    const duration = Date.now() - startTime;
+    console.log(`✅ [Groq LPU] Response received in ${duration}ms! Raw length: ${rawContent.length}`);
+    return safeParseJSON(rawContent);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn(`⚠️  [Groq LPU Error] Failed: ${err.message}`);
+    return null;
+  }
+};
+
+/**
+ * Calls Google Gemini (gemini-3.5-flash-lite).
+ * Acts as high-reliability secondary fallback when Groq is unavailable or times out.
+ */
+const callGemini = async (systemPrompt, history = [], userPrompt = '') => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey.trim() === '') return null;
+
+  try {
+    console.log(`🤖 [Gemini API] Requesting response from gemini-3.5-flash-lite...`);
+    const startTime = Date.now();
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-3.5-flash-lite',
+      generationConfig: { responseMimeType: 'application/json' }
+    });
+
+    const contents = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: '{"reply": "Ah, bonjour! I am ready to cook up some culinary genius. Ask me anything!", "recommendedDishId": null, "quote": null}' }] }
+    ];
+
+    if (history && history.length > 0) {
+      history.forEach(msg => {
+        contents.push({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.sender === 'user' ? msg.text : JSON.stringify({ reply: msg.text }) }]
+        });
+      });
+    }
+
+    contents.push({ role: 'user', parts: [{ text: userPrompt }] });
+
+    const apiCallPromise = model.generateContent({ contents });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini API request timed out')), GEMINI_TIMEOUT_MS)
+    );
+
+    const result = await Promise.race([apiCallPromise, timeoutPromise]);
+    const responseText = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text
+      || result?.response?.text?.()
+      || '';
+
+    const duration = Date.now() - startTime;
+    console.log(`✅ [Gemini API] Response received in ${duration}ms. Raw length: ${responseText.length}`);
+    return safeParseJSON(responseText);
+  } catch (err) {
+    console.warn(`⚠️  [Gemini API Error] Failed: ${err.message}`);
+    return null;
+  }
+};
+
+/**
+ * Dual-provider dispatcher:
+ * Priority 1: Groq (Llama 3.1) ~300ms ultra-fast response
+ * Priority 2: Gemini (3.5 Flash-Lite) ~1.2s reliable fallback
+ */
+const dispatchLLM = async (systemPrompt, history = [], userPrompt = '') => {
+  // 1. Try Groq (Llama 3.1) first
+  if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.trim() !== '') {
+    const parsed = await callGroq(systemPrompt, history, userPrompt);
+    if (parsed && (parsed.reply || parsed.recommendedDishId)) {
+      return { data: parsed, provider: 'groq' };
+    }
+    console.warn('⚠️  [LLM Dispatcher] Groq unavailable or returned invalid JSON. Falling back to Gemini...');
+  }
+
+  // 2. Fallback to Gemini (3.5 Flash-Lite)
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '') {
+    const parsed = await callGemini(systemPrompt, history, userPrompt);
+    if (parsed && (parsed.reply || parsed.recommendedDishId)) {
+      return { data: parsed, provider: 'gemini' };
+    }
+    console.warn('⚠️  [LLM Dispatcher] Gemini unavailable or timed out.');
+  }
+
+  // 3. Both failed or keys missing
+  return { data: null, provider: 'none' };
+};
 
 /**
  * Helper to construct the premium Chef personality system prompt.
@@ -88,9 +233,9 @@ const buildSystemPrompt = (context, availableDishes = [], isRecommendationOnly =
     } else if (hasSushi) {
       cartGuideline += "Since they have sushi, suggest a clean, crisp pairing like seaweed salad, tempura sides, or a chilled matcha-based beverage. ";
     }
-    if (cartTotal < 600) {
-      cartGuideline += "The order volume is relatively low. Suggest an affordable, high-margin side, appetizer, or quick dessert to round out the meal. ";
-    } else if (cartTotal > 1500) {
+    if (cartTotal < 1200) {
+      cartGuideline += "The order volume is relatively modest. Suggest an affordable, high-margin side, appetizer, or quick dessert to round out the meal. ";
+    } else if (cartTotal > 3000) {
       cartGuideline += "The order volume is already premium and large. Avoid aggressive upselling; suggest a light post-dinner dessert or a refreshing digestive beverage. ";
     }
   }
@@ -324,10 +469,10 @@ const getFailsafeChefResponse = async (messageText, context, history = []) => {
     
     // Add-on recommendations based on pricing
     if (!selectedDish) {
-      if (cartTotal < 600) {
+      if (cartTotal < 1200) {
         // Suggest an affordable sweet dessert
         selectedDish = filteredDishes.find(d => 
-          d.price < 15 && (
+          d.price < 450 && (
             (d.category && d.category.toLowerCase().includes("dessert")) || 
             (d.category && d.category.toLowerCase().includes("gelato")) ||
             (d.category && d.category.toLowerCase().includes("crepe"))
@@ -337,7 +482,7 @@ const getFailsafeChefResponse = async (messageText, context, history = []) => {
           reply = "Your order looks delicious! May I suggest completing this beautiful journey with a little sweet touch?";
           quote = "Delicately sweetened and served fresh, it is the ultimate way to complete a beautiful bite!";
         }
-      } else if (cartTotal > 1500) {
+      } else if (cartTotal > 3000) {
         // High budget digestif suggestion
         selectedDish = filteredDishes.find(d => 
           (d.category && d.category.toLowerCase().includes("coffee")) || 
@@ -450,21 +595,12 @@ const isChatExpandedPrefix = (context) => {
 exports.chat = async (req, res, next) => {
   const requestTime = new Date().toISOString();
   console.log(`\n📡 [API Request] POST /api/chef/chat started at ${requestTime}`);
-  
-  // Debug log verifying API key configuration without exposing the secret
-  console.log("Gemini Key Exists:", !!process.env.GEMINI_API_KEY);
+  console.log("Providers Configured -> Groq:", !!process.env.GROQ_API_KEY, "| Gemini:", !!process.env.GEMINI_API_KEY);
 
   try {
     const { message, context, history } = req.body;
     console.log(`💬 [User Message]: "${message}"`);
     console.log(`🌍 [Active Path]: "${context?.currentPath || 'Home'}" | [Restaurant ID]: "${context?.restaurantId || 'None'}"`);
-
-    // Failsafe check: If API key is missing, return graceful fallback directly
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
-      console.log(`⚠️  [Security Warning] GEMINI_API_KEY is not defined in backend/.env. Using local failsafe.`);
-      const fallback = await getFailsafeChefResponse(message || '', context || {}, history || []);
-      return res.json({ success: true, ...fallback, isFallback: true });
-    }
 
     // Fetch context-appropriate menu items to inform the AI
     let availableDishes = [];
@@ -475,64 +611,19 @@ exports.chat = async (req, res, next) => {
         context.restaurantName = restObj.name;
       }
     } else {
-      availableDishes = await FoodItem.find({ isAvailable: true }).limit(5);
+      availableDishes = await FoodItem.find({ isAvailable: true }).limit(6);
     }
-
-    // Set up model config - upgraded to gemini-2.5-flash
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
 
     const systemPrompt = buildSystemPrompt(context || {}, availableDishes);
-    
-    // Structure chat history for Gemini
-    const contents = [
-      { role: 'user', parts: [{ text: systemPrompt }] },
-      { role: 'model', parts: [{ text: '{"reply": "Ah, bonjour! I am ready to cook up some culinary genius. Ask me anything!", "recommendedDishId": null, "quote": null}' }] }
-    ];
+    const { data: parsedResponse, provider } = await dispatchLLM(systemPrompt, history, message);
 
-    // Append conversation history
-    if (history && history.length > 0) {
-      history.forEach(msg => {
-        contents.push({
-          role: msg.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.sender === 'user' ? msg.text : JSON.stringify({ reply: msg.text }) }]
-        });
-      });
-    }
-
-    // Add current user message
-    contents.push({ role: 'user', parts: [{ text: message }] });
-
-    console.log(`🤖 [Gemini API] Requesting response from gemini-2.5-flash...`);
-
-    // Race Gemini API against timeout (14s — gemini-2.5-flash needs time for JSON structured output)
-    const apiCallPromise = model.generateContent({ contents });
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Gemini API request timed out')), GEMINI_TIMEOUT_MS)
-    );
-
-    const result = await Promise.race([apiCallPromise, timeoutPromise]);
-
-    // Extract response text safely
-    const responseText = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text
-      || result?.response?.text?.()
-      || '';
-    console.log(`✅ [Gemini API] Response received. Raw length: ${responseText.length}`);
-
-    // Parse using robust extractor that handles code fences
-    let parsedResponse = safeParseJSON(responseText);
     if (!parsedResponse) {
-      console.warn('⚠️  [Parser] Could not parse Gemini response, using inline fallback.');
-      parsedResponse = {
-        reply: 'Magnifique! My kitchen is buzzing with exquisite aromas today.',
-        recommendedDishId: null,
-        quote: null
-      };
+      console.log(`🛡️  [Chef Savoré Failsafe] Both Groq & Gemini unavailable or unconfigured. Using local failsafe.`);
+      const fallback = await getFailsafeChefResponse(message || '', context || {}, history || []);
+      return res.json({ success: true, ...fallback, isFallback: true, provider: 'failsafe' });
     }
 
-    // If Gemini chose a dish, enrich the recommendation with full DB details
+    // Enrich recommendation with DB details if a dish was recommended
     let enrichedRecommendation = null;
     if (parsedResponse.recommendedDishId) {
       const dish = await FoodItem.findById(parsedResponse.recommendedDishId).populate('restaurant');
@@ -540,64 +631,55 @@ exports.chat = async (req, res, next) => {
         enrichedRecommendation = {
           _id: dish._id,
           dish: dish.name,
-          restaurant: dish.restaurant.name,
+          restaurant: dish.restaurant ? dish.restaurant.name : "Savoré Curated Kitchen",
           restaurantObj: {
-            _id: dish.restaurant._id,
-            name: dish.restaurant.name,
-            deliveryFee: dish.restaurant.deliveryFee
+            _id: dish.restaurant ? dish.restaurant._id : "",
+            name: dish.restaurant ? dish.restaurant.name : "Savoré Curated Kitchen",
+            deliveryFee: dish.restaurant ? dish.restaurant.deliveryFee : 0
           },
           price: dish.price,
           image: dish.image,
           quote: parsedResponse.quote || "A masterpiece of flavors!"
         };
-        console.log(`🍽️  [Chef Recommendation]: Recommended "${dish.name}" from "${dish.restaurant.name}"`);
+        console.log(`🍽️  [Chef Recommendation]: Recommended "${dish.name}" from "${dish.restaurant ? dish.restaurant.name : 'Curated Kitchen'}" (Provider: ${provider})`);
       }
     }
 
     res.json({
       success: true,
       reply: parsedResponse.reply,
-      recommendation: enrichedRecommendation
+      recommendation: enrichedRecommendation,
+      provider
     });
   } catch (error) {
-    console.error(`❌ [Gemini Error] Chat call failed:`, error.message);
-    // Use failsafe rule-based engine for chat errors too
+    console.error(`❌ [Chef Controller Error] Chat call failed:`, error.message);
     try {
       const { message, context, history } = req.body;
       const fallback = await getFailsafeChefResponse(message || '', context || {}, history || []);
-      return res.json({ success: true, ...fallback, isFallback: true });
+      return res.json({ success: true, ...fallback, isFallback: true, provider: 'failsafe' });
     } catch (fallbackErr) {
       return res.json({
         success: true,
         reply: "Chef Savoré is preparing something wonderful — try again in a moment! 👨‍🍳",
         recommendation: null,
-        isFallback: true
+        isFallback: true,
+        provider: 'failsafe'
       });
     }
   }
 };
 
 // @desc    Get dynamic AI recommendation based on current context
-// @desc    Get dynamic AI recommendation based on current context
 // @route   POST /api/chef/recommend
 // @access  Public
 exports.recommend = async (req, res, next) => {
   const requestTime = new Date().toISOString();
   console.log(`\n📡 [API Request] POST /api/chef/recommend started at ${requestTime}`);
-  
-  // Debug log verifying API key configuration without exposing the secret
-  console.log("Gemini Key Exists:", !!process.env.GEMINI_API_KEY);
+  console.log("Providers Configured -> Groq:", !!process.env.GROQ_API_KEY, "| Gemini:", !!process.env.GEMINI_API_KEY);
 
   try {
     const { context, history } = req.body;
     console.log(`🌍 [Active Path]: "${context?.currentPath || 'Home'}" | [Restaurant ID]: "${context?.restaurantId || 'None'}"`);
-
-    // Failsafe check: If API key is missing, return graceful fallback directly
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '') {
-      console.log(`⚠️  [Security Warning] GEMINI_API_KEY is not defined in backend/.env. Using local failsafe.`);
-      const fallback = await getFailsafeChefResponse('recommend', context || {}, history || []);
-      return res.json({ success: true, ...fallback, isFallback: true });
-    }
 
     let query = { isAvailable: true };
     if (context?.restaurantId) {
@@ -613,61 +695,24 @@ exports.recommend = async (req, res, next) => {
       });
     }
 
-    // Set up model config - upgraded to gemini-2.5-flash
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
-      generationConfig: { responseMimeType: 'application/json' }
-    });
-
     const systemPrompt = buildSystemPrompt(context || {}, availableDishes, true);
+    const userPrompt = (history && history.length > 0)
+      ? "Based on our current chat context, preferences, active location, and cart state, please select and recommend the absolute best matching dish from the menu list."
+      : "Please recommend the absolute best dish matching my current location, temporal state, page context, and cart profile.";
 
-    // Dynamic Context-Aware contents construction incorporating history (conversational memory)
-    const contents = [
-      { role: 'user', parts: [{ text: systemPrompt }] },
-      { role: 'model', parts: [{ text: '{"reply": "Ah, bonjour! I am ready to cook up some culinary genius. Ask me anything!", "recommendedDishId": null, "quote": null}' }] }
-    ];
+    const { data: parsedResponse, provider } = await dispatchLLM(systemPrompt, history, userPrompt);
 
-    if (history && history.length > 0) {
-      history.forEach(msg => {
-        contents.push({
-          role: msg.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.sender === 'user' ? msg.text : JSON.stringify({ reply: msg.text }) }]
-        });
-      });
-      contents.push({ role: 'user', parts: [{ text: "Based on our current chat context, preferences, active location, and cart state, please select and recommend the absolute best matching dish from the menu list." }] });
-    } else {
-      contents.push({ role: 'user', parts: [{ text: "Please recommend the absolute best dish matching my current location, temporal state, page context, and cart profile." }] });
-    }
-
-    console.log(`🤖 [Gemini API] Requesting recommendation from gemini-2.5-flash...`);
-
-    // Race Gemini API against timeout (14s — gemini-2.5-flash needs time for JSON structured output)
-    const apiCallPromise = model.generateContent({ contents });
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Gemini API recommendation timed out')), GEMINI_TIMEOUT_MS)
-    );
-
-    const result = await Promise.race([apiCallPromise, timeoutPromise]);
-
-    // Extract response text safely
-    const responseText = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text
-      || result?.response?.text?.()
-      || '';
-    console.log(`✅ [Gemini API] Recommendation received. Raw length: ${responseText.length}`);
-
-    // Parse using robust extractor
-    const parsedResponse = safeParseJSON(responseText);
     if (!parsedResponse || !parsedResponse.recommendedDishId) {
-      console.warn('⚠️  [Recommend] No valid dish ID from Gemini — using failsafe.');
-      const fallback = await getFailsafeChefResponse('recommend', context, history || []);
-      return res.json({ success: true, ...fallback, isFallback: true });
+      console.warn('⚠️  [Recommend] No valid dish ID from AI — using failsafe.');
+      const fallback = await getFailsafeChefResponse('recommend', context || {}, history || []);
+      return res.json({ success: true, ...fallback, isFallback: true, provider: 'failsafe' });
     }
 
     const dish = availableDishes.find(d => d._id.toString() === parsedResponse.recommendedDishId);
     if (!dish) {
       console.log("⚠️  [Dish Missing] Selected dish not found in menu, triggering fallback.");
       const fallback = await getFailsafeChefResponse('recommend', context || {}, history || []);
-      return res.json({ success: true, ...fallback, isFallback: true });
+      return res.json({ success: true, ...fallback, isFallback: true, provider: 'failsafe' });
     }
 
     res.json({
@@ -685,24 +730,25 @@ exports.recommend = async (req, res, next) => {
         price: dish.price,
         image: dish.image,
         quote: parsedResponse.quote || "Pure perfection on a plate!"
-      }
+      },
+      provider
     });
   } catch (error) {
-    console.error(`❌ [Gemini Error] Recommendation call failed:`, error.message);
-    // Activate rule-based failsafe — guarantees a real dish recommendation always fires
+    console.error(`❌ [Chef Controller Error] Recommendation call failed:`, error.message);
     try {
       const { context, history } = req.body;
-      console.log('🛡️  [Recommend] Activating failsafe rule-based recommendation engine...');
       const fallback = await getFailsafeChefResponse('recommend', context || {}, history || []);
-      return res.json({ success: true, ...fallback, isFallback: true });
+      return res.json({ success: true, ...fallback, isFallback: true, provider: 'failsafe' });
     } catch (fallbackErr) {
       console.error('❌ [Failsafe Error]', fallbackErr.message);
       return res.json({
         success: true,
         reply: "Chef Savoré is preparing something wonderful — please try again in a moment! 👨‍🍳",
         recommendation: null,
-        isFallback: true
+        isFallback: true,
+        provider: 'failsafe'
       });
     }
   }
 };
+
