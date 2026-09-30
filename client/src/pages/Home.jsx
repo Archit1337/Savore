@@ -1012,35 +1012,62 @@ export default function Home() {
   const [isPillHovered, setIsPillHovered] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchHovered, setSearchHovered] = useState(false);
+  const [forceChefSmile, setForceChefSmile] = useState(false);
 
   useEffect(() => {
     let wasPast = false;
     let wasFloating = false;
+    let isSmiling = false;
+    let scrollTimeout = null;
+    let rafId = null;
 
-    const handleScroll = () => {
-      const scrollPos = window.scrollY;
-      const isPastThreshold = scrollPos > 120;
-      
-      if (isPastThreshold !== wasPast) {
-        wasPast = isPastThreshold;
-        setIsPastScrollThreshold(isPastThreshold);
-      }
-      
-      const docHeight = document.documentElement.scrollHeight;
-      const windowHeight = window.innerHeight;
-      const distanceToBottom = docHeight - windowHeight - scrollPos;
-      
-      // Hide location selector when within 380px of page bottom to avoid overlapping footer
-      const isCloseToFooter = distanceToBottom < 380;
-      const shouldShowFloating = isPastThreshold && !isCloseToFooter;
+    const onScroll = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const scrollPos = window.scrollY;
 
-      if (shouldShowFloating !== wasFloating) {
-        wasFloating = shouldShowFloating;
-        setShowFloatingLocation(shouldShowFloating);
-      }
+        // 1. Chef smile animation check
+        const shouldSmile = scrollPos > 15 && scrollPos < 850;
+        if (shouldSmile !== isSmiling) {
+          isSmiling = shouldSmile;
+          setForceChefSmile(shouldSmile);
+        }
+        if (isSmiling) {
+          if (scrollTimeout) clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
+            isSmiling = false;
+            setForceChefSmile(false);
+          }, 400);
+        }
+
+        // 2. Floating location threshold check
+        const isPastThreshold = scrollPos > 120;
+        if (isPastThreshold !== wasPast) {
+          wasPast = isPastThreshold;
+          setIsPastScrollThreshold(isPastThreshold);
+        }
+
+        // 3. Bottom footer clearance check
+        const docHeight = document.documentElement.scrollHeight;
+        const windowHeight = window.innerHeight;
+        const distanceToBottom = docHeight - windowHeight - scrollPos;
+        const isCloseToFooter = distanceToBottom < 380;
+        const shouldShowFloating = isPastThreshold && !isCloseToFooter;
+
+        if (shouldShowFloating !== wasFloating) {
+          wasFloating = shouldShowFloating;
+          setShowFloatingLocation(shouldShowFloating);
+        }
+      });
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
   }, []);
 
   const getSearchPlaceholder = () => {
@@ -1069,44 +1096,12 @@ export default function Home() {
   const [isCookingClicked, setIsCookingClicked] = useState(false);
   const [isBtnHovered, setIsBtnHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [forceChefSmile, setForceChefSmile] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 900);
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    const scrollTimeoutRef = { current: null };
-    let isSmiling = false;
-
-    const handleScroll = () => {
-      const currentScroll = window.scrollY;
-      const shouldSmile = currentScroll > 15 && currentScroll < 850;
-      
-      if (shouldSmile !== isSmiling) {
-        isSmiling = shouldSmile;
-        setForceChefSmile(shouldSmile);
-      }
-
-      if (isSmiling) {
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-        }
-        scrollTimeoutRef.current = setTimeout(() => {
-          isSmiling = false;
-          setForceChefSmile(false);
-        }, 400);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    };
   }, []);
 
   // --- Element 1: Concierge / Weather Badge ---
@@ -1268,7 +1263,12 @@ export default function Home() {
 
   // Slide Carousel State
   const [slideIndex, setSlideIndex] = useState(0);
-  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const heroDriftX = useSpring(useTransform(mouseX, [-1, 1], [-8, 8]), { stiffness: 60, damping: 15 });
+  const heroDriftY = useSpring(useTransform(mouseY, [-1, 1], [-6, 6]), { stiffness: 60, damping: 15 });
+  const chefDriftX = useSpring(useTransform(mouseX, [-1, 1], [-14, 14]), { stiffness: 50, damping: 14 });
+  const chefDriftY = useSpring(useTransform(mouseY, [-1, 1], [-10, 10]), { stiffness: 50, damping: 14 });
   const navigate = useNavigate();
 
 
@@ -1394,7 +1394,8 @@ export default function Home() {
   const handleMouseMove = (e) => {
     const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2); // -1 to 1
     const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2); // -1 to 1
-    setMouseOffset({ x, y });
+    mouseX.set(x);
+    mouseY.set(y);
   };
 
   useEffect(() => {
@@ -1402,7 +1403,7 @@ export default function Home() {
       setLoading(true);
       try {
         // Fetch reels preview (requesting a larger limit to sort the most trending on likes + comments)
-        const reelsRes = await api.get('/reels?page=1&limit=1000').catch((err) => {
+        const reelsRes = await api.get('/reels?page=1&limit=6').catch((err) => {
           console.warn('API reels preview failed, using local mock data:', err.message);
           return null;
         });
@@ -1419,7 +1420,7 @@ export default function Home() {
         }
 
         // Fetch restaurants (querying a larger limit to sort all elite kitchens by rating)
-        const restRes = await api.get('/restaurants?page=1&limit=1000').catch((err) => {
+        const restRes = await api.get('/restaurants?page=1&limit=12').catch((err) => {
           console.warn('API restaurants preview failed, using local mock data:', err.message);
           return null;
         });
@@ -1510,11 +1511,10 @@ export default function Home() {
           {/* Left Text and Search Controls */}
           <motion.div
             className="relative -mt-28 md:-mt-48 z-10"
-            animate={{ 
-              x: mouseOffset.x * 8,
-              y: mouseOffset.y * 6
+            style={{ 
+              x: heroDriftX,
+              y: heroDriftY
             }}
-            transition={{ type: "spring", stiffness: 60, damping: 15 }}
           >
             {/* High-contrast radial overlay behind hero text */}
             <div className="absolute -inset-6 md:-inset-10 z-0 pointer-events-none bg-[radial-gradient(circle_at_left_30%,_rgba(246,243,238,0.72)_0%,_transparent_60%)] dark:bg-[radial-gradient(circle_at_left_30%,_rgba(11,15,20,0.72)_0%,_transparent_60%)] rounded-[32px] blur-sm" />
@@ -1780,11 +1780,10 @@ export default function Home() {
                 <motion.div style={{ x: chefX }} className="flex flex-col items-center justify-end relative w-full h-full">
                   <motion.div
                     className="relative"
-                    animate={{ 
-                      x: mouseOffset.x * 14,
-                      y: mouseOffset.y * 10
+                    style={{ 
+                      x: chefDriftX,
+                      y: chefDriftY
                     }}
-                    transition={{ type: "spring", stiffness: 50, damping: 14 }}
                   >
                     {/* Floating Close Button positioned beautifully relative to the chat/character */}
                     <button

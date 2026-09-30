@@ -71,7 +71,23 @@ export const resolveMediaUrl = (url, fallback = '') => {
   // Clean relative path (remove duplicate slashes if any)
   const cleanUrl = url.startsWith('/') ? url : `/${url}`;
 
-  // Direct backend origin port 5000 hosting
-  const backendOrigin = 'http://localhost:5000';
+  // Derive backend origin dynamically across development and production deployments
+  let backendOrigin = 'http://localhost:5000';
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl.startsWith('http://') || envUrl.startsWith('https://')) {
+      try {
+        backendOrigin = new URL(envUrl).origin;
+      } catch (e) {
+        backendOrigin = envUrl.replace(/\/api\/?$/, '');
+      }
+    } else if (typeof window !== 'undefined') {
+      backendOrigin = window.location.origin;
+    }
+  } else if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    backendOrigin = isLocalhost ? 'http://localhost:5000' : window.location.origin;
+  }
+
   return `${backendOrigin}${cleanUrl}`;
 };

@@ -13,7 +13,8 @@
     "server:dev": "npm run dev --workspace=savore-backend",
     "dev": "concurrently --kill-others -n \"client,server\" -c \"cyan,green\" \"npm run client:dev\" \"npm run server:dev\"",
     "build": "npm run build --workspace=savore-client",
-    "start": "npm start --workspace=savore-backend"
+    "start": "npm start --workspace=savore-backend",
+    "test": "npm run test --workspace=savore-backend"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

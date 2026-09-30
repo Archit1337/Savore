@@ -14,6 +14,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
 
   // Smooth mouse coordinates and scroll offsets tracking (with lerp interpolation)
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
+  const mouseMovedRef = useRef(false);
   const scrollRef = useRef({ y: 0, targetY: 0 });
 
   // Sizzle burst state trackers
@@ -93,16 +94,41 @@ export default function Hero3DBackground({ chefVisible = false }) {
     let width = canvas.width = canvas.offsetWidth;
     let height = canvas.height = canvas.offsetHeight;
 
-    // Handles High-DPI/Retina displays
+    const staticStarsCanvas = document.createElement('canvas');
+
+    // Handles High-DPI/Retina displays with performance-conscious clamping
     const resizeCanvas = () => {
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      width = canvas.width = rect.width * dpr;
-      height = canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       width = rect.width;
       height = rect.height;
+
+      // Pre-render static background dust stars to offscreen canvas once
+      staticStarsCanvas.width = rect.width * dpr;
+      staticStarsCanvas.height = rect.height * dpr;
+      const sCtx = staticStarsCanvas.getContext('2d');
+      if (sCtx) {
+        sCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        sCtx.clearRect(0, 0, rect.width, rect.height);
+        sCtx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.28)' : 'rgba(24, 22, 21, 0.22)';
+        sCtx.beginPath();
+        if (starsRef.current && starsRef.current.length > 0) {
+          starsRef.current.forEach((star) => {
+            if (star.twinkleSpeed === 0) {
+              const sx = star.x * rect.width;
+              const sy = star.y * rect.height;
+              const sz = isDark ? star.size : star.size * 1.5;
+              sCtx.moveTo(sx + sz, sy);
+              sCtx.arc(sx, sy, sz, 0, Math.PI * 2);
+            }
+          });
+        }
+        sCtx.fill();
+      }
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -114,6 +140,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
       const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2); // -1 to 1
       mouseRef.current.targetX = x;
       mouseRef.current.targetY = y;
+      mouseMovedRef.current = true;
     };
 
     // Track page scroll
@@ -427,8 +454,8 @@ export default function Hero3DBackground({ chefVisible = false }) {
       }
     }
 
-    // ── ADD LOOSE SPICE DRIFT PARTICLES (900 particles orbiting the mesh) ──
-    const spiceCount = 900;
+    // ── ADD LOOSE SPICE DRIFT PARTICLES (Clamped to 220 for 60fps locked rendering) ──
+    const spiceCount = 220;
     for (let i = 0; i < spiceCount; i++) {
       // Pick a random mesh coordinate to cluster around, then apply offsets
       const refIdx = Math.floor(Math.random() * totalMeshPoints);
@@ -491,12 +518,56 @@ export default function Hero3DBackground({ chefVisible = false }) {
       const sin = Math.sin(angle);
       return { x: x * cos + z * sin, y, z: -x * sin + z * cos };
     };
-    // Render loop
+    // Render loop state & viewport-aware pausing
     let startTime = performance.now();
+    let isCanvasVisible = true;
+    let isRunning = false;
+
+    const startLoop = () => {
+      if (!isRunning && isCanvasVisible && !document.hidden) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(tick);
+      }
+    };
+
+    const stopLoop = () => {
+      isRunning = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        isCanvasVisible = entry.isIntersecting;
+        if (isCanvasVisible) {
+          startLoop();
+        } else {
+          stopLoop();
+        }
+      }
+    }, { threshold: 0.01 });
+
+    observer.observe(canvas);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopLoop();
+      } else {
+        startLoop();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const tick = () => {
-      if (document.hidden || !window.savoreLoaderComplete || window.scrollY > 950) {
-        startTime = performance.now(); // Keep resetting startTime while loading or off-screen to start Shape 0 clean
+      if (!isCanvasVisible || document.hidden) {
+        isRunning = false;
+        return;
+      }
+      if (!window.savoreLoaderComplete) {
+        startTime = performance.now(); // Keep resetting startTime while loading
         animationFrameId = requestAnimationFrame(tick);
         return;
       }
@@ -625,79 +696,63 @@ export default function Hero3DBackground({ chefVisible = false }) {
         ctx.fill();
         ctx.restore();
         
-        // Connect nearby drifting food items with constellation chart lines
+        // Connect nearby drifting food items with constellation chart lines (Batched path)
         if (foodsRef.current && foodsRef.current.length > 0) {
           ctx.strokeStyle = isDark ? 'rgba(255, 210, 127, 0.16)' : 'rgba(24, 22, 21, 0.18)';
           ctx.lineWidth = 0.8;
+          ctx.beginPath();
           for (let i = 0; i < foodsRef.current.length; i++) {
             for (let j = i + 1; j < foodsRef.current.length; j++) {
               const f1 = foodsRef.current[i];
               const f2 = foodsRef.current[j];
-              const f1Depth = f1.zDepth || 0.5;
-              const f2Depth = f2.zDepth || 0.5;
-              const f1X = f1.x * width + mouse.x * 25 * f1Depth;
-              const f1Y = f1.y * height + mouse.y * 25 * f1Depth - (scroll.y * 120 * f1Depth);
-              const f2X = f2.x * width + mouse.x * 25 * f2Depth;
-              const f2Y = f2.y * height + mouse.y * 25 * f2Depth - (scroll.y * 120 * f2Depth);
-              
-              const dist = Math.hypot(f1X - f2X, f1Y - f2Y);
-              if (dist < 140) {
-                ctx.beginPath();
-                ctx.moveTo(f1X, f1Y);
-                ctx.lineTo(f2X, f2Y);
-                ctx.stroke();
+              if (f1.screenX && f1.screenY && f2.screenX && f2.screenY) {
+                const dx = f1.screenX - f2.screenX;
+                const dy = f1.screenY - f2.screenY;
+                if ((dx * dx + dy * dy) < 19600) { // 140px threshold squared
+                  ctx.moveTo(f1.screenX, f1.screenY);
+                  ctx.lineTo(f2.screenX, f2.screenY);
+                }
               }
             }
           }
+          ctx.stroke();
         }
         ctx.restore();
       }
 
-      // ── Draw Twinkling & Static Stars (Sugar Crystals / Gold Flecks / Chart Nodes) ──
-      if (starsRef.current && starsRef.current.length > 0) {
-        starsRef.current.forEach((star) => {
-          // If twinkleSpeed is 0, star stays static (Milky Way background dust / star chart nodes)
-          const twinkle = star.twinkleSpeed === 0 
-            ? 0.5 
-            : 0.2 + 0.8 * Math.sin(time * star.twinkleSpeed * 50 + star.phase);
-            
-          const starX = star.x * width;
-          const starY = star.y * height;
-          
-          ctx.beginPath();
-          ctx.arc(starX, starY, isDark ? star.size : star.size * 1.5, 0, Math.PI * 2);
-          
-          let starColor = 'rgba(255,255,255,';
-          if (star.colorType === 0) {
-            // Gold star color / Chart gold node
-            starColor = isDark ? 'rgba(255, 220, 150, ' : 'rgba(180, 120, 20, 0.52)';
-          } else if (star.colorType === 1) {
-            // White / Grey star color
-            starColor = isDark ? 'rgba(255, 255, 255, ' : 'rgba(24, 22, 21, 0.42)';
-          } else {
-            // Blue star color / Chart coral node
-            starColor = isDark ? 'rgba(180, 220, 255, ' : 'rgba(240, 80, 50, 0.50)';
-          }
-          
-          ctx.fillStyle = starColor + (twinkle * (star.twinkleSpeed === 0 ? 0.45 : 0.75)) + ')';
-          ctx.fill();
+      // ── Draw Twinkling & Static Stars (High-efficiency blit + batched paths) ──
+      // 1. Draw static background dust stars using one single hardware-accelerated drawImage
+      if (staticStarsCanvas && staticStarsCanvas.width > 0) {
+        ctx.drawImage(staticStarsCanvas, 0, 0, width, height);
+      }
 
-          // ── Draw Telescope Crosshair Lens Flares for twinkling stars in Light Mode ──
-          if (!isDark && star.size > 0.85 && twinkle > 0.55 && star.twinkleSpeed > 0) {
-            ctx.save();
-            ctx.strokeStyle = starColor + (twinkle * 0.35) + ')';
-            ctx.lineWidth = 0.7;
-            ctx.beginPath();
-            // Horizontal flare
-            ctx.moveTo(starX - star.size * 3.5, starY);
-            ctx.lineTo(starX + star.size * 3.5, starY);
-            // Vertical flare
-            ctx.moveTo(starX, starY - star.size * 3.5);
-            ctx.lineTo(starX, starY + star.size * 3.5);
-            ctx.stroke();
-            ctx.restore();
+      // 2. Draw 120 twinkling foreground stars (batched by color palettes)
+      if (starsRef.current && starsRef.current.length > 0) {
+        for (let c = 0; c < 3; c++) {
+          let starColor = 'rgba(255,255,255,';
+          if (c === 0) {
+            starColor = isDark ? 'rgba(255, 220, 150, ' : 'rgba(180, 120, 20, ';
+          } else if (c === 1) {
+            starColor = isDark ? 'rgba(255, 255, 255, ' : 'rgba(24, 22, 21, ';
+          } else {
+            starColor = isDark ? 'rgba(180, 220, 255, ' : 'rgba(240, 80, 50, ';
           }
-        });
+
+          const baseAlpha = isDark ? 0.75 : 0.50;
+          ctx.fillStyle = starColor + baseAlpha + ')';
+          ctx.beginPath();
+          starsRef.current.forEach((star) => {
+            if (star.twinkleSpeed > 0 && star.colorType === c) {
+              const twinkle = 0.2 + 0.8 * Math.sin(time * star.twinkleSpeed * 50 + star.phase);
+              const starX = star.x * width;
+              const starY = star.y * height;
+              const starSize = (isDark ? star.size : star.size * 1.5) * twinkle;
+              ctx.moveTo(starX + starSize, starY);
+              ctx.arc(starX, starY, Math.max(0.3, starSize), 0, Math.PI * 2);
+            }
+          });
+          ctx.fill();
+        }
       }
 
       // ── Draw Procedural Shooting Stars (Meteors) ──
@@ -780,12 +835,6 @@ export default function Hero3DBackground({ chefVisible = false }) {
           ctx.save();
           ctx.translate(screenX, screenY);
           ctx.rotate(food.angleSelf);
-          
-          // Apply hardware-accelerated Depth of Field blur to foreground elements
-          const blurAmount = fDepth > 0.72 ? (fDepth - 0.72) * 8 : 0;
-          if (blurAmount > 0.5) {
-            ctx.filter = `blur(${blurAmount}px)`;
-          }
 
           // Render with elegant transparency based on depth and hover scaling
           ctx.globalAlpha = (isDark ? (0.15 + fDepth * 0.30) : (0.1 + fDepth * 0.22)) * (0.8 + (food.hoverScale - 1.0) * 0.25);
@@ -809,7 +858,6 @@ export default function Hero3DBackground({ chefVisible = false }) {
           }
         });
         ctx.globalAlpha = 1.0; // Reset canvas alpha
-        ctx.filter = 'none'; // Reset canvas filter
       }
 
       // ── CHEF VISIBILITY SIZZLE/FADE LERP ──
@@ -970,122 +1018,109 @@ export default function Hero3DBackground({ chefVisible = false }) {
       // Update projected points ref for handleCanvasClick
       projectedPointsRef.current = currentProjected;
 
-      // Update cursor dynamically based on whether hovering over any visible particle or food item
-      const mouseCanvasX = mouse.x * (width / 2) + width / 2;
-      const mouseCanvasY = mouse.y * (height / 2) + height / 2;
+      // Update cursor dynamically based on whether hovering over any visible particle or food item (throttled to mouse movement)
+      if (mouseMovedRef.current) {
+        mouseMovedRef.current = false;
+        const mouseCanvasX = mouse.x * (width / 2) + width / 2;
+        const mouseCanvasY = mouse.y * (height / 2) + height / 2;
 
-      const isHoveringParticle = currentProjected.some(pt => {
-        const dx = mouseCanvasX - pt.x;
-        const dy = mouseCanvasY - pt.y;
-        return (dx * dx + dy * dy) < 1296; // 36px radius check (smooth, forgiving hover pointer)
-      });
+        const isHoveringParticle = currentProjected.some(pt => {
+          const dx = mouseCanvasX - pt.x;
+          const dy = mouseCanvasY - pt.y;
+          return (dx * dx + dy * dy) < 1296; // 36px radius check (smooth, forgiving hover pointer)
+        });
 
-      const isHoveringFood = foodsRef.current && foodsRef.current.some(food => {
-        if (food.screenX && food.screenY) {
-          const dx = mouseCanvasX - food.screenX;
-          const dy = mouseCanvasY - food.screenY;
-          return (dx * dx + dy * dy) < 5625; // 75px radius check (generous click targets)
+        const isHoveringFood = foodsRef.current && foodsRef.current.some(food => {
+          if (food.screenX && food.screenY) {
+            const dx = mouseCanvasX - food.screenX;
+            const dy = mouseCanvasY - food.screenY;
+            return (dx * dx + dy * dy) < 5625; // 75px radius check (generous click targets)
+          }
+          return false;
+        });
+
+        const targetCursor = (isHoveringParticle || isHoveringFood) ? 'pointer' : 'default';
+        if (canvas.style.cursor !== targetCursor) {
+          canvas.style.cursor = targetCursor;
         }
-        return false;
-      });
-
-      const targetCursor = (isHoveringParticle || isHoveringFood) ? 'pointer' : 'default';
-      if (canvas.style.cursor !== targetCursor) {
-        canvas.style.cursor = targetCursor;
       }
 
-      // ── DRAW MESH CONNECTION LINES (Hologram grid) ──
-      ctx.lineWidth = 0.75;
-      ctx.strokeStyle = isDark ? '#FF6A4D' : '#E65A3D'; // Richer terracotta orange for Light Mode contrast
-      
-      lines.forEach(([u, v]) => {
-        const p1 = projected[u];
-        const p2 = projected[v];
-
-        if (p1 && p2) {
-          const avgZ = (p1.z + p2.z) / 2;
-          
-          // Fades out lines when scrolling deep into the dispersed steam phase
-          const fade = Math.max(0, 1.2 - avgZ / 580) * Math.max(0, 1.0 - (scroll.y - 0.7) * 3) * globalFade;
-          
-          if (fade > 0.01) {
-            ctx.globalAlpha = isDark ? fade * 0.14 : fade * 0.22; // Boosted line opacity in Light Mode from 0.08
-            ctx.beginPath();
+      // ── DRAW MESH CONNECTION LINES (Batched into a single hardware path) ──
+      const lineAlpha = (isDark ? 0.14 : 0.22) * Math.max(0, 1.0 - (scroll.y - 0.7) * 3) * globalFade;
+      if (lineAlpha > 0.01) {
+        ctx.lineWidth = 0.75;
+        ctx.strokeStyle = isDark ? '#FF6A4D' : '#E65A3D';
+        ctx.globalAlpha = lineAlpha;
+        ctx.beginPath();
+        for (let i = 0; i < lines.length; i++) {
+          const [u, v] = lines[i];
+          const p1 = projected[u];
+          const p2 = projected[v];
+          if (p1 && p2 && p1.z < 580 && p2.z < 580) {
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
           }
         }
-      });
+        ctx.stroke();
+      }
 
-      // ── DRAW GLOWING DUST PARTICLES (Depth-Sorted) ──
-      const drawList = [];
-      projected.forEach((pt) => {
-        if (pt && pt.x >= -50 && pt.x <= width + 50 && pt.y >= -50 && pt.y <= height + 50) {
-          drawList.push(pt);
-        }
-      });
-      drawList.sort((a, b) => b.z - a.z);
+      // ── DRAW GLOWING DUST PARTICLES (Batched by color group — 3 draw calls total) ──
+      const colorPalettes = isDark 
+        ? [
+            { fill: '#FF6A4D', alpha: 0.75 },
+            { fill: '#FFD27F', alpha: 0.90 },
+            { fill: '#FAF6EE', alpha: 0.40 }
+          ]
+        : [
+            { fill: '#E65A3D', alpha: 0.85 },
+            { fill: '#A66F22', alpha: 0.80 },
+            { fill: '#4E4840', alpha: 0.60 }
+          ];
 
-      drawList.forEach((pt) => {
-        let opacity = Math.max(0.04, Math.min(0.9, 1.35 - pt.z / 600));
-        opacity *= globalFade;
-        if (opacity < 0.01) return; // Skip rendering fully transparent particles
-
-        const radius = Math.max(0.4, pt.size);
-
+      for (let c = 0; c < 3; c++) {
+        const palette = colorPalettes[c];
+        ctx.fillStyle = palette.fill;
+        ctx.globalAlpha = palette.alpha * globalFade;
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
-
-        if (isDark) {
-          if (pt.colorType === 0) {
-            ctx.globalAlpha = opacity * 0.75;
-            ctx.fillStyle = '#FF6A4D'; // Restored orange glow
-          } else if (pt.colorType === 1) {
-            ctx.globalAlpha = opacity * 0.90;
-            ctx.fillStyle = '#FFD27F'; // Restored gold glow
-          } else {
-            ctx.globalAlpha = opacity * 0.40;
-            ctx.fillStyle = '#FAF6EE'; // Restored cream
-          }
-        } else {
-          if (pt.colorType === 0) {
-            ctx.globalAlpha = opacity * 0.85; // Boosted opacity for Light Mode
-            ctx.fillStyle = '#E65A3D'; // Richer terracotta orange
-          } else if (pt.colorType === 1) {
-            ctx.globalAlpha = opacity * 0.80; // Boosted opacity for Light Mode
-            ctx.fillStyle = '#A66F22'; // Deeper bronze amber
-          } else {
-            ctx.globalAlpha = opacity * 0.60; // Boosted opacity for Light Mode
-            ctx.fillStyle = '#4E4840'; // Deeper warm charcoal grey
+        for (let i = 0; i < projected.length; i++) {
+          const pt = projected[i];
+          if (pt && pt.colorType === c && pt.x >= -30 && pt.x <= width + 30 && pt.y >= -30 && pt.y <= height + 30) {
+            const radius = Math.max(0.4, pt.size);
+            ctx.moveTo(pt.x + radius, pt.y);
+            ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
           }
         }
         ctx.fill();
+      }
 
-        // Draw ambient halo glow for closer, prominent particles
-        if (isDark && radius > 2.8 && opacity > 0.55) {
-          ctx.globalAlpha = 0.08;
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, radius * 2.8, 0, Math.PI * 2);
-          if (pt.colorType === 0) {
-            ctx.fillStyle = '#FF6A4D';
-          } else {
-            ctx.fillStyle = '#FFD27F';
+      // Draw ambient halo glow for closer, prominent particles (single batched path)
+      if (isDark && globalFade > 0.05) {
+        ctx.fillStyle = '#FFD27F';
+        ctx.globalAlpha = 0.07 * globalFade;
+        ctx.beginPath();
+        for (let i = 0; i < projected.length; i++) {
+          const pt = projected[i];
+          if (pt && pt.size > 2.8 && pt.z < 360 && pt.x >= -30 && pt.x <= width + 30 && pt.y >= -30 && pt.y <= height + 30) {
+            const haloRadius = pt.size * 2.8;
+            ctx.moveTo(pt.x + haloRadius, pt.y);
+            ctx.arc(pt.x, pt.y, haloRadius, 0, Math.PI * 2);
           }
-          ctx.fill();
         }
-      });
+        ctx.fill();
+      }
       
       ctx.globalAlpha = 1.0; // Reset alpha for the next frame
 
       animationFrameId = requestAnimationFrame(tick);
     };
 
-    tick();
+    startLoop();
 
     // Cleanup listeners and loops
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      stopLoop();
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);

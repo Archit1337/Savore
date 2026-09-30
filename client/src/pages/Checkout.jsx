@@ -170,18 +170,24 @@ function DeliveryMapSimulator({ orderId, onDeliveryComplete }) {
 
 const CITY_PINCODE_PREFIXES = {
   mumbai: ['400'],
+  bombay: ['400'],
   delhi: ['11'],
+  'new delhi': ['11'],
   bengaluru: ['560'],
   bangalore: ['560'],
   hyderabad: ['500'],
+  secunderabad: ['500'],
   chennai: ['600'],
+  madras: ['600'],
   kolkata: ['700'],
+  calcutta: ['700'],
   pune: ['411', '412'],
   ahmedabad: ['380', '382'],
   jaipur: ['302'],
   chandigarh: ['160'],
   goa: ['403'],
   kochi: ['682'],
+  cochin: ['682'],
   lucknow: ['226'],
   indore: ['452'],
   surat: ['395']
@@ -196,19 +202,38 @@ const getCityAliases = (city) => {
   if (c === 'mumbai' || c === 'bombay') {
     return ['mumbai', 'bombay'];
   }
+  if (c === 'delhi' || c === 'new delhi') {
+    return ['delhi', 'new delhi'];
+  }
   if (c === 'kolkata' || c === 'calcutta') {
     return ['kolkata', 'calcutta'];
   }
   if (c === 'chennai' || c === 'madras') {
     return ['chennai', 'madras'];
   }
+  if (c === 'hyderabad' || c === 'secunderabad') {
+    return ['hyderabad', 'secunderabad'];
+  }
+  if (c === 'kochi' || c === 'cochin') {
+    return ['kochi', 'cochin'];
+  }
   return [c];
+};
+
+const getCityPrefixes = (city) => {
+  if (!city) return null;
+  const aliases = getCityAliases(city);
+  for (const alias of aliases) {
+    if (CITY_PINCODE_PREFIXES[alias]) {
+      return CITY_PINCODE_PREFIXES[alias];
+    }
+  }
+  return null;
 };
 
 const isPincodeValidForCity = (pin, city) => {
   if (!pin || !city) return false;
-  const normalizedCity = city.toLowerCase().trim();
-  const prefixes = CITY_PINCODE_PREFIXES[normalizedCity];
+  const prefixes = getCityPrefixes(city);
   if (!prefixes) return true;
   
   const cleanPin = pin.trim();
@@ -250,8 +275,7 @@ export default function Checkout() {
     // 0. If in Merchant Simulation mode, prefill test address and matching pincode automatically
     if (isOwnRestaurant) {
       setAddress(`[Simulation] Owner Kitchen HQ, ${restaurant.city}`);
-      const cityKey = restaurant.city.toLowerCase().trim();
-      const prefixes = CITY_PINCODE_PREFIXES[cityKey];
+      const prefixes = getCityPrefixes(restaurant.city);
       const prefix = (prefixes && prefixes[0]) || '560';
       setPincode(prefix.padEnd(6, '0'));
       return;
@@ -395,18 +419,24 @@ export default function Checkout() {
       try {
         const stateFallback = {
           mumbai: 'Maharashtra',
+          bombay: 'Maharashtra',
           delhi: 'Delhi',
+          'new delhi': 'Delhi',
           bengaluru: 'Karnataka',
           bangalore: 'Karnataka',
           hyderabad: 'Telangana',
+          secunderabad: 'Telangana',
           chennai: 'Tamil Nadu',
+          madras: 'Tamil Nadu',
           kolkata: 'West Bengal',
+          calcutta: 'West Bengal',
           pune: 'Maharashtra',
           ahmedabad: 'Gujarat',
           jaipur: 'Rajasthan',
           chandigarh: 'Chandigarh',
           goa: 'Goa',
           kochi: 'Kerala',
+          cochin: 'Kerala',
           lucknow: 'Uttar Pradesh',
           indore: 'Madhya Pradesh',
           surat: 'Gujarat'

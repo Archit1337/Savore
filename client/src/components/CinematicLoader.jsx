@@ -150,6 +150,11 @@ export default function CinematicLoader({ onComplete }) {
     return () => clearInterval(greetingInterval);
   }, [isExiting]);
 
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
+
   // Smooth progress bar pacing with organic EaseOutCubic acceleration
   useEffect(() => {
     const duration = 2800; // 2.8 seconds
@@ -172,7 +177,7 @@ export default function CinematicLoader({ onComplete }) {
         setIsExiting(true);
         // Wait slightly for exit zoom animation, then trigger complete
         setTimeout(() => {
-          if (onComplete) onComplete();
+          if (onCompleteRef.current) onCompleteRef.current();
         }, 600);
       }
     };
@@ -184,7 +189,7 @@ export default function CinematicLoader({ onComplete }) {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [onComplete]);
+  }, []);
 
   const ActiveIcon = ICONS[activeIconIndex];
 

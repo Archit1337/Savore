@@ -93,24 +93,26 @@ The client-side API layer (`client/src/utils/api.js`) deploys an Axios response 
 
 ---
 
-## 💳 4. Transactional Integrity: Stripe Webhook Pipelines
+## 💳 4. Transactional Integrity: Multi-Mode Payment & Webhook Pipelines
 
-Handling financial payments requires zero tolerance for packet loss or client-side tampering. 
+Handling financial transactions requires zero tolerance for packet loss or client-side tampering. Savoré deploys a robust multi-mode payment subsystem:
 
 ```
-[Client] -> [Initiate Checkout] -> [Stripe Element Portal]
+[Client] -> [Initiate Checkout] -> [Select Method: COD / Card / Simulation]
                                             |
-                                  [Complete Payment]
+                                  [Process Gateway / Handshake]
                                             |
-[Order Finalized] <- [Validate Hook] <- [Stripe Webhook Event]
+[Order Finalized] <- [Validate Hook / State] <- [Stripe Webhook / Direct Verification]
 ```
 
 ### The Webhook Shield & Stock Safeguards
-- **No Client Trust**: Never trust the client application to report a payment's success. Savoré relies exclusively on Stripe's direct, asynchronous server-to-server webhook callback channel: `POST /api/payment/webhook`.
-- **Raw Signature Validation**: To prevent spoofing attacks, the backend uses `stripe.webhooks.constructEvent()` inside `paymentController.js` to cryptographically verify the webhook payload signature using `STRIPE_WEBHOOK_SECRET`.
+- **Dual Pipeline Support**:
+  1. **Simulated / Sandbox Gateway**: For frictionless local development, automated testing, and merchant simulation mode, orders are processed idempotently with replica set / standalone transaction safety.
+  2. **Production Stripe Pipeline**: Direct asynchronous server-to-server webhook callback channel: `POST /api/payment/webhook`.
+- **Raw Signature Validation**: In Stripe mode, the backend uses `stripe.webhooks.constructEvent()` inside `paymentController.js` to cryptographically verify the webhook payload signature using `STRIPE_WEBHOOK_SECRET`.
 - **Atomic Operations & Idempotency**:
-  - The webhook handler checks whether an order is already marked as `Paid` before processing to prevent duplicate double-billing on network retries.
-  - Savoré ensures stock alignment by atomically reducing dish availability levels in Mongoose when checkout transactions finalize.
+  - The order system enforces database price validation (`FoodItem.price`), prevents cross-restaurant item mixing, and detects duplicate transactions within a 30-second time window.
+  - Savoré ensures stock and state alignment by atomically recording orders in Mongoose before dispatching live Socket.io merchant notifications.
 
 ---
 

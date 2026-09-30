@@ -79,14 +79,17 @@ export const setupResponseInterceptor = (logoutUser, refreshTokens) => {
             return Promise.reject(error);
           }
 
-          // Request a new access token
+          // Request a new access token and rotated refresh token
           const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
           
           if (res.data && res.data.success) {
-            const { accessToken } = res.data.data;
+            const { accessToken, refreshToken: newRefreshToken } = res.data.data;
             
-            // Save new token
+            // Save new access token and rotated refresh token
             localStorage.setItem('savore_access_token', accessToken);
+            if (newRefreshToken) {
+              localStorage.setItem('savore_refresh_token', newRefreshToken);
+            }
             
             // Update original request headers and retry
             originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
@@ -123,13 +126,14 @@ export const setupResponseInterceptor = (logoutUser, refreshTokens) => {
         }
       }
 
-      // Return a standard formatted error response matching backend formatting
-      const formattedError = {
-        message: error.response?.data?.error || error.message || 'An unexpected API error occurred',
-        status: error.response?.status || 500,
-      };
+      // Return a standard Error instance preserving Axios response properties and backend messages
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'An unexpected API error occurred';
+      const customError = new Error(errorMessage);
+      customError.status = error.response?.status || 500;
+      customError.response = error.response;
+      customError.isAxiosError = true;
 
-      return Promise.reject(formattedError);
+      return Promise.reject(customError);
     }
   );
 };

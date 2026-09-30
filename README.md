@@ -42,9 +42,9 @@ Explore the visual design and cinematic interactions of Savoré:
 - **Contextual Search & Filters**: Restructures restaurant feeds in real time using client-side geolocation APIs.
 - **Dynamic Weather Integration**: Uses current weather states (e.g., raining, sunny, hot) to suggest relevant items (e.g., warm ramen on rainy days, chilled smoothies on hot summer afternoons).
 
-### 💳 4. Enterprise payment & Stripe Webhooks
-- **Stripe SDK Security**: Uses PCI-compliant tokenized payment pipelines via Stripe Element gateways.
-- **Event-Driven Webhooks**: Listens to server-side Stripe webhooks (`payment_intent.succeeded`) to safely complete orders, adjust food stock levels, and send notifications, preventing client-side interception.
+### 💳 4. Flexible Payment Architecture & Stripe Webhooks
+- **Multi-Mode Checkout Engine**: Native support for Cash on Delivery (COD), interactive Card Payment, and an internal Merchant Kitchen Simulation mode with real-time GPS transit tracking.
+- **Stripe SDK & Webhook Verification**: Production-ready PCI-compliant tokenized payment pipelines via Stripe Element gateways, complemented by cryptographic server-side webhook listeners (`payment_intent.succeeded`) that ensure atomic order state transitions and stock safeguards without client-side trust.
 
 ### 🔒 5. Hardened Security & RBAC
 - **Token Rotation Protocol**: Protects against Session Hijacking by executing dual JWT access and refresh token mechanisms with secure cookie signatures and local rotation interceptors.

@@ -5,18 +5,24 @@ const mongoose = require('mongoose');
 
 const CITY_PINCODE_PREFIXES = {
   mumbai: ['400'],
+  bombay: ['400'],
   delhi: ['11'],
+  'new delhi': ['11'],
   bengaluru: ['560'],
   bangalore: ['560'],
   hyderabad: ['500'],
+  secunderabad: ['500'],
   chennai: ['600'],
+  madras: ['600'],
   kolkata: ['700'],
+  calcutta: ['700'],
   pune: ['411', '412'],
   ahmedabad: ['380', '382'],
   jaipur: ['302'],
   chandigarh: ['160'],
   goa: ['403'],
   kochi: ['682'],
+  cochin: ['682'],
   lucknow: ['226'],
   indore: ['452'],
   surat: ['395']
@@ -31,13 +37,33 @@ const getCityAliases = (city) => {
   if (c === 'mumbai' || c === 'bombay') {
     return ['mumbai', 'bombay'];
   }
+  if (c === 'delhi' || c === 'new delhi') {
+    return ['delhi', 'new delhi'];
+  }
   if (c === 'kolkata' || c === 'calcutta') {
     return ['kolkata', 'calcutta'];
   }
   if (c === 'chennai' || c === 'madras') {
     return ['chennai', 'madras'];
   }
+  if (c === 'hyderabad' || c === 'secunderabad') {
+    return ['hyderabad', 'secunderabad'];
+  }
+  if (c === 'kochi' || c === 'cochin') {
+    return ['kochi', 'cochin'];
+  }
   return [c];
+};
+
+const getCityPrefixes = (city) => {
+  if (!city) return null;
+  const aliases = getCityAliases(city);
+  for (const alias of aliases) {
+    if (CITY_PINCODE_PREFIXES[alias]) {
+      return CITY_PINCODE_PREFIXES[alias];
+    }
+  }
+  return null;
 };
 
 const isAddressMatchingCity = (addressStr, city) => {
@@ -54,8 +80,7 @@ const isAddressValidForRestaurantCity = (addressStr, city) => {
   const rawPins = addressStr.match(/\b\d{3}\s?\d{3}\b/g);
   if (rawPins && rawPins.length > 0) {
     const pins = rawPins.map(pin => pin.replace(/\s+/g, ''));
-    const normalizedCity = city.toLowerCase().trim();
-    const prefixes = CITY_PINCODE_PREFIXES[normalizedCity];
+    const prefixes = getCityPrefixes(city);
     if (prefixes) {
       const hasValidPin = pins.some(pin => prefixes.some(pref => pin.startsWith(pref)));
       if (hasValidPin) return true;
@@ -66,21 +91,60 @@ const isAddressValidForRestaurantCity = (addressStr, city) => {
   return isAddressMatchingCity(addressStr, city);
 };
 
+const isTransactionSupported = () => {
+  try {
+    const topology = mongoose.connection?.client?.topology;
+    if (!topology) return false;
+    const desc = topology.description;
+    if (!desc) return false;
+    const type = desc.type;
+    return (
+      type === 'ReplicaSetWithPrimary' ||
+      type === 'Sharded' ||
+      Boolean(desc.setName) ||
+      (Array.isArray(desc.servers) && desc.servers.some(s => s.type === 'RSPrimary' || s.type === 'Mongos'))
+    );
+  } catch (err) {
+    return false;
+  }
+};
+
 // @desc    Place a new order
 // @route   POST /api/orders
 // @access  Private (Customer)
 const placeOrder = async (req, res, next) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const canUseTransactions = isTransactionSupported();
+  let session = null;
+  if (canUseTransactions) {
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+    } catch (_) {
+      if (session) {
+        try { await session.endSession(); } catch (e) {}
+      }
+      session = null;
+    }
+  }
+
+  let createdOrderId = null;
+
   try {
     const { restaurant: restaurantId, items, paymentMethod, deliveryAddress, transactionId } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400);
+      throw new Error('Order must contain at least one item.');
+    }
 
     // Idempotency: Prevent duplicate submissions
     if (transactionId) {
       const existingOrder = await Order.findOne({ transactionId }).session(session);
       if (existingOrder) {
-        await session.abortTransaction();
-        session.endSession();
+        if (session) {
+          await session.abortTransaction();
+          session.endSession();
+        }
         return res.status(200).json({
           success: true,
           data: existingOrder,
@@ -126,23 +190,34 @@ const placeOrder = async (req, res, next) => {
       }
     }
 
-    // Verify item prices and availability
+    // Verify item prices and availability (P12 Database Price Override & Cross-Restaurant Validation)
     let subtotal = 0;
     const validatedItems = [];
 
     for (const item of items) {
+      const quantity = Math.floor(Number(item.quantity));
+      if (!quantity || quantity < 1 || quantity > 100) {
+        res.status(400);
+        throw new Error(`Invalid quantity (${item.quantity}) for item.`);
+      }
+
       const foodItem = await FoodItem.findById(item.foodItem).session(session);
       if (!foodItem || !foodItem.isAvailable) {
         res.status(400);
         throw new Error(`Item ${item.foodItem} is not available`);
       }
-      
+
+      if (foodItem.restaurant.toString() !== restaurant._id.toString()) {
+        res.status(400);
+        throw new Error(`Item ${foodItem.name} does not belong to this restaurant.`);
+      }
+
       const itemPrice = foodItem.price;
-      subtotal += itemPrice * item.quantity;
-      
+      subtotal += itemPrice * quantity;
+
       validatedItems.push({
         foodItem: foodItem._id,
-        quantity: item.quantity,
+        quantity,
         price: itemPrice,
       });
     }
@@ -162,8 +237,10 @@ const placeOrder = async (req, res, next) => {
     }).session(session);
 
     if (possibleDuplicate) {
-      await session.abortTransaction();
-      session.endSession();
+      if (session) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       return res.status(200).json({
         success: true,
         data: possibleDuplicate,
@@ -179,7 +256,7 @@ const placeOrder = async (req, res, next) => {
       paymentStatus = 'pending'; // COD paid on delivery
     }
 
-    const [order] = await Order.create([{
+    const orderData = {
       user: req.user.id,
       restaurant: restaurant._id,
       items: validatedItems,
@@ -193,10 +270,21 @@ const placeOrder = async (req, res, next) => {
       deliveryAddress,
       status: isTestOrder ? 'preparing' : 'pending',
       isTestOrder,
-    }], { session });
+    };
 
-    await session.commitTransaction();
-    session.endSession();
+    let order;
+    if (session) {
+      const created = await Order.create([orderData], { session });
+      order = created[0];
+    } else {
+      order = await Order.create(orderData);
+      createdOrderId = order._id;
+    }
+
+    if (session) {
+      await session.commitTransaction();
+      session.endSession();
+    }
 
     // Emit live socket event to the restaurant owner's room (outside transaction block)
     const io = req.app.get('io');
@@ -213,8 +301,16 @@ const placeOrder = async (req, res, next) => {
       data: order,
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    if (session) {
+      try {
+        await session.abortTransaction();
+        session.endSession();
+      } catch (_) {}
+    } else if (createdOrderId) {
+      try {
+        await Order.findByIdAndDelete(createdOrderId);
+      } catch (_) {}
+    }
     next(error);
   }
 };

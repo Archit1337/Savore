@@ -20,7 +20,7 @@ const generateAccessToken = (id) => {
 
 const generateRefreshToken = (id) => {
   const secret = process.env.JWT_REFRESH_SECRET || 'savore_saas_jwt_refresh_secret_token_2026';
-  return jwt.sign({ id }, secret, { expiresIn: '7d' });
+  return jwt.sign({ id, nonce: crypto.randomBytes(16).toString('hex') }, secret, { expiresIn: '7d' });
 };
 
 // @desc    Register a new user
@@ -79,53 +79,37 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    console.log(`\n[AUTH DIAGNOSTICS] ==========================================`);
-    console.log(`[AUTH DIAGNOSTICS] Login attempt for: ${email}`);
 
-    // Check database connection and environment
     if (!process.env.JWT_SECRET) {
-      console.warn(`[AUTH DIAGNOSTICS] WARNING: JWT_SECRET environment variable is missing, falling back to default.`);
+      console.warn(`[AUTH] WARNING: JWT_SECRET environment variable is missing, falling back to default.`);
     }
 
     // Find user and include password and refreshTokens explicitly
     const user = await User.findOne({ email }).select('+password +refreshTokens');
     if (!user) {
-      console.error(`[AUTH DIAGNOSTICS] LOGIN FAILURE: No user found in MongoDB with email: ${email}`);
       res.status(401);
       return next(new Error('Invalid email or password'));
     }
 
     if (user.isSuspended) {
-      console.error(`[AUTH DIAGNOSTICS] LOGIN FAILURE: Suspended account login attempt: ${email}`);
       res.status(403);
       return next(new Error('Your account has been suspended by administration. Please contact support.'));
     }
 
-    console.log(`[AUTH DIAGNOSTICS] User lookup successful. Role: ${user.role}`);
-    console.log(`[AUTH DIAGNOSTICS] Stored Hashed Password from DB: ${user.password}`);
-
     // Perform bcrypt comparison
     const isMatch = await user.matchPassword(password);
-    console.log(`[AUTH DIAGNOSTICS] Bcrypt comparison outcome for entered password: ${isMatch}`);
-
     if (!isMatch) {
-      console.error(`[AUTH DIAGNOSTICS] LOGIN FAILURE: Password comparison failed for user: ${email}`);
       res.status(401);
       return next(new Error('Invalid email or password'));
     }
 
     // Token signing
-    console.log(`[AUTH DIAGNOSTICS] Generating JWT Access and Refresh tokens for user id: ${user._id}`);
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
-    console.log(`[AUTH DIAGNOSTICS] Tokens generated. Access Token prefix: ${accessToken.substring(0, 15)}...`);
 
     // Store refresh token
     user.refreshTokens.push(refreshToken);
     await user.save();
-    console.log(`[AUTH DIAGNOSTICS] Session refresh token successfully saved in MongoDB.`);
-    console.log(`[AUTH DIAGNOSTICS] SUCCESSFUL AUTHENTICATION FOR: ${email}`);
-    console.log(`[AUTH DIAGNOSTICS] ==========================================\n`);
 
     res.json({
       success: true,
@@ -172,18 +156,41 @@ const refresh = async (req, res, next) => {
     }
 
     const user = await User.findById(decoded.id).select('+refreshTokens');
-    if (!user || !user.refreshTokens.includes(refreshToken)) {
+    if (!user) {
       res.status(401);
-      return next(new Error('Refresh token is not active or user was deleted'));
+      return next(new Error('User does not exist or was deleted.'));
     }
 
-    // Generate new access token
+    // Refresh Token Rotation (RTR) Reuse Detection:
+    // If incoming token is valid for this user but NOT found in active refreshTokens,
+    // it was already rotated or revoked — indicating potential token theft / replay!
+    if (!user.refreshTokens.includes(refreshToken)) {
+      user.refreshTokens = []; // Revoke entire token family
+      await user.save();
+      res.status(403);
+      return next(new Error('Refresh token reuse detected. All sessions revoked for your security. Please log in again.'));
+    }
+
+    // Token is valid: Rotate refresh token
+    // 1. Invalidate used token
+    user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken);
+
+    // 2. Issue new tokens
     const newAccessToken = generateAccessToken(user._id);
+    const newRefreshToken = generateRefreshToken(user._id);
+
+    // 3. Store new token (bounded to max 10 concurrent sessions)
+    user.refreshTokens.push(newRefreshToken);
+    if (user.refreshTokens.length > 10) {
+      user.refreshTokens = user.refreshTokens.slice(-10);
+    }
+    await user.save();
 
     res.json({
       success: true,
       data: {
         accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
       },
     });
   } catch (error) {
@@ -202,9 +209,9 @@ const logout = async (req, res, next) => {
       const refreshSecret = process.env.JWT_REFRESH_SECRET || 'savore_saas_jwt_refresh_secret_token_2026';
       try {
         const decoded = jwt.verify(refreshToken, refreshSecret);
-        const user = await User.findById(decoded.id);
+        const user = await User.findById(decoded.id).select('+refreshTokens');
         if (user) {
-          user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken);
+          user.refreshTokens = (user.refreshTokens || []).filter((token) => token !== refreshToken);
           await user.save();
         }
       } catch (err) {

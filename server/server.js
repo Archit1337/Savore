@@ -42,6 +42,8 @@ const allowedOrigins = [
   'http://localhost:5174',
   'http://127.0.0.1:5174',
   'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/+$/, '')) : []),
 ];
 
 app.use(
@@ -81,8 +83,13 @@ app.use(express.urlencoded({ extended: true }));
 // Sanitize inputs to prevent MongoDB NoSQL Injection attacks
 app.use(mongoSanitize());
 
-// Serve Static upload directories
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve Static upload directories with browser caching and byte-range support for video streaming
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1d',
+  setHeaders: (res) => {
+    res.setHeader('Accept-Ranges', 'bytes');
+  }
+}));
 
 // Root Route check
 app.get('/', (req, res) => {
@@ -154,17 +161,36 @@ io.use(async (socket, next) => {
 io.on('connection', (socket) => {
   console.log(`🔌 Secured socket connection established: ${socket.id} (User: ${socket.user.username})`);
 
-  // Room binding: join specific merchant room after authorization check
+  // Room binding: join specific merchant room with strict tenant isolation
   socket.on('join_merchant_room', async (merchantId) => {
     try {
+      // Admins have platform-wide monitoring rights
+      if (socket.user.role === 'admin') {
+        const adminRoom = `merchant_${merchantId}`;
+        socket.join(adminRoom);
+        console.log(`🚪 Admin Socket ${socket.id} joined room: ${adminRoom}`);
+        return;
+      }
+
       const restaurant = await Restaurant.findOne({ owner: socket.user._id });
-      if (!restaurant || restaurant.owner.toString() !== socket.user._id.toString()) {
+      if (!restaurant) {
+        socket.emit('error_message', 'Forbidden: You do not own a registered restaurant.');
+        return;
+      }
+
+      const targetId = merchantId ? merchantId.toString() : '';
+      const isOwnerId = targetId === socket.user._id.toString();
+      const isRestaurantId = targetId === restaurant._id.toString();
+
+      if (!isOwnerId && !isRestaurantId) {
         socket.emit('error_message', 'Forbidden: You are not authorized to monitor this merchant room.');
         return;
       }
 
-      socket.join(`merchant_${merchantId}`);
-      console.log(`🚪 Socket ${socket.id} authorized & joined room: merchant_${merchantId}`);
+      // Join the authenticated owner's room (matching orderController alert dispatches)
+      const roomName = `merchant_${socket.user._id.toString()}`;
+      socket.join(roomName);
+      console.log(`🚪 Socket ${socket.id} authorized & joined room: ${roomName}`);
     } catch (err) {
       socket.emit('error_message', 'Server error joining merchant updates.');
     }

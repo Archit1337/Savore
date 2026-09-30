@@ -687,7 +687,7 @@ export default function ReelsFeed() {
                   muted={isMuted}
                   playsInline
                   autoPlay
-                  preload="metadata"
+                  preload="auto"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: hasVideoError ? 0 : 1 }}
                   exit={{ opacity: 0 }}
@@ -710,24 +710,17 @@ export default function ReelsFeed() {
                 />
               </AnimatePresence>
 
-              {/* ⏳ Next Multi-Video Preload Queue (Concurrent Caching for Lag-free Swiping) */}
-              <div className="absolute w-[1px] h-[1px] opacity-[0.001] pointer-events-none hidden">
-                {/* Next video (N+1) */}
+              {/* ⏳ Next Video Preload (Lightweight metadata queue to prepare next video without bandwidth congestion) */}
+              <div 
+                aria-hidden="true"
+                style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}
+              >
+                {/* Next video (N+1) only, with preload="metadata" */}
                 {activeIndex < reels.length - 1 && reels[activeIndex + 1] && (
                   <video
                     key={`preload-next1-${reels[activeIndex + 1]._id}`}
                     src={resolveMediaUrl(reels[activeIndex + 1].videoUrl)}
-                    preload="auto"
-                    muted
-                    playsInline
-                  />
-                )}
-                {/* Second next video (N+2) */}
-                {activeIndex < reels.length - 2 && reels[activeIndex + 2] && (
-                  <video
-                    key={`preload-next2-${reels[activeIndex + 2]._id}`}
-                    src={resolveMediaUrl(reels[activeIndex + 2].videoUrl)}
-                    preload="auto"
+                    preload="metadata"
                     muted
                     playsInline
                   />

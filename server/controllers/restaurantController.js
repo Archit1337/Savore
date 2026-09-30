@@ -11,8 +11,9 @@ const mongoose = require('mongoose');
 // @access  Public
 const getRestaurants = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const isUnpaginated = req.query.paginate === 'false' || req.query.all === 'true';
+    const page = isUnpaginated ? 1 : Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = isUnpaginated ? 1000 : Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 1000);
     const skip = (page - 1) * limit;
 
     const query = {};
@@ -83,6 +84,7 @@ const getRestaurants = async (req, res, next) => {
       .limit(limit);
 
     res.json({
+      success: true,
       data: restaurants || [],
       page,
       totalPages,

@@ -48,15 +48,39 @@ export const CITY_COORDINATES = {
 export const LocationProvider = ({ children }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
 
-  const [activeCity, setActiveCity] = useState('Mumbai');
-  const [activeLocality, setActiveLocality] = useState('Bandra');
-  const [activeCoords, setActiveCoords] = useState({ lat: 19.0596, lng: 72.8258 }); // Bandra coordinates
+  const getCachedLocation = () => {
+    try {
+      const cached = sessionStorage.getItem('savore_detected_location');
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
+    return null;
+  };
+
+  const initialLocation = getCachedLocation();
+
+  const [activeCity, setActiveCity] = useState(initialLocation?.city || 'Mumbai');
+  const [activeLocality, setActiveLocality] = useState(initialLocation?.locality || 'Bandra');
+  const [activeCoords, setActiveCoords] = useState(initialLocation?.coords || { lat: 19.0596, lng: 72.8258 }); // Bandra coordinates
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState('prompt');
 
   const isDetectingGps = useRef(false);
+
+  const persistLocationCache = (city, locality, coords) => {
+    try {
+      sessionStorage.setItem(
+        'savore_detected_location',
+        JSON.stringify({
+          city,
+          locality,
+          coords,
+          timestamp: Date.now(),
+        })
+      );
+    } catch (_) {}
+  };
 
   // Haversine geodesic distance helper
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -100,21 +124,26 @@ export const LocationProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const applyAddressState = (address) => {
+    const locality = address.area || address.street || 'Bandra';
     setActiveCity(address.city);
-    setActiveLocality(address.area || address.street || 'Bandra');
+    setActiveLocality(locality);
     
     // Assign coordinates with slight offset based on locality or city default
     const defaults = CITY_COORDINATES[address.city] || CITY_COORDINATES['Mumbai'];
-    setActiveCoords({ lat: defaults.lat, lng: defaults.lng });
+    const coords = { lat: defaults.lat, lng: defaults.lng };
+    setActiveCoords(coords);
+    persistLocationCache(address.city, locality, coords);
   };
 
   // Switch city manually
   const selectManualCity = (city, locality = null) => {
     const defaults = CITY_COORDINATES[city] || CITY_COORDINATES['Mumbai'];
     const activeLoc = locality || CITY_LOCALITIES[city]?.[0] || 'Bandra';
+    const coords = { lat: defaults.lat, lng: defaults.lng };
     setActiveCity(city);
     setActiveLocality(activeLoc);
-    setActiveCoords({ lat: defaults.lat, lng: defaults.lng });
+    setActiveCoords(coords);
+    persistLocationCache(city, activeLoc, coords);
   };
 
   // Save / Add Address
@@ -184,9 +213,11 @@ export const LocationProvider = ({ children }) => {
     });
 
     const defaults = CITY_COORDINATES[closestCity];
+    const coords = { lat: defaults.lat, lng: defaults.lng };
     setActiveCity(closestCity);
     setActiveLocality(defaults.locality);
-    setActiveCoords({ lat: defaults.lat, lng: defaults.lng });
+    setActiveCoords(coords);
+    persistLocationCache(closestCity, defaults.locality, coords);
   }, []);
 
   // GPS Geolocation and reverse geocoding mapper
@@ -199,6 +230,16 @@ export const LocationProvider = ({ children }) => {
       console.log('📍 [Location Context] Geolocation detection already in progress. Skipping...');
       return;
     }
+
+    // Check if recent location is already cached within 30 minutes
+    const cached = getCachedLocation();
+    if (cached && (Date.now() - (cached.timestamp || 0)) < 30 * 60 * 1000) {
+      setActiveCity(cached.city);
+      setActiveLocality(cached.locality);
+      setActiveCoords(cached.coords);
+      return;
+    }
+
     isDetectingGps.current = true;
     setGpsLoading(true);
 
@@ -209,16 +250,21 @@ export const LocationProvider = ({ children }) => {
         setActiveCoords({ lat: latitude, lng: longitude });
 
         try {
-          // Attempt reverse geocoding OSM Nominatim API
+          // Attempt reverse geocoding OSM Nominatim API with 2.5s abort controller
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2500);
+
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
             {
+              signal: controller.signal,
               headers: {
                 'Accept-Language': 'en',
                 'User-Agent': 'Savore-Dining-Application'
               }
             }
           );
+          clearTimeout(timeoutId);
           const data = await response.json();
           
           if (data && data.address) {
@@ -233,8 +279,11 @@ export const LocationProvider = ({ children }) => {
             );
 
             if (matchedCity) {
+              const locality = parsedLocality || CITY_LOCALITIES[matchedCity]?.[0] || 'Bandra';
+              const coords = { lat: latitude, lng: longitude };
               setActiveCity(matchedCity);
-              setActiveLocality(parsedLocality || CITY_LOCALITIES[matchedCity]?.[0] || 'Bandra');
+              setActiveLocality(locality);
+              persistLocationCache(matchedCity, locality, coords);
             } else {
               // Geographically closest Indian city fallback if coordinates are in India but OSM returned custom names
               handleGeoClosestFallback(latitude, longitude);
@@ -255,7 +304,7 @@ export const LocationProvider = ({ children }) => {
         isDetectingGps.current = false;
         console.warn('Geolocation permission denied or error occurred:', error.message);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
     );
   }, [handleGeoClosestFallback]);
 

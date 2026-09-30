@@ -68,6 +68,11 @@ function ConditionalFooter() {
 export default function App() {
   const [appLoading, setAppLoading] = useState(true);
 
+  const handleLoaderComplete = React.useCallback(() => {
+    setAppLoading(false);
+    window.savoreLoaderComplete = true;
+  }, []);
+
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -75,7 +80,7 @@ export default function App() {
       <ChefMoodProvider>
         <AnimatePresence mode="wait">
           {appLoading && (
-            <CinematicLoader onComplete={() => { setAppLoading(false); window.savoreLoaderComplete = true; }} />
+            <CinematicLoader onComplete={handleLoaderComplete} />
           )}
         </AnimatePresence>
 
