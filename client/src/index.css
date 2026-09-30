@@ -2293,6 +2293,13 @@ html.light .cinematic-loader-shimmer,
   padding: 6px 12px !important;
   border-radius: 8px !important;
   transition: all 0.3s ease !important;
+  outline: none !important;
+}
+
+.nav-link-premium:focus,
+.nav-link-premium:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Muted state */

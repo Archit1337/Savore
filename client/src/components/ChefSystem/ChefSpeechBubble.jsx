@@ -168,6 +168,16 @@ export default function ChefSpeechBubble() {
     }
   }, [chatHistory, isAIThinking, isChatExpanded]);
 
+  // Auto-focus chat input when expanded
+  useEffect(() => {
+    if (isChatExpanded) {
+      const timer = setTimeout(() => {
+        chatInputRef.current?.focus();
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+  }, [isChatExpanded]);
+
   // Reset checkout indicators when recommendation changes
   useEffect(() => {
     setIsFlying(false);
@@ -239,6 +249,8 @@ export default function ChefSpeechBubble() {
         {showBubble && (
           <motion.div
             ref={wrapperRef}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
             className={`chef-speech-bubble-wrapper ${layoutMode} ${
               recommendation ? ' has-recommendation' : ''
             } ${isChatExpanded ? ' chat-expanded' : ''} z-[45] pointer-events-auto`}
@@ -361,6 +373,24 @@ export default function ChefSpeechBubble() {
                                 }`}
                               >
                                 {msg.sender === 'user' ? msg.text : highlightKeywords(msg.text)}
+                                {msg.isAuthPrompt && (
+                                  <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-white/10">
+                                    <button
+                                      type="button"
+                                      onClick={() => navigate('/login')}
+                                      className="px-3 py-1 rounded-lg bg-gradient-to-r from-[#FF6A4E] to-[#FF8A72] hover:brightness-105 text-white text-[11px] font-bold shadow-sm transition-all cursor-pointer"
+                                    >
+                                      Log In
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => navigate('/register')}
+                                      className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-text-primary text-[11px] font-bold border border-white/10 transition-all cursor-pointer"
+                                    >
+                                      Sign Up
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </motion.div>
                           ))}
@@ -457,6 +487,8 @@ export default function ChefSpeechBubble() {
                   {/* ⌨️ Rich Glassmorphic Chat Input Bar */}
                   <form 
                     onSubmit={handleFormSubmit}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="p-3 border-t border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.01] flex gap-2 items-center rounded-b-[28px]"
                   >
                     <button
@@ -479,6 +511,8 @@ export default function ChefSpeechBubble() {
                       type="text"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       disabled={isAIThinking}
                       placeholder="Ask Savoré about wine pairings, menus..."
                       className="flex-1 min-w-0 bg-black/20 hover:bg-black/35 focus:bg-black/40 border border-white/5 rounded-xl px-3.5 py-2 text-[12.5px] text-text-primary focus:outline-none focus:border-[#FF8A72]/40 transition-all font-sans"

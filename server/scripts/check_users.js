@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const User = require('./models/User');
-require('dotenv').config();
+const User = require('../models/User');
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/savore';
 
@@ -13,12 +13,13 @@ async function check() {
     const users = await User.find({}).select('+password');
     console.log(`Found ${users.length} users in database:`);
     users.forEach(u => {
-      console.log(`- Username: ${u.username}, Email: ${u.email}, Role: ${u.role}, PasswordHash: ${u.password}`);
+      console.log(`- Username: ${u.username}, Email: ${u.email}, Role: ${u.role}`);
     });
     
-    mongoose.disconnect();
+    await mongoose.disconnect();
   } catch (err) {
     console.error(err);
+    process.exit(1);
   }
 }
 

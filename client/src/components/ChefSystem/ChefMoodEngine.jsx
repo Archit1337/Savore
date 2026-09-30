@@ -243,18 +243,29 @@ export const ChefMoodProvider = ({ children }) => {
   const sendMessageToChef = async (messageText) => {
     if (!messageText || messageText.trim() === '' || isAIThinking) return;
 
-    if (!user) {
-      setBubbleText("Bonjour! Please log in to chat with me and ask for my secret recipes! 👨‍🍳");
-      soundController.playPop();
-      return;
-    }
-
     const userMessage = messageText.trim();
     // 1. Add user message to history
     const updatedHistory = [...chatHistory, { sender: 'user', text: userMessage }];
     setChatHistory(updatedHistory);
+
+    // 2. If guest user, reply with hardcoded invitation to log in or sign up
+    if (!user) {
+      soundController.playPop();
+      const guestReply = "Bonjour mon ami! To unlock my secret recipes, culinary pairings, and conversational AI, please log in or sign up! 👨‍🍳✨";
+      setTimeout(() => {
+        setChatHistory(prev => [...prev, { 
+          sender: 'chef', 
+          text: guestReply,
+          isAuthPrompt: true 
+        }]);
+        setBubbleText(guestReply);
+        setCurrentMood('active');
+        setCommentType('common');
+      }, 300);
+      return;
+    }
     
-    // 2. Adjust state to thinking
+    // 3. Adjust state to thinking for authenticated users
     soundController.playClick();
     setIsAIThinking(true);
     setCurrentMood('thinking');

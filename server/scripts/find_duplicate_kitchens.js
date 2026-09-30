@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const Restaurant = require('./models/Restaurant');
-const User = require('./models/User');
-require('dotenv').config();
+const Restaurant = require('../models/Restaurant');
+const User = require('../models/User');
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/savore';
 
@@ -47,7 +47,7 @@ async function findDuplicates() {
       console.log('✅ No duplicate restaurants found. Each owner has exactly one kitchen.');
     }
 
-    mongoose.disconnect();
+    await mongoose.disconnect();
   } catch (err) {
     console.error('Error:', err.message);
     process.exit(1);

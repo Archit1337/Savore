@@ -1,5 +1,5 @@
-require('dotenv').config();
-const { chat, recommend } = require('./controllers/chefController');
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+const { chat, recommend } = require('../controllers/chefController');
 const mongoose = require('mongoose');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/savore';

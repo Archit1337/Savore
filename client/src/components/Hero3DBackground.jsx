@@ -150,8 +150,13 @@ export default function Hero3DBackground({ chefVisible = false }) {
       scrollRef.current.targetY = Math.min(scrollPos / maxScroll, 1.0);
     };
 
-    // Global mouse down click-handler (handles clicks instantly and prevents text selection highlights)
+    // Global mouse down click-handler (handles clicks on 3D particles without blocking UI elements)
     const handleGlobalMouseDown = (e) => {
+      // 0. NEVER intercept or block clicks on interactive DOM elements, inputs, buttons, or chef system!
+      if (e.target && e.target.closest('input, textarea, button, select, a, [role="button"], .chef-speech-bubble-wrapper, .chef-speech-bubble, form')) {
+        return;
+      }
+
       const rect = canvas.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
@@ -164,7 +169,7 @@ export default function Hero3DBackground({ chefVisible = false }) {
       });
 
       if (clickedOnParticle) {
-        e.preventDefault(); // Blocks browser text selection highlight
+        if (e.target === canvas) e.preventDefault();
         const nextState = !isLogoActiveRef.current;
         isLogoActiveRef.current = nextState;
         setIsLogoActive(nextState);
@@ -208,12 +213,9 @@ export default function Hero3DBackground({ chefVisible = false }) {
         });
       }
 
-      // Prevent highlights if clicking on a food item, directly on the canvas, or anywhere on the right 58% of the screen
-      const isRightSide = clickX > (rect.width * 0.42);
-      const isDirectCanvas = e.target === canvas;
-
-      if (clickedOnFood || isDirectCanvas || isRightSide) {
-        e.preventDefault(); // Blocks browser text selection highlight
+      // Only prevent text selection highlight if the user clicked directly on the canvas background
+      if ((clickedOnParticle || clickedOnFood || e.target === canvas) && !e.target.closest('input, textarea, button, a')) {
+        e.preventDefault();
       }
     };
 
