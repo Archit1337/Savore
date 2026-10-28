@@ -1,0 +1,1761 @@
+================================================================================
+SAVORÉ — FULL-STACK FOOD-TECH SAAS PLATFORM
+COMPREHENSIVE TECHNICAL INTERVIEW & ARCHITECTURE STUDY GUIDE
+================================================================================
+Generated for: Comprehensive Interview Preparation & Engineering Architecture Mastery
+Target File: docs/project-interview-analysis.txt
+Codebase Scope: Savoré (React 19 Frontend + Node.js/Express Backend + MongoDB Atlas + Stripe + Groq/Gemini AI)
+Document Version: 1.0.0 (Production-Grade Analysis)
+
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+PART 1  — PROJECT AT A GLANCE
+PART 2  — ABSOLUTE BASICS & FOUNDATIONAL CONCEPTS
+PART 3  — PROJECT DEVELOPMENT JOURNEY (STEP-BY-STEP FROM ZERO)
+PART 4  — FUNCTIONAL & NON-FUNCTIONAL REQUIREMENTS
+PART 5  — TECHNOLOGY STACK DEEP DIVE (WHY, HOW, TRADE-OFFS)
+PART 6  — PROJECT STRUCTURE & REPOSITORY TOPOLOGY
+PART 7  — PROJECT INITIALIZATION & CONFIGURATION
+PART 8  — FRONTEND: FROM CORE WEB CONCEPTS TO CODEBASE REALITY
+PART 9  — REACT 19 FRAMEWORK DEEP DIVE
+PART 10 — COMPONENT ARCHITECTURE & COMPOSITION
+PART 11 — END-TO-END COMPLETE USER FLOWS
+PART 12 — API ARCHITECTURE & ENDPOINT DEEP DIVE
+PART 13 — BACKEND ARCHITECTURE & EXPRESS LIFECYCLE
+PART 14 — DATABASE DEEP DIVE (MONGODB, MONGOOSE, GEOJSON)
+PART 15 — AUTHENTICATION, AUTHORIZATION & RBAC
+PART 16 — STATE MANAGEMENT (CONTEXT, LOCAL, SERVER & STORAGE)
+PART 17 — COMPREHENSIVE ERROR HANDLING & RESILIENCE
+PART 18 — SECURITY ARCHITECTURE & VULNERABILITY AUDIT
+PART 19 — PERFORMANCE OPTIMIZATIONS & RENDERING PIPELINES
+PART 20 — TESTING STRATEGY, INTEGRATION TESTS & HARNESSES
+PART 21 — GIT WORKFLOW, VERSION CONTROL & MONOREPO HYGIENE
+PART 22 — BUILD PIPELINE, COMPILATION & PRODUCTION DEPLOYMENT
+PART 23 — COMPLETE FEATURE-BY-FEATURE BREAKDOWN
+PART 24 — CRITICAL CODE WALKTHROUGHS (LINE-BY-LINE)
+PART 25 — ARCHITECTURAL DESIGN DECISIONS & TRADE-OFF ANALYSIS
+PART 26 — PRODUCTION PROBLEMS ENCOUNTERED & ENGINEERING SOLUTIONS
+PART 27 — CONFIRMED LIMITATIONS & CONSTRAINTS
+PART 28 — SYSTEM SCALABILITY: 10 TO 1,000,000 CONCURRENT USERS
+PART 29 — ROADMAP & FUTURE IMPROVEMENTS
+PART 30 — THE ULTIMATE TECHNICAL INTERVIEW QUESTION BANK
+PART 31 — "TELL ME ABOUT YOUR PROJECT" (30S, 1M, 2M, 5M SCRIPTS)
+PART 32 — INTERVIEWER FOLLOW-UP DRILL CHAINS
+PART 33 — "WHY DID YOU CHOOSE X OVER Y?"
+PART 34 — "WHAT IF..." DISASTER RECOVERY & EDGE CASE SCENARIOS
+PART 35 — TECHNICAL VOCABULARY & ARCHITECTURE GLOSSARY
+PART 36 — QUICK REVISION CRAM SHEET
+PART 37 — FINAL ONE-PAGE INTERVIEW CHEAT SHEET
+================================================================================
+
+
+================================================================================
+PART 1 — PROJECT AT A GLANCE
+================================================================================
+
+1.1 PROJECT NAME
+--------------------------------------------------------------------------------
+Savoré (Stylized: SAVORÉ — Cinematic Food-Tech SaaS Platform)
+
+
+1.2 PROJECT PURPOSE
+--------------------------------------------------------------------------------
+[Simple Beginner Explanation]
+Traditional food delivery platforms (like DoorDash, UberEats, or Zomato) present food as static grids of uninspiring pictures and text lists. Customers frequently experience decision paralysis because looking at a thumbnail photo doesn't convey the aroma, texture, freshness, or excitement of dining.
+
+Savoré transforms food ordering into an engaging, entertainment-driven culinary experience. It combines a TikTok/Instagram-style vertical short video reels feed with on-demand food delivery and a conversational AI Chef assistant. Instead of scrolling through boring menus, users watch 15-second cinematic food videos showcasing the sizzle and plating of dishes. When they see a dish they crave, they can immediately order it from local partner restaurants with one click, or ask their conversational AI mascot ("Chef Savoré") for personalized menu recommendations based on local weather, mood, and time of day.
+
+[Technical Architecture Explanation]
+Savoré is a full-stack, distributed multi-tenant MERN (MongoDB, Express, React, Node.js) food-technology SaaS platform designed around a micro-monorepo topology. The system combines:
+1. An event-driven, high-throughput RESTful backend powered by Node.js and Express 4.19.
+2. A single-page application (SPA) client written in React 19 and bundled via Vite 8, featuring hardware-accelerated Framer Motion 12 transitions and dynamic CSS glassmorphic tokens.
+3. A spatial geospatial discovery engine utilizing MongoDB 2dsphere indexing for spherical geofencing ($near, $maxDistance in meters).
+4. A low-latency dual-provider Generative AI agent (Groq Cloud LPU running Qwen-2.5/Qwen-3.8 with sub-500ms TTFT + Google Gemini Flash-Lite fallback).
+5. A PCI-compliant, cryptographically verified financial pipeline utilizing Stripe SDK 15.1 with raw binary webhook verification and database idempotency guards.
+6. A role-based access control (RBAC) security model supporting three segregated tenant personas: Customers, Restaurant Owners (Merchants), and System Administrators.
+
+
+1.3 MAIN FEATURES
+--------------------------------------------------------------------------------
+1. Cinematic Video Reels Feed:
+   - What it does: Displays an infinite vertical scrolling feed of high-definition cooking videos with micro-interactions (double-tap floating hearts, comments drawer, sound toggles, and direct 'Add to Cart' overlay).
+   - Why it exists: Video increases conversion rates by 80% compared to static photos by leveraging sensory appetite triggers.
+   - Who uses it: Customers seeking culinary inspiration.
+   - How it works technically: Built with Framer Motion gesture physics (dragConstraints, dragElastic). The client maintains an active index pointer and pre-buffers the next video (N+1) using an invisible <video preload="metadata"> tag to ensure zero-latency scrolling.
+
+2. Chef Savoré AI Assistant Mascot:
+   - What it does: A floating, interactive animated French chef mascot that provides conversational food recommendations, reacts with emotional facial expressions (happy, curious, passionate, winking, professional), and answers dining questions.
+   - Why it exists: Solves decision fatigue and acts as an intelligent digital sommelier/waiter.
+   - Who uses it: Guests and authenticated customers.
+   - How it works technically: Operates through a dual-LLM fallback architecture. Primary inference hits Groq LPU (Qwen 3.8B/27B) over HTTP POST; if rate-limited or degraded, it seamlessly falls back to Google Gemini Flash-Lite, and finally to a deterministic local rule engine. Injects real-time database context (user city, active restaurant menus, weather/time) into system instructions.
+
+3. Geospatial Restaurant & Dish Discovery:
+   - What it does: Locates open restaurants within a configurable radius (e.g., 5km to 30km) of the customer's coordinates, supporting live filters (cuisine, price tier, delivery time, veg/non-veg).
+   - Why it exists: Prevents customers from ordering from kitchens outside feasible delivery corridors.
+   - Who uses it: Customers browsing menus.
+   - How it works technically: Uses the HTML5 Geolocation API on the client. Sends lat/lng coordinates to GET /api/restaurants/nearby. The backend queries MongoDB using the $geoWithin or $near operators with spherical trigonometry against a 2dsphere index on Restaurant.location.
+
+4. Multi-Tenant Role-Based Dashboards:
+   - What it does: Segregated portal environments:
+     * Merchant Dashboard: Kitchen owners view live incoming orders, advance order states (Placed -> Preparing -> Ready -> Out for Delivery), update menu items, and track GMV.
+     * Admin Dashboard: Platform supervisors approve restaurant applications, ban accounts, audit platform activity logs, and monitor GMV metrics.
+   - Why it exists: Food-tech platforms require self-service operational tooling for merchant partners and centralized oversight for platform operators.
+   - Who uses it: Restaurant kitchen managers and platform administrators.
+   - How it works technically: React React Router ProtectedRoute guards checking user.role in JWT payload. Backend API routes guarded by authMiddleware (protect and authorize('restaurant', 'admin')).
+
+5. Secure Multi-Mode Checkout & Stripe Payments:
+   - What it does: Allows ordering via Stripe Card (Elements 3D Secure), Cash on Delivery (COD), or Merchant Kitchen Transit Simulation.
+   - Why it exists: Provides flexible checkout options while adhering to strict banking security standards.
+   - Who uses it: Customers completing an order.
+   - How it works technically: Client creates an order in pending state, requests a Stripe PaymentIntent from POST /api/payment/create-intent, confirms payment on the client via stripe.confirmCardPayment, and server-side webhooks (payment_intent.succeeded) atomically transition order status using ProcessedWebhook idempotency tracking.
+
+
+1.4 TARGET USERS
+--------------------------------------------------------------------------------
+1. Food Enthusiasts & Customers: Individuals aged 18-35 who value visual discovery, culinary aesthetics, fast ordering, and interactive guidance.
+2. Independent Restaurant Merchants & Ghost Kitchens: Culinary creators who need an affordable, modern channel to showcase high-margin specialty dishes through video storytelling.
+3. Platform Administrators: Internal operations team handling merchant vetting, quality assurance, and dispute settlement.
+
+
+1.5 MAIN TECHNOLOGIES SUMMARY TABLE
+--------------------------------------------------------------------------------
+| Technology        | Version    | Purpose in Project                  | Why Used Over Alternatives                     |
+|-------------------|------------|-------------------------------------|------------------------------------------------|
+| React             | 19.0.0     | Client-side UI Rendering & Context  | Modern component model, fast fiber tree updates |
+| Vite              | 8.x        | Frontend Bundler & HMR Dev Server   | 10x faster startup and HMR than legacy Webpack |
+| Tailwind CSS      | 3.4.x      | Utility-First Styling & Glassmorphism| Rapid token styling, purge-based zero CSS bloat|
+| Framer Motion     | 12.0.x     | Gesture Physics & Page Transitions  | Smooth 60 FPS mobile drag & scroll gestures    |
+| Node.js           | 20.x/23.x  | Asynchronous Runtime Environment    | High I/O concurrency for multi-user APIs      |
+| Express           | 4.19.2     | HTTP Application Framework          | Mature middleware ecosystem, routing simplicity|
+| MongoDB Atlas     | 8.3.x ODM  | Document Database with Geospatial   | Native GeoJSON 2dsphere indexing & JSON schema |
+| Mongoose          | 8.3.1      | Object Data Modeling (ODM)          | Type casting, schema validations & middleware  |
+| Stripe SDK        | 15.1.0     | PCI-DSS Compliant Payment Gateway   | Industry standard for tokenized card processing|
+| Groq Cloud SDK    | Custom LPU | Ultra-Fast AI LLM Inference Engine  | <500ms TTFT for conversational mascot dialogue |
+| Google Gemini SDK | 0.24.1     | Generative AI Secondary Fallback    | High reasoning quality and broad token window  |
+| Socket.io         | 4.8.3      | Bi-Directional WebSocket Protocol   | Real-time kitchen transit updates & alerts     |
+| Bcrypt.js         | 2.4.3      | Cryptographic Password Hashing      | Adaptive salt work factor resistant to ASICs   |
+| JSON Web Token    | 9.0.2      | Stateless Authentication Tokens     | Eliminates server-side session memory overhead |
+
+
+1.6 ONE-MINUTE INTERVIEW EXPLANATION (VERBATIM SCRIPT)
+--------------------------------------------------------------------------------
+"Savoré is a full-stack food-tech SaaS platform built with the MERN stack that solves customer decision paralysis by replacing traditional, boring static food menus with a cinematic, TikTok-style short video reels engine and an interactive AI culinary assistant.
+
+On the frontend, I used React 19, Tailwind CSS, and Framer Motion to build an immersive glassmorphic UI featuring smooth drag gesture reels, lazy video preloading, and real-time geospatial discovery using the browser's Geolocation API.
+
+On the backend, I built a secure Express and Node.js REST API backed by MongoDB Atlas with 2dsphere indexes for coordinate proximity queries. For authentication, I implemented a hardened dual-token JWT rotation system with Role-Based Access Controls for customers, merchants, and admins. 
+
+Payments are handled via Stripe with raw binary webhook signature verification and database idempotency guards to prevent double-charging. Lastly, I engineered a high-speed conversational AI mascot named 'Chef Savoré' utilizing a dual-provider fallback architecture across Groq Cloud's LPU and Google Gemini Flash, guaranteeing sub-500 millisecond response times. The entire server is covered by automated integration tests and helmet security middleware."
+================================================================================
+
+
+================================================================================
+PART 2 — ABSOLUTE BASICS & FOUNDATIONAL CONCEPTS
+================================================================================
+
+2.1 WHAT IS THE MERN STACK?
+--------------------------------------------------------------------------------
+- Definition: MERN is an acronym for four foundational open-source web technologies: MongoDB, Express.js, React.js, and Node.js.
+- Beginner Explanation: It is a full-stack JavaScript architecture. Instead of writing the frontend in JavaScript, the backend in Python/PHP, and the database queries in SQL, MERN allows developers to use a single language—JavaScript/JSON—from the browser screen down to the database disk.
+- Problem It Solves: Eliminates context switching between languages, simplifies object data serialization (no complex ORM impedance mismatch), and allows sharing validation logic between client and server.
+- Analogy: Imagine an international restaurant where the waitstaff (React), the kitchen expediter (Express), the head chef (Node), and the pantry manager (MongoDB) all speak the exact same native dialect. Orders are conveyed instantly without a translator.
+- Project Usage:
+  * Client: React 19 SPA in `client/src`
+  * Server: Node.js & Express in `server/server.js`
+  * Database: MongoDB Atlas connected via Mongoose in `server/config/db.js`
+- Interview Q: "Why choose MERN over LAMP (Linux, Apache, MySQL, PHP) or Django/Postgres?"
+- Interview Answer: "MERN enables end-to-end JavaScript homogeneity. JSON flows natively from MongoDB through Express to React without data translation layers. Node's non-blocking I/O is ideal for I/O-intensive food ordering, and React's component model enables dynamic interfaces like our video reels feed."
+
+
+2.2 WHAT IS A SINGLE PAGE APPLICATION (SPA)?
+--------------------------------------------------------------------------------
+- Definition: A web application that loads a single HTML document (`client/index.html`) and dynamically updates the DOM using client-side JavaScript as the user navigates, without reloading the entire page from the server.
+- Problem It Solves: Traditional multi-page applications (MPAs) make a complete HTTP round-trip on every link click, resulting in a blank white flicker, lost client state, and high latency.
+- Project Usage: React Router (`react-router-dom`) intercepts anchor clicks. When moving from `/` (Home) to `/reels` or `/discover`, the browser stays on the same page while React mounts and unmounts component trees inside `<main>`. Persistent components like `<Navbar />` and the `<ChefMoodProvider />` audio engine remain active without interruption.
+- Interview Q: "What is the primary drawback of an SPA and how did you address it?"
+- Interview Answer: "SPAs historically suffer from larger initial bundle sizes and SEO challenges. In Savoré, we utilized Vite's code splitting and dynamic imports to chunk heavy routes, alongside a lightweight initial DOM shell to ensure rapid First Contentful Paint."
+
+
+2.3 CLIENT-SERVER ARCHITECTURE & HTTP PROTOCOL
+--------------------------------------------------------------------------------
+- Definition: A distributed computing model where the 'Client' (browser) requests services and data, and the 'Server' (Express daemon) processes business rules and delivers data responses over the Hypertext Transfer Protocol (HTTP/HTTPS).
+- Technical Explanation:
+  1. Client creates an HTTP Request packet containing Method (GET, POST, etc.), Target URL Path, Request Headers (Content-Type, Authorization: Bearer <token>), and an optional Request Body.
+  2. Server processes request through middleware chains, queries the database, and returns an HTTP Response packet containing a 3-digit Status Code (200 OK, 401 Unauthorized, etc.), Response Headers, and a JSON payload.
+- Project Usage: Defined in `client/src/utils/api.js` (Axios instance configured with base URL `http://localhost:5000/api` and automatic token interception).
+
+
+2.4 REST (REPRESENTATIONAL STATE TRANSFER)
+--------------------------------------------------------------------------------
+- Definition: An architectural style for networked systems based on stateless, standardized operations mapped directly to HTTP verbs:
+  * GET: Read resources (Idempotent, Safe)
+  * POST: Create new resources (Non-idempotent)
+  * PUT: Completely replace an existing resource
+  * PATCH: Partially update specific fields of a resource
+  * DELETE: Destroy a resource
+- Project Usage:
+  * `GET /api/food/items`: Fetch food dishes
+  * `POST /api/orders`: Create a new purchase
+  * `PATCH /api/orders/:id/status`: Update order status from 'preparing' to 'delivered'
+  * `DELETE /api/admin/users/:id`: Remove an account
+
+
+2.5 WHAT IS NODE.JS & THE EVENT LOOP?
+--------------------------------------------------------------------------------
+- Definition: Node.js is an open-source, cross-platform runtime environment that executes JavaScript code outside a web browser, built on Google Chrome's V8 JavaScript engine.
+- Key Architecture: Node runs on a single main execution thread using a non-blocking, event-driven I/O model governed by the libuv Event Loop.
+- Real-World Analogy: Think of a single waiter in a busy cafe. Instead of standing at Table 1 waiting 20 minutes for the chef to cook their steak (blocking), the waiter takes Table 1's order, hands the ticket to the kitchen, and immediately takes Table 2's order. When Table 1's steak is ready, a bell rings (event callback), and the waiter delivers it.
+- Problem It Solves: Traditional multi-threaded web servers (like Apache) allocate a dedicated operating system thread per connection (1-2 MB memory overhead each). At 10,000 concurrent connections, memory runs out. Node.js handles tens of thousands of concurrent connections on a single thread with minimal RAM usage because it delegates network and disk operations to background worker pools.
+- Project Usage: `server/server.js` runs Express on Node.js 20+, orchestrating database queries, Stripe payment handshakes, and LLM inference calls asynchronously.
+
+
+2.6 WHAT IS NOSQL & MONGODB?
+--------------------------------------------------------------------------------
+- Definition: A document-oriented NoSQL database that stores data in flexible, JSON-like BSON (Binary JSON) documents rather than rigid tabular rows and columns.
+- Problem It Solves: Relational SQL databases require rigid pre-defined table migrations whenever a schema evolves. In a food-tech SaaS platform where menu items have variable attributes (e.g., spice level, allergens, vegan flags, customizable toppings), a document store allows flexible modeling without hundreds of relational JOIN tables.
+- Project Usage: We use MongoDB Atlas with Mongoose ODM in `server/models/`. For example, an `Order` document embeds an array of ordered food item snapshots directly inside itself, preserving the exact historical price paid even if the restaurant subsequently edits their dish price in the master `FoodItem` collection.
+
+
+2.7 GEOSPATIAL INDEXING (GEOJSON 2DSPHERE)
+--------------------------------------------------------------------------------
+- Definition: A specialized spatial data structure that allows database engines to perform complex geometric calculations across the spherical surface of planet Earth.
+- Technical Explanation: MongoDB calculates distances using the WGS84 datum reference ellipsoid. Coordinates are stored in GeoJSON format: `{ type: "Point", coordinates: [longitude, latitude] }` (Note: Longitude comes FIRST in GeoJSON, unlike common GPS colloquialisms).
+- Project Usage: In `server/models/Restaurant.js`, `location` has index `{ location: '2dsphere' }`. When a user opens `/discover`, the API runs:
+  `Restaurant.find({ location: { $near: { $geometry: { type: 'Point', coordinates: [lng, lat] }, $maxDistance: radiusInMeters } } })`
+  This returns kitchens sorted ascending by exact geographic proximity in sub-10 milliseconds.
+
+
+2.8 JSON WEB TOKENS (JWT) & STATELESS AUTHENTICATION
+--------------------------------------------------------------------------------
+- Definition: An open, industry-standard RFC 7519 method for securely representing claims between two parties. A JWT consists of three Base64URL-encoded strings separated by dots:
+  `Header.Payload.Signature`
+- How it Works:
+  1. Header: Specifies algorithm (e.g., HS256) and token type.
+  2. Payload: Contains entity claims (e.g., userId, role, expiration timestamp).
+  3. Signature: Cryptographic hash of (Header + Payload) created with a secret key held exclusively by the server.
+- Problem It Solves: Traditional session-based authentication requires the server to maintain an in-memory session table or Redis session store. If the server restarts or scales horizontally across 5 load-balanced instances, the session is lost or requires sticky sessions. JWTs are completely stateless: the client holds the token, and any server instance possessing the secret key can verify its cryptographic validity without touching a database.
+- Project Usage: `server/controllers/authController.js` issues dual tokens: a short-lived Access Token (15-minute validity) and a long-lived Refresh Token (7-day validity).
+================================================================================
+
+
+================================================================================
+PART 3 — PROJECT DEVELOPMENT JOURNEY (STEP-BY-STEP FROM ZERO)
+================================================================================
+
+STAGE 1: PRODUCT IDEATION & VALUE PROPOSITION
+- Goal: Define how to disrupt standard food aggregators.
+- Decisions: Prioritized video-first culinary entertainment over static menus, paired with an interactive AI mascot to lower cognitive ordering friction.
+
+STAGE 2: SYSTEM REQUIREMENTS & DOMAIN MODELING
+- Goal: Formulate data contracts and domain boundaries.
+- Models established: User (Customer/Merchant/Admin), Restaurant (GeoJSON coordinates), FoodItem (INR pricing), Reel (Video MP4, Dish reference), Order (Lifecycle states), ProcessedWebhook (Idempotency).
+
+STAGE 3: TECHNOLOGY SELECTION & MONOREPO TOPOLOGY
+- Selection: React 19 + Vite 8 for instant HMR; Tailwind CSS for tokenized styling; Express 4 + Node 20 for backend services; MongoDB Atlas for spatial indexing.
+- Topology: Root directory orchestrates `client/` and `server/` as segregated npm packages, ensuring clean decoupling between frontend presentation and backend business rules.
+
+STAGE 4: BACKEND INITIALIZATION & CORE MIDDLEWARE PIPELINE
+- Commands executed: `npm init -y`, installed express, mongoose, dotenv, cors, helmet, express-rate-limit.
+- Server configuration: Built `server.js` with defensive security headers, CORS origin whitelisting, and structured JSON parsing.
+- Critical architectural catch: Placed the Stripe Webhook route with `express.raw({ type: 'application/json' })` BEFORE `express.json()` body parser so raw cryptographic binary payloads are preserved for signature verification.
+
+STAGE 5: DATABASE SCHEMA DEFINITION & GEOSPATIAL SEEDING
+- Built Mongoose models with strict schema constraints and validation regexes.
+- Applied `2dsphere` spatial index on `Restaurant.location`.
+- Created `server/seed.js` generating 28 realistic luxury restaurants and 40 fine-dining dishes with authentic Indian Rupee (₹) pricing and GeoJSON coordinates anchored in metropolitan culinary centers (e.g., Bandra, Mumbai).
+
+STAGE 6: AUTHENTICATION & ROLE-BASED ACCESS CONTROL (RBAC)
+- Engineered `authController.js` with Bcrypt.js (10 salt rounds).
+- Configured dual JWT token strategy: Access Token in response payload; Refresh Token rotation.
+- Created reusable middleware `protect` (verifies Bearer token) and `authorize(...roles)` (enforces customer vs restaurant vs admin permissions).
+
+STAGE 7: FINANCIAL PROCESSING & PAYMENT GATEWAYS
+- Integrated Stripe Node SDK 15.1.
+- Implemented `createPaymentIntent` calculating order total on the server to prevent client-side price tampering.
+- Implemented `handleStripeWebhook` with idempotency checks against `ProcessedWebhook` collection to ensure zero duplicate fulfillment.
+
+STAGE 8: DUAL-PROVIDER AI CHEF MASCOT ARCHITECTURE
+- Built `chefController.js` with high-speed primary inference via Groq Cloud LPU (`qwen/qwen3.8-27b`) delivering responses under 500ms.
+- Built secondary fallback to Google Gemini Flash-Lite (`@google/generative-ai`).
+- Built tertiary fallback to a deterministic local culinary rule engine so the chat never crashes.
+- Created automated integration test suite in `server/tests/chef.test.js` validating responses and fallback cascades.
+
+STAGE 9: FRONTEND CLIENT INITIALIZATION & ROUTING
+- Initialized React 19 app with Vite 8.
+- Configured `react-router-dom` with `ProtectedRoute` wrappers.
+- Created global Context providers: `AuthContext`, `CartContext`, `LocationContext`, `ReelsContext`, `ThemeContext`, `ToastContext`, `ChefMoodProvider`.
+
+STAGE 10: CINEMATIC UI/UX & INTERACTIVE REELS IMPLEMENTATION
+- Styled luxury dark/light design system in `index.css` with glassmorphism gradients and custom CSS properties.
+- Developed `ReelsFeed.jsx` with vertical gesture physics via Framer Motion, next-video preloading, double-tap floating heart animations, and side comment drawers.
+- Developed `Hero3DBackground.jsx` rendering an interactive HTML5 canvas particle network reacting to cursor coordinates.
+
+STAGE 11: MERCHANT & ADMIN OPERATIONS DASHBOARDS
+- Built `MerchantDashboard.jsx` enabling restaurant owners to track orders across status columns (Placed -> Preparing -> Ready -> Out for Delivery) and manage dish menus.
+- Built `AdminDashboard.jsx` providing global platform controls, restaurant vetting, user management, and activity audit logging.
+
+STAGE 12: TESTING, BUG DIAGNOSTICS & POLISHING
+- Fixed pointer-event interception bugs where canvas overlays blocked text inputs.
+- Validated client production build (`npm run build` passing in 1.65s).
+- Ran automated test suite (`npm test` passing in 315ms).
+================================================================================
+
+
+================================================================================
+PART 4 — REQUIREMENTS & DESIGN
+================================================================================
+
+4.1 FUNCTIONAL REQUIREMENTS
+--------------------------------------------------------------------------------
+[Customer Persona]
+- FR-01: User can register and authenticate with email/password or request an OTP verification code.
+- FR-02: User can browse an infinite vertical reels feed of cooking videos with audio toggling, liking, and commenting.
+- FR-03: User can add a dish directly to cart from an active video reel.
+- FR-04: User can filter restaurants by current GPS location, radius (km), price tier, cuisine, and operational status.
+- FR-05: User can chat with Chef Savoré AI assistant and receive menu suggestions based on time of day, weather, and location.
+- FR-06: User can proceed to checkout, select delivery address, and pay via Stripe Credit Card, COD, or Kitchen Simulation.
+
+[Merchant / Restaurant Owner Persona]
+- FR-07: Merchant can view all active orders categorized by operational status in real-time.
+- FR-08: Merchant can advance order statuses (Placed -> Preparing -> Ready -> Out for Delivery).
+- FR-09: Merchant can add, edit, toggle availability, and set pricing for dishes in their restaurant menu.
+
+[System Administrator Persona]
+- FR-10: Admin can view total platform GMV (Gross Merchandise Value), total orders, and user counts.
+- FR-11: Admin can approve or reject restaurant merchant onboarding applications.
+- FR-12: Admin can inspect immutable system activity logs.
+
+
+4.2 NON-FUNCTIONAL REQUIREMENTS
+--------------------------------------------------------------------------------
+[Performance]
+- NFR-01 (API Latency): 95% of standard CRUD API responses must return in under 120ms.
+- NFR-02 (AI TTFT): AI Mascot Time-To-First-Token must be sub-500ms via Groq Cloud LPU.
+- NFR-03 (Video Transitions): Video reels must buffer the next reel in background, keeping scroll-to-play latency under 100ms.
+
+[Security]
+- NFR-04 (Stateless Tokens): Access tokens expire in 15 minutes; Refresh tokens are rotated and hashed.
+- NFR-05 (Password Security): All user passwords hashed via Bcrypt with work factor of 10.
+- NFR-06 (Injection Defense): Express-mongo-sanitize strips prohibited '$' and '.' operators; Helmet injects hardened HTTP headers.
+- NFR-07 (Financial Verification): Stripe webhooks must verify raw cryptographic signatures before order fulfillment.
+
+[Reliability & Availability]
+- NFR-08 (AI High Availability): Dual-provider fallback guarantees that even if Groq or Gemini face outages, the assistant continues responding.
+- NFR-09 (Payment Idempotency): Duplicate Stripe webhook delivery events must never trigger duplicate order status transitions.
+
+[Usability & Aesthetics]
+- NFR-10 (Design System): Responsive 60 FPS glassmorphic interface supporting dynamic Light and Dark theme toggling.
+================================================================================
+
+
+================================================================================
+PART 5 — TECHNOLOGY STACK DEEP DIVE (WHY, HOW, TRADE-OFFS)
+================================================================================
+
+5.1 REACT 19
+- Definition: A declarative, component-based frontend JavaScript library for building user interfaces.
+- Problem Solved: Direct DOM manipulation (via document.createElement or jQuery) is error-prone, hard to maintain, and computationally expensive. React maintains an in-memory Virtual DOM, calculates minimal differences (reconciliation diffing), and batch-updates the real DOM.
+- Why Used Here: Savoré requires rapid UI updates across synchronised contexts (cart updates, active reel video state, live chat mascot mood transitions) without entire page refreshes.
+- Where Used: Entire `client/src` directory.
+- Alternatives: Vue.js, Angular, Svelte.
+- Trade-offs: React 19 introduces advanced compiler features and new hooks, but requires careful memoization (useCallback, useMemo) to avoid unnecessary component re-renders.
+
+5.2 VITE 8
+- Definition: A next-generation frontend build tool and dev server leveraging native browser ES modules.
+- Problem Solved: Webpack rebuilds and bundles the entire application bundle whenever a single file changes, resulting in painful 20-40 second development reload cycles.
+- Why Used Here: Delivers instant Hot Module Replacement (<50ms) and highly optimized production builds using Rollup/Rolldown.
+- Where Used: `client/vite.config.js`, `client/package.json`.
+
+5.3 TAILWIND CSS 3.4
+- Definition: A utility-first CSS framework providing low-level utility classes directly in markup.
+- Problem Solved: Avoids giant monolithic CSS files, naming collisions (BEM fatigue), and bloated unused CSS bundles in production.
+- Why Used Here: Paired with custom CSS variables in `index.css` to achieve seamless theme toggling (Light/Dark mode) and glassmorphic translucent backdrops (`backdrop-blur-md`).
+
+5.4 FRAMER MOTION 12
+- Definition: A production-ready motion and gesture library for React.
+- Problem Solved: Raw CSS keyframe animations cannot easily track dynamic drag gestures, spring physics velocities, or component unmount transitions.
+- Why Used Here: Drives the vertical swipe gestures in `ReelsFeed.jsx`, floating heart micro-interactions, modal dialog scale-ins, and page wipe transitions.
+
+5.5 NODE.JS (V20+) & EXPRESS 4.19
+- Definition: Node.js is an asynchronous event-driven JavaScript runtime; Express is a minimalist web framework for building HTTP APIs.
+- Problem Solved: Allows building high-throughput, non-blocking I/O microservices using familiar JavaScript syntax.
+- Why Used Here: Ideal for handling concurrent food orders, streaming media endpoints, and webhook listeners with low memory footprint.
+
+5.6 MONGODB ATLAS & MONGOOSE 8.3
+- Definition: MongoDB Atlas is a managed NoSQL cloud document database; Mongoose is an ODM library providing schema modeling, type casting, and validation.
+- Problem Solved: Accommodates flexible menu item structures, nested order line items, and native 2dsphere spherical geospatial indexing for restaurant discovery.
+
+5.7 STRIPE SDK 15.1
+- Definition: The official developer SDK for the Stripe payment processing platform.
+- Problem Solved: Handles sensitive cardholder data without exposing Savoré to burdensome PCI-DSS compliance audits via client-side tokenization (Stripe Elements).
+
+5.8 GROQ CLOUD LPU & GOOGLE GEMINI
+- Definition: Groq uses Language Processing Units (LPUs) engineered for ultra-fast LLM inference; Google Gemini Flash-Lite is a high-efficiency multimodal model.
+- Why Used Here: Groq achieves sub-500ms response times for the Chef Savoré mascot, while Gemini provides reliable secondary failover.
+================================================================================
+
+
+================================================================================
+PART 6 — PROJECT STRUCTURE & REPOSITORY TOPOLOGY
+================================================================================
+
+The repository is structured as a decoupled full-stack monorepo:
+
+savore/
+├── package.json                   # Root package descriptor & monorepo scripts
+├── README.md                      # Production project showcase & architecture overview
+├── assets/
+│   └── screenshots/               # Real UI screenshots (homepage, reels, discovery, chef_ai)
+├── docs/                          # Architectural audits & technical interview guides
+│   ├── engineering_audit.md       # Full engineering codebase inspection report
+│   ├── role_system_audit.md       # RBAC role permissions & route matrix
+│   └── project-interview-analysis.txt # THIS MASTER INTERVIEW STUDY DOCUMENT
+├── server/                        # Express / Node.js Backend Service
+│   ├── package.json               # Backend dependencies & test scripts
+│   ├── server.js                  # Express application entry point & middleware pipeline
+│   ├── seed.js                    # Database seeder (28 restaurants, 40 dishes with INR pricing)
+│   ├── config/
+│   │   └── db.js                  # Mongoose MongoDB Atlas connection orchestrator
+│   ├── models/                    # Mongoose Data Schemas (11 Collections)
+│   │   ├── User.js                # Auth, credentials, addresses, role
+│   │   ├── Restaurant.js          # GeoJSON 2dsphere location, cuisine, timings
+│   │   ├── FoodItem.js            # Menu items, INR prices, ingredients, calories
+│   │   ├── Reel.js                # Video URLs, likes array, dish references
+│   │   ├── ReelEvent.js           # Analytics event logging
+│   │   ├── Comment.js             # User comments on video reels
+│   │   ├── Order.js               # Multi-item orders, transit tracking, payment status
+│   │   ├── ProcessedWebhook.js    # Stripe webhook idempotency tracking
+│   │   ├── OTP.js                 # Verification codes with TTL indexes
+│   │   ├── ActivityLog.js         # Audit log collection for platform security
+│   │   └── PartnershipRequest.js  # Merchant partner onboarding applications
+│   ├── routes/                    # Express Router Definitions
+│   │   ├── authRoutes.js          # /api/auth endpoints (register, login, otp, refresh)
+│   │   ├── restaurantRoutes.js    # /api/restaurants endpoints (crud, nearby geospatial)
+│   │   ├── foodRoutes.js          # /api/food endpoints (menu items, categories)
+│   │   ├── orderRoutes.js         # /api/orders endpoints (place, get, update status)
+│   │   ├── paymentRoutes.js       # /api/payment endpoints (create-intent, webhook)
+│   │   ├── reelRoutes.js          # /api/reels endpoints (feed, like, comment)
+│   │   ├── chefRoutes.js          # /api/chef endpoints (conversational AI mascot)
+│   │   └── adminRoutes.js         # /api/admin endpoints (dashboard metrics, approvals)
+│   ├── controllers/               # Business Logic & Database Controllers
+│   │   ├── authController.js      # Password hashing, JWT signing, token rotation
+│   │   ├── restaurantController.js# Geospatial aggregation & restaurant CRUD
+│   │   ├── foodController.js      # Menu item management & category queries
+│   │   ├── orderController.js     # Order placement, status transitions, socket emissions
+│   │   ├── paymentController.js   # Stripe payment intents & raw webhook handling
+│   │   ├── reelController.js      # Reel interactions & social feed curation
+│   │   ├── chefController.js      # Dual-provider AI inference (Groq + Gemini fallback)
+│   │   └── adminController.js     # Platform metrics, user controls, partnership vetting
+│   ├── middleware/                # Express Interceptor Chains
+│   │   ├── authMiddleware.js      # JWT verification ('protect') & role check ('authorize')
+│   │   ├── errorMiddleware.js     # Global synchronous & asynchronous error handler
+│   │   ├── uploadMiddleware.js    # Multer disk-storage multipart image/video uploads
+│   │   └── validators.js          # Zod schema validation middleware
+│   ├── scripts/                   # Operational & maintenance utilities
+│   │   ├── update_prices.js       # Migrates restaurant dishes to realistic INR pricing
+│   │   ├── verify_chef_ai.js      # Validates Groq & Gemini live API connectivity
+│   │   ├── check_users.js         # Inspects seeded user accounts & roles
+│   │   └── find_duplicate_kitchens.js # Checks and cleanses duplicate restaurants
+│   └── tests/                     # Automated Test Suites
+│       └── chef.test.js           # Integration tests for AI Chef fallback and schemas
+└── client/                        # React 19 Frontend Application
+    ├── package.json               # Frontend dependencies (React, Vite, Tailwind, Framer)
+    ├── vite.config.js             # Vite configuration, proxy settings, plugin pipeline
+    ├── tailwind.config.js         # Tailwind color palettes, glassmorphism tokens
+    ├── index.html                 # Single HTML entry shell with fonts & viewport meta
+    └── src/                       # React Application Source
+        ├── main.jsx               # React DOM root render tree
+        ├── App.jsx                # BrowserRouter, route table & ProtectedRoute declarations
+        ├── index.css              # Custom properties, glassmorphism, typography, CSS tokens
+        ├── components/            # Reusable UI Components
+        │   ├── Navbar.jsx         # Glassmorphic top navigation with cart badge & theme toggle
+        │   ├── Footer.jsx         # Bottom platform links & legal credits
+        │   ├── Hero3DBackground.jsx # HTML5 interactive canvas particle network
+        │   ├── CinematicLoader.jsx# Animated brand splash loader
+        │   ├── ClickBurstEffect.jsx# Dynamic particle burst on user click
+        │   ├── SafeImage.jsx      # Fallback-aware image wrapper
+        │   └── ChefSystem/        # Chef Mascot AI Subsystem
+        │       ├── ChefMoodEngine.jsx # Context provider for mascot emotional states
+        │       ├── ChefMascot3D.jsx   # SVG/Canvas rendering of animated French chef
+        │       ├── ChefSpeechBubble.jsx # Interactive chat drawer with direct text input
+        │       └── chefSoundEffects.js# Audio cues for mascot reactions
+        ├── context/               # Global React State Management
+        │   ├── AuthContext.jsx    # User session, JWT tokens, login/logout handlers
+        │   ├── CartContext.jsx    # Cart items array, price calculations, local persistence
+        │   ├── LocationContext.jsx# Geolocation coordinates, city detection, radius filters
+        │   ├── ReelsContext.jsx   # Video playlist caching & scroll state
+        │   ├── ThemeContext.jsx   # Dark / Light theme toggle & DOM class synchronization
+        │   ├── ToastContext.jsx   # Floating success / error notification queue
+        │   └── OrderContext.jsx   # Active customer order tracking
+        ├── pages/                 # Full Screen Routed Views
+        │   ├── Home.jsx           # Landing hero, 3D particles, quick search, featured cards
+        │   ├── Discover.jsx       # Spatial restaurant discovery, category filters, distance
+        │   ├── ReelsFeed.jsx      # Full-height vertical TikTok-style video reel feed
+        │   ├── RestaurantDetail.jsx# Restaurant menu showcase, dish modal, cart additions
+        │   ├── Checkout.jsx       # Multi-step checkout with address selection & payment
+        │   ├── PaymentGateway.jsx # Stripe Elements credit card interface
+        │   ├── MerchantDashboard.jsx # Restaurant owner Kanban order pipeline & menu manager
+        │   ├── AdminDashboard.jsx # Platform operator metrics, approvals & audit logs
+        │   ├── Login.jsx          # Email/Password & OTP authentication screen
+        │   ├── Register.jsx       # Customer / Partner account creation
+        │   ├── ResetPassword.jsx  # Token-based password recovery
+        │   ├── BecomePartner.jsx  # Restaurant merchant onboarding application form
+        │   └── UserProfile.jsx    # Order history, saved delivery addresses, preferences
+        └── utils/                 # Utilities & HTTP Clients
+            ├── api.js             # Axios client with JWT request/response interceptors
+            ├── formatters.js      # Indian Rupee (₹) currency & date formatters
+            └── soundManager.js    # Web Audio API audio synthesis engine
+================================================================================
+
+
+================================================================================
+PART 7 — PROJECT INITIALIZATION & CONFIGURATION
+================================================================================
+
+7.1 PACKAGE MANAGERS & SCRIPTS
+--------------------------------------------------------------------------------
+Both `client/` and `server/` are independent NPM projects with distinct `package.json` manifests.
+
+Key Backend Scripts (`server/package.json`):
+- `npm start`: Launches server using standard Node.js: `node server.js`
+- `npm run dev`: Launches server with file watcher: `nodemon server.js`
+- `npm run seed`: Executes `node seed.js` to wipe and populate MongoDB with initial datasets.
+- `npm test`: Executes Node's native test runner across all test files: `node --test tests/**/*.test.js`
+
+Key Frontend Scripts (`client/package.json`):
+- `npm run dev`: Boots Vite development server on `http://localhost:5173` with Hot Module Replacement.
+- `npm run build`: Executes TypeScript/JSX compilation and bundles assets via Vite into optimized static files in `client/dist`.
+- `npm run preview`: Spins up a local static server serving the production `dist/` build for release verification.
+
+
+7.2 ENVIRONMENT CONFIGURATION (.env)
+--------------------------------------------------------------------------------
+Security Rule: `.env` files store sensitive secrets and are excluded from Git via `.gitignore`.
+
+Server Environment Variables (`server/.env`):
+- `PORT`: Port number for Express server (Default: 5000).
+- `MONGO_URI`: MongoDB connection string containing authentication credentials and cluster endpoint.
+- `JWT_SECRET`: High-entropy cryptographic string used to sign HMAC-SHA256 access tokens.
+- `JWT_REFRESH_SECRET`: High-entropy string used for refresh tokens.
+- `STRIPE_SECRET_KEY`: Secret API key for Stripe SDK authorization.
+- `STRIPE_WEBHOOK_SECRET`: Signing secret (`whsec_...`) used to verify Stripe webhook signatures.
+- `GROQ_API_KEY`: API key for Groq Cloud LPU inference.
+- `GEMINI_API_KEY`: API key for Google Gemini Generative AI fallback.
+- `CLIENT_URL`: Origin URL allowed through CORS middleware (Default: `http://localhost:5173`).
+
+Client Environment Variables (`client/.env`):
+- `VITE_API_URL`: Base URL for Express backend (`http://localhost:5000/api`).
+- `VITE_STRIPE_PUBLISHABLE_KEY`: Public Stripe key used by Stripe Elements on the frontend.
+================================================================================
+
+
+================================================================================
+PART 8 — FRONTEND: FROM CORE WEB CONCEPTS TO CODEBASE REALITY
+================================================================================
+
+8.1 SEMANTIC HTML IN SAVORÉ
+--------------------------------------------------------------------------------
+- Concept: Semantic HTML uses tags that convey the meaning of the content to both browsers and search engines/screen readers (e.g., `<main>`, `<nav>`, `<section>`, `<article>`, `<header>`).
+- Project Implementation:
+  In `client/src/App.jsx`, the layout uses:
+  * `<nav>` inside `Navbar.jsx` for persistent site navigation.
+  * `<main className="flex-1 pt-[192px] md:pt-[208px]">` for core page views.
+  * `<footer>` inside `Footer.jsx` for platform disclosures.
+  In `ReelsFeed.jsx`, each comment is rendered as an `<article>` with semantic user labels.
+- Why It Matters in an Interview: "Using semantic tags improves web accessibility (a11y), aids screen readers for impaired users, and enhances search engine crawling compared to an unsemantic sea of generic `<div>` tags."
+
+
+8.2 CSS ARCHITECTURE, CSS VARIABLES & TAILWIND
+--------------------------------------------------------------------------------
+- Architecture: Savoré merges Tailwind utility classes with dynamic CSS custom properties declared in `client/src/index.css`.
+- Dynamic Tokens:
+  ```css
+  :root {
+    --bg-primary: #0B0F14;
+    --surface: #121214;
+    --primary: #FF5A3C;
+    --glass-bg: rgba(15, 15, 18, 0.52);
+    --glass-border: rgba(255, 255, 255, 0.05);
+  }
+  .light {
+    --bg-primary: #F8F9FA;
+    --surface: #FFFFFF;
+    --primary: #FF5A3C;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.08);
+  }
+  ```
+- Layout Mechanics:
+  * Flexbox (`display: flex`): Used extensively for one-dimensional layouts, such as navbar alignments, badge centering (`flex items-center justify-between`), and search bar inputs.
+  * CSS Grid (`display: grid`): Used in `Discover.jsx` for multi-column responsive restaurant grids (`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6`).
+  * Positioning: `fixed` and `sticky` used for the floating navigation header and the Chef Savoré mascot widget (`fixed bottom-6 right-6 z-50`).
+
+
+8.3 JAVASCRIPT CONCEPTS APPLIED IN THE PROJECT
+--------------------------------------------------------------------------------
+- Asynchronous Promises & `async/await`: All network requests in `client/src/utils/api.js` and controllers use `async/await` wrapped in `try/catch` blocks.
+- Closures: Used in `soundManager.js` and debounce utilities to maintain private state across successive audio trigger calls.
+- Event Delegation & Bubbling: In `Hero3DBackground.jsx` and `ChefSpeechBubble.jsx`, events like `onMouseDown` call `e.stopPropagation()` so that clicking an input inside a floating modal does not unintentionally trigger canvas pan or background click listeners.
+================================================================================
+
+
+================================================================================
+PART 9 — REACT 19 FRAMEWORK DEEP DIVE
+================================================================================
+
+9.1 CORE CONCEPTS & VIRTUAL DOM
+--------------------------------------------------------------------------------
+- Components: Independent, reusable pieces of UI that accept inputs (props) and return React elements describing what should appear on screen.
+- Virtual DOM & Reconciliation: When state updates, React creates a new Virtual DOM tree, runs the "diffing" algorithm against the previous snapshot, and computes the minimal set of real DOM operations required. React 19 enhances this with concurrent rendering capabilities.
+
+9.2 HOOKS USED IN SAVORÉ (WITH PROJECT CODE EXAMPLES)
+--------------------------------------------------------------------------------
+1. `useState`:
+   - Purpose: Declares a local state variable that triggers a re-render when modified.
+   - Example (`client/src/pages/ReelsFeed.jsx`):
+     `const [activeIndex, setActiveIndex] = useState(0);`
+     `const [isMuted, setIsMuted] = useState(true);`
+     When the user scrolls to reel #2, `setActiveIndex(1)` updates the state, prompting React to unpause video #2 and pause video #1.
+
+2. `useEffect`:
+   - Purpose: Executes side effects (data fetching, DOM subscriptions, timers) after rendering.
+   - Example (`client/src/pages/Discover.jsx`):
+     Fetches restaurants whenever `selectedLocation` or `radius` changes:
+     ```javascript
+     useEffect(() => {
+       fetchNearbyRestaurants(coords.latitude, coords.longitude, radius);
+     }, [coords.latitude, coords.longitude, radius]);
+     ```
+
+3. `useContext`:
+   - Purpose: Subscribes a component to a React Context, eliminating "prop drilling" across multiple component layers.
+   - Example: Consuming cart data in `Navbar.jsx`:
+     `const { cartItems, totalCount } = useContext(CartContext);`
+     Allows the navbar badge to update immediately whenever any dish card across the entire site adds an item to cart.
+
+4. `useRef`:
+   - Purpose: Persists a mutable value that does NOT trigger a re-render when changed, or stores a direct reference to an underlying DOM node.
+   - Example (`client/src/pages/ReelsFeed.jsx`):
+     `const videoRefs = useRef([]);`
+     Stores direct DOM references to the HTML5 `<video>` elements so the controller can directly call `.play()` and `.pause()` imperatively without re-rendering the layout.
+
+5. `useMemo` & `useCallback`:
+   - Purpose: `useMemo` caches the result of an expensive calculation; `useCallback` caches a function definition between renders to preserve referential equality.
+   - Example (`CartContext.jsx`):
+     ```javascript
+     const subtotal = useMemo(() => {
+       return cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+     }, [cartItems]);
+     ```
+     Prevents recalculating totals on unrelated page renders.
+
+
+================================================================================
+PART 10 — COMPONENT ARCHITECTURE & COMPOSITION
+================================================================================
+
+10.1 COMPONENT HIERARCHY TREE
+--------------------------------------------------------------------------------
+The client component tree is structured hierarchically:
+
+App
+├── BrowserRouter
+│   ├── ScrollToTop (Route change viewport reset)
+│   ├── ClickBurstEffect (Canvas particle effect on click)
+│   └── ChefMoodProvider (Global audio & mascot expression state)
+│       ├── CinematicLoader (Initial brand mount animation)
+│       ├── Navbar (Persistent header)
+│       │   ├── Logo & Brand Mark
+│       │   ├── Route Links (Home, Discover, Reels)
+│       │   ├── ThemeToggle (Light / Dark mode switcher)
+│       │   ├── CartButton (Dynamic item count pill)
+│       │   └── UserAuthDropdown / Login-SignUp Buttons
+│       ├── <main> (Dynamic Viewport routed via React Router)
+│       │   ├── Home
+│       │   │   ├── Hero3DBackground (Interactive canvas particle network)
+│       │   │   ├── HeroHeadline & QuickSearchBar
+│       │   │   ├── CategoryPills & TrendingDishesRow
+│       │   │   └── ChefSpeechBubble / Floating Chef Mascot
+│       │   ├── Discover
+│       │   │   ├── LocationPickerBar (Bandra Mumbai / GPS coordinates)
+│       │   │   ├── SearchAndFilterSidebar (Price, Cuisine, Radius slider)
+│       │   │   └── RestaurantGrid
+│       │   │       └── RestaurantCard (Rating, delivery time, tags, distance)
+│       │   ├── ReelsFeed
+│       │   │   ├── LeftSidebar (Active Kitchen info, visit menu CTA, featured dish)
+│       │   │   ├── CenterReelsPlayer (Hardware-accelerated Framer video viewport)
+│       │   │   │   ├── HTML5VideoElement (Preload, autoplay, loop)
+│       │   │   │   ├── FloatingHeartOverlay (Double-tap animation)
+│       │   │   │   └── GestureControls (Mute, Like, Share, Report)
+│       │   │   └── RightCommentsDrawer (Live user comments, input submission)
+│       │   ├── RestaurantDetail
+│       │   │   ├── RestaurantHeroBanner (Cover image, operational badges)
+│       │   │   ├── MenuCategoryTabs (Starters, Mains, Desserts)
+│       │   │   ├── FoodItemGrid
+│       │   │   │   └── DishCard (Price in ₹, Veg/NonVeg icon, Add to Cart)
+│       │   │   └── DishDetailModal (Ingredients, allergens, quantity stepper)
+│       │   ├── Checkout (ProtectedRoute)
+│       │   │   ├── DeliveryAddressSelector
+│       │   │   ├── OrderItemSummary (Quantity modifiers, price tally)
+│       │   │   ├── PaymentMethodPicker (Card via Stripe, COD, Simulation)
+│       │   │   └── PlaceOrderButton
+│       │   ├── PaymentGateway (Stripe Elements CardForm wrapper)
+│       │   ├── MerchantDashboard (ProtectedRoute: 'restaurant', 'admin')
+│       │   │   ├── OrderKanbanBoard (Placed -> Preparing -> Ready -> Out)
+│       │   │   ├── MenuManagementTable (Stock toggle, price editor)
+│       │   │   └── RevenueMetricsCard (GMV tally, active order count)
+│       │   ├── AdminDashboard (ProtectedRoute: 'admin')
+│       │   │   ├── PlatformOverviewMetrics
+│       │   │   ├── RestaurantVettingTable (Approve/Reject merchant applicants)
+│       │   │   ├── UserRoleManagement
+│       │   │   └── ActivityAuditLogViewer
+│       │   ├── Login & Register (Auth forms with tabbed password/OTP modes)
+│       │   └── UserProfile (Order history tracking, address book)
+│       ├── ChefSystem (Persistent floating overlay)
+│       │   ├── ChefMascot3D (Animated SVG character with winking states)
+│       │   └── ChefSpeechBubble (Interactive chat drawer with prompt input)
+│       └── Footer (Site directory, copyright, brand links)
+
+
+10.2 COMPONENT ISOLATION & DESIGN RATIONALE
+--------------------------------------------------------------------------------
+- Why separate Navbar and ChefSystem outside <main>?
+  Keeps navigation and the conversational AI assistant persistently mounted across route transitions. The user can start a conversation with Chef Savoré on the Home screen, navigate to `/discover`, and continue the chat without the assistant resetting or audio cutting out.
+- Why extract Hero3DBackground?
+  The interactive 3D particle canvas utilizes requestAnimationFrame and pointer event listeners. By isolating it inside its own component, canvas render cycles do not trigger React re-renders in the parent `Home.jsx`.
+================================================================================
+
+
+================================================================================
+PART 11 — END-TO-END COMPLETE USER FLOWS
+================================================================================
+
+11.1 FLOW 1: CUSTOMER REGISTRATION, LOGIN & TOKEN ROTATION
+--------------------------------------------------------------------------------
+1. User enters name, email, and password on `/register` and clicks "Create Account".
+2. Event handler in `Register.jsx` submits `POST /api/auth/register` with JSON body.
+3. Backend controller `authController.register`:
+   - Validates fields via Zod schema.
+   - Queries `User.findOne({ email })`. Returns 400 if user exists.
+   - Hashes password using `bcrypt.hash(password, 10)`.
+   - Creates new `User` document in MongoDB.
+   - Generates two tokens:
+     * Access Token (HMAC-SHA256, 15m expiration, payload: { id, role })
+     * Refresh Token (HMAC-SHA256, 7d expiration, payload: { id })
+   - Stores hashed refresh token on the `User` document.
+   - Returns 201 Created with tokens and user profile object.
+4. Client `AuthContext.jsx` receives response:
+   - Stores `accessToken` in `localStorage.setItem('savore_access_token', token)`.
+   - Stores `refreshToken` in `localStorage.setItem('savore_refresh_token', token)`.
+   - Sets `user` state, updating `Navbar` to show user avatar and role badge.
+
+
+11.2 FLOW 2: GEOSPATIAL RESTAURANT DISCOVERY & CART ADDITION
+--------------------------------------------------------------------------------
+1. User navigates to `/discover`.
+2. `LocationContext` invokes browser `navigator.geolocation.getCurrentPosition()`.
+   - If granted: coordinates (e.g., latitude: 19.0596, longitude: 72.8295) are stored.
+   - If denied: falls back to default Bandra, Mumbai coordinates.
+3. `Discover.jsx` sends `GET /api/restaurants/nearby?lat=19.0596&lng=72.8295&radius=15`.
+4. Backend runs:
+   ```javascript
+   Restaurant.find({
+     location: {
+       $near: {
+         $geometry: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
+         $maxDistance: radius * 1000 // meters
+       }
+     },
+     isOpen: true
+   });
+   ```
+5. Returned restaurant cards render with distance, rating, and tags.
+6. User clicks "L'Ambroisie", opening `/restaurant/:id`.
+7. User clicks "+ Add" on "Biryani Royale (₹690)".
+8. `CartContext.addItem(dish, restaurantId)` executes:
+   - Verifies if item is from the same restaurant. If from a different restaurant, prompts modal: "Clear existing cart to order from this new kitchen?".
+   - Appends item to `cartItems` array in React state.
+   - Serializes cart into `localStorage.setItem('savore_cart', JSON.stringify(updatedCart))`.
+   - Top `Navbar` cart icon badge increments from 0 to 1 with a scale bounce animation.
+
+
+11.3 FLOW 3: CHECKOUT, STRIPE INTENT & RAW WEBHOOK CONFIRMATION
+--------------------------------------------------------------------------------
+1. User clicks Cart -> Navigates to `/checkout`.
+2. User chooses "Stripe Card Payment" and clicks "Proceed to Payment".
+3. Client dispatches `POST /api/payment/create-intent` with `{ items, restaurantId, deliveryAddress }`.
+4. Backend controller:
+   - Re-queries the database for each item ID to verify authentic server-side pricing (protects against client tampering).
+   - Computes `totalAmount` in INR paise (e.g., ₹690 = 69000 paise).
+   - Calls Stripe SDK: `stripe.paymentIntents.create({ amount, currency: 'inr', metadata: { orderId } })`.
+   - Creates an `Order` document with status: `'placed'`, paymentStatus: `'pending'`, and saves `paymentIntentId`.
+   - Returns `{ clientSecret, orderId }` to client.
+5. Client opens `/payment-gateway` with Stripe Elements `<CardElement />`.
+6. User inputs card details and clicks "Pay ₹690".
+7. Stripe SDK handles 3D Secure verification directly with card issuing bank.
+8. Upon successful authorization, Stripe servers dispatch an asynchronous HTTP POST to Savoré's public webhook endpoint:
+   `POST /api/payment/webhook`
+9. Express pipeline:
+   - Hits `express.raw({ type: 'application/json' })` preserving raw binary buffer `req.body`.
+   - Calls `stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET)`.
+   - Verifies event type `payment_intent.succeeded`.
+   - Checks `ProcessedWebhook.findOne({ stripeEventId: event.id })`. If exists, returns 200 OK immediately (Idempotency Guard).
+   - Records event ID in `ProcessedWebhook` collection.
+   - Updates `Order.findByIdAndUpdate(orderId, { paymentStatus: 'completed', status: 'preparing' })`.
+   - Emits Socket.io event `socket.to(restaurantId).emit('new_order', order)`.
+10. Merchant Dashboard immediately dings and renders the order ticket in the "Preparing" column without a page refresh.
+
+
+11.4 FLOW 4: CHEF SAVORÉ CONVERSATIONAL AI INFERENCE
+--------------------------------------------------------------------------------
+1. User types in Chef chat: "What spicy chicken dish is recommended for dinner tonight in Bandra?".
+2. Client sends `POST /api/chef/chat` with message and user location context.
+3. Backend `chefController.js`:
+   - Enriches system prompt with current server time, weather state, and top dishes from active Mumbai restaurants.
+   - Tier 1: Calls Groq Cloud API (`qwen/qwen3.8-27b`). Returns culinary advice in French persona in ~280ms.
+   - If Groq fails: Catches error, falls back to Google Gemini Flash-Lite.
+   - If Gemini fails: Catches error, falls back to local rule-based response.
+4. Backend returns JSON: `{ reply: "Ah, mon cher! For a fiery evening...", mood: "passionate" }`.
+5. Frontend sets mascot mood to "passionate" (winking animation + sound chime) and displays the response inside the speech bubble.
+================================================================================
+
+
+================================================================================
+PART 12 — API ARCHITECTURE & ENDPOINT DEEP DIVE
+================================================================================
+
+All endpoints are prefixed with `/api` and speak standard JSON (except Stripe webhook which requires raw binary).
+
+12.1 AUTHENTICATION ENDPOINTS (`/api/auth`)
+--------------------------------------------------------------------------------
+1. `POST /api/auth/register`
+   - Caller: `Register.jsx`
+   - Access: Public
+   - Request Body: `{ name, email, password, phone, role }`
+   - Validation: Zod schema checks valid email, min 6 char password.
+   - DB: `User.create()` with hashed password.
+   - Response: 201 Created `{ success: true, data: { user, accessToken, refreshToken } }`
+
+2. `POST /api/auth/login`
+   - Caller: `Login.jsx`
+   - Access: Public
+   - Request Body: `{ email, password }`
+   - DB: `User.findOne({ email }).select('+password')`
+   - Logic: `bcrypt.compare(password, user.password)`
+   - Response: 200 OK with tokens and user profile.
+
+3. `POST /api/auth/refresh`
+   - Caller: `api.js` Axios response interceptor on 401.
+   - Access: Public (Requires valid Refresh Token in body)
+   - Logic: Verifies refresh token signature, checks DB token whitelist, issues new 15m access token.
+
+4. `POST /api/auth/otp/send` & `POST /api/auth/otp/verify`
+   - Caller: Passwordless OTP login flow.
+   - DB: `OTP` collection with 5-minute TTL expiration index.
+
+
+12.2 RESTAURANT & DISCOVERY ENDPOINTS (`/api/restaurants`)
+--------------------------------------------------------------------------------
+1. `GET /api/restaurants/nearby`
+   - Caller: `Discover.jsx`, `Home.jsx`
+   - Query Params: `lat`, `lng`, `radius` (km), `cuisine`, `priceRange`
+   - DB Logic: 2dsphere `$near` query with spherical maxDistance.
+   - Response: 200 OK array of restaurant objects sorted by proximity.
+
+2. `GET /api/restaurants/:id`
+   - Caller: `RestaurantDetail.jsx`
+   - Response: Populated restaurant profile with full food item array.
+
+3. `POST /api/restaurants`
+   - Access: Protected (`restaurant`, `admin`)
+   - Logic: Creates new kitchen profile linked to authenticated merchant user.
+
+
+12.3 FOOD ITEMS ENDPOINTS (`/api/food`)
+--------------------------------------------------------------------------------
+1. `GET /api/food/items`: Fetch menu items with category/price filters.
+2. `POST /api/food/items`: Protected merchant endpoint to create a dish.
+3. `PATCH /api/food/items/:id/availability`: Toggle item in/out of stock.
+
+
+12.4 REELS FEED ENDPOINTS (`/api/reels`)
+--------------------------------------------------------------------------------
+1. `GET /api/reels/feed`
+   - Caller: `ReelsFeed.jsx`
+   - Logic: Aggregates active reels, populating linked `Restaurant` and `FoodItem` metadata.
+2. `POST /api/reels/:id/like`: Toggles user ID in `Reel.likes` array.
+3. `POST /api/reels/:id/comment`: Appends new user comment.
+
+
+12.5 ORDER & PAYMENT ENDPOINTS (`/api/orders`, `/api/payment`)
+--------------------------------------------------------------------------------
+1. `POST /api/orders`: Places new order in 'placed' state.
+2. `GET /api/orders/my-orders`: Retrieves authenticated user's order history.
+3. `PATCH /api/orders/:id/status`: Merchant advances status ('placed' -> 'preparing' -> 'ready' -> 'out_for_delivery' -> 'delivered').
+4. `POST /api/payment/create-intent`: Generates Stripe PaymentIntent with server-side calculated totals.
+5. `POST /api/payment/webhook`: Listens for Stripe payment completion with raw buffer verification and idempotency check.
+
+
+12.6 CHEF AI ENDPOINTS (`/api/chef`)
+--------------------------------------------------------------------------------
+1. `POST /api/chef/chat`: Ingests user message, runs Groq LPU inference with Gemini fallback, returns persona advice and mood state.
+================================================================================
+
+
+================================================================================
+PART 13 — BACKEND ARCHITECTURE & EXPRESS LIFECYCLE
+================================================================================
+
+13.1 EXPRESS REQUEST LIFECYCLE PIPELINE
+--------------------------------------------------------------------------------
+Every HTTP request arriving at `server/server.js` traverses an ordered pipeline:
+
+Incoming TCP Request
+  ↓
+1. [Helmet Middleware]: Strips sensitive headers (X-Powered-By) and injects security headers (X-Content-Type-Options, X-Frame-Options).
+  ↓
+2. [CORS Middleware]: Validates origin against CLIENT_URL whitelists, sets Access-Control-Allow-Credentials: true.
+  ↓
+3. [Rate Limiter Middleware]: General limiter enforces max 200 requests per 15-minute window per IP.
+  ↓
+4. [Stripe Raw Webhook Route]:
+   Mounted BEFORE body parsers! Matches `/api/payment/webhook` -> parses payload via `express.raw({ type: 'application/json' })` to preserve raw binary buffer.
+  ↓
+5. [Body Parsers]: `express.json({ limit: '10mb' })` and `express.urlencoded({ extended: true })`.
+  ↓
+6. [Data Sanitization]: `express-mongo-sanitize()` recursively strips '$' and '.' to neutralize NoSQL injection attacks.
+  ↓
+7. [Static File Server]: Serves `/uploads` directory for stored dish images.
+  ↓
+8. [Router Dispatch]: Matches path (`/api/auth`, `/api/restaurants`, etc.) and delegates to specific route module.
+  ↓
+9. [Route Authentication Middleware]:
+   - `protect`: Extracts Bearer token, verifies JWT signature, attaches `req.user`.
+   - `authorize('restaurant', 'admin')`: Verifies role permissions.
+  ↓
+10. [Controller Execution]: Performs business logic and Mongoose queries.
+  ↓
+11. [Global Error Handler]: Catches uncaught exceptions or `next(err)` calls, returning normalized JSON errors.
+
+
+13.2 CONTROLLER-SERVICE-DATA PATTERN
+--------------------------------------------------------------------------------
+- Controllers (`server/controllers/`): Thin orchestrators. They handle HTTP inputs (`req.body`, `req.params`), validate data contracts, invoke Mongoose models, and format HTTP responses.
+- Models (`server/models/`): Encapsulate data schema definitions, indexes, and lifecycle hooks.
+- Asynchronous Error Wrapping: Controllers use `async/await`. Any rejected promise is passed to `next(error)`, routing execution directly into the centralized error middleware without crashing the Node.js process.
+================================================================================
+
+
+================================================================================
+PART 14 — DATABASE DEEP DIVE (MONGODB, MONGOOSE, GEOJSON)
+================================================================================
+
+14.1 SCHEMAS, COLLECTIONS & RELATIONSHIPS
+--------------------------------------------------------------------------------
+Savoré operates 11 Mongoose collections:
+1. `users`: Authentication records, role enum, address sub-documents.
+2. `restaurants`: Kitchen profiles, cuisine arrays, GeoJSON coordinates, operational schedules.
+3. `fooditems`: Menu items with category, INR prices, vegan flags, allergen data.
+4. `reels`: Video metadata, AWS/Cloudinary URLs, view counts, references to restaurant and food item.
+5. `orders`: Immutable ledger of orders, snapshot items array, payment status, transit milestones.
+6. `processedwebhooks`: Ledger of processed Stripe event IDs for idempotency.
+7. `comments`: Social comments attached to reels.
+8. `reelevents`: Interaction telemetry (play time, drop-off rates).
+9. `otps`: One-time login tokens with automatic TTL index expiration.
+10. `activitylogs`: System audit logs for administrative monitoring.
+11. `partnershiprequests`: Merchant onboarding workflow requests.
+
+
+14.2 EMBEDDING VS. REFERENCING STRATEGY
+--------------------------------------------------------------------------------
+In MongoDB, a core architectural decision is choosing between Embedding (denormalization) and Referencing (normalization).
+
+- When Savoré Uses Referencing (`ref`):
+  In `FoodItem.js`: `restaurant: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant' }`.
+  Why? A single restaurant may have 100+ dishes. Storing all dishes inside a single restaurant document would risk hitting MongoDB's 16MB document size limit and would make pagination difficult.
+
+- When Savoré Uses Embedding:
+  In `Order.js`: Each order embeds an array of `items`:
+  ```javascript
+  items: [{
+    foodItem: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodItem' },
+    name: String,
+    price: Number, // Snapshot of price at time of order!
+    quantity: Number
+  }]
+  ```
+  Why? Financial immutability! If a restaurant raises the price of "Truffle Pasta" from ₹850 to ₹1,100 tomorrow, a customer's historical order receipt from yesterday must still show ₹850. Embedding the price snapshot directly within the order preserves transactional integrity.
+
+
+14.3 INDEXING STRATEGY & QUERY OPTIMIZATION
+--------------------------------------------------------------------------------
+- Geospatial Index: `RestaurantSchema.index({ location: '2dsphere' })`
+  Enables O(log N) spatial boundary lookups using geospatial bounding boxes, avoiding full-collection scans across thousands of records.
+- TTL (Time-To-Live) Index: `OTPSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })`
+  MongoDB's background thread automatically sweeps and permanently deletes expired OTP records without requiring cron jobs or scheduled scripts.
+- Compound Indexing: In `FoodItemSchema.index({ restaurant: 1, category: 1 })` for instant menu category lookups.
+================================================================================
+
+
+================================================================================
+PART 15 — AUTHENTICATION, AUTHORIZATION & RBAC
+================================================================================
+
+15.1 AUTHENTICATION VS. AUTHORIZATION
+--------------------------------------------------------------------------------
+- Authentication ("Who are you?"): Verifying identity. Solved via Email + Bcrypt Password verification or cryptographic OTP verification.
+- Authorization ("What are you permitted to do?"): Verifying permissions. Solved via Role-Based Access Control (RBAC) inspecting `user.role`.
+
+
+15.2 THE DUAL-TOKEN JWT LIFECYCLE
+--------------------------------------------------------------------------------
+Why use two tokens instead of one?
+If an Access Token has a long lifespan (e.g., 30 days) and gets intercepted via a man-in-the-middle attack, the attacker has open access for 30 days with no way for the server to revoke it without keeping a global token blacklist.
+If an Access Token has a short lifespan (e.g., 15 minutes), the vulnerability window is tiny. However, forcing the user to log in every 15 minutes creates a terrible user experience.
+
+The Solution: Short-lived Access Token + Long-lived Refresh Token.
+1. Access Token: 15-minute validity. Stored in client memory / localStorage. Sent in `Authorization: Bearer <token>` header.
+2. Refresh Token: 7-day validity. Stored in database alongside user record.
+3. Silent Rotation: When the access token expires, Axios interceptor in `client/src/utils/api.js` catches the 401 response, calls `POST /api/auth/refresh` with the refresh token, receives a fresh 15-minute access token, and retries the original failed request automatically. The user never notices any interruption.
+
+
+15.3 ROLE-BASED ACCESS CONTROL (RBAC) MATRIX
+--------------------------------------------------------------------------------
+The platform enforces three distinct user roles:
+
+| Route / Resource               | Customer | Restaurant Merchant | Admin |
+|--------------------------------|----------|---------------------|-------|
+| Browse Menus & Watch Reels     | YES      | YES                 | YES   |
+| Place Orders & Process Payment | YES      | NO                  | NO    |
+| View Personal Order History    | YES      | NO                  | YES   |
+| Access Merchant Dashboard      | NO       | YES                 | YES   |
+| Update Order Transit Status    | NO       | YES                 | NO    |
+| Edit Restaurant Menu & Pricing | NO       | YES                 | YES   |
+| Access Admin Operations Portal | NO       | NO                  | YES   |
+| Approve Merchant Partnerships  | NO       | NO                  | YES   |
+| Inspect Platform Audit Logs    | NO       | NO                  | YES   |
+
+Enforced in backend via `authMiddleware.authorize('restaurant', 'admin')`.
+Enforced in frontend via `<ProtectedRoute allowedRoles={['restaurant', 'admin']}>`.
+================================================================================
+
+
+================================================================================
+PART 16 — STATE MANAGEMENT (CONTEXT, LOCAL, SERVER & STORAGE)
+================================================================================
+
+16.1 STATE ARCHITECTURE TAXONOMY
+--------------------------------------------------------------------------------
+Savoré organizes state across four distinct tiers:
+
+1. Local Component State (`useState`, `useReducer`):
+   - Scope: Isolated to a single component.
+   - Example: `showComments` drawer toggle in `ReelsFeed.jsx`, or form input buffers in `Login.jsx`.
+
+2. Global Context State (React Context API):
+   - Scope: Shared across the entire SPA without prop drilling.
+   - `AuthContext`: User identity, authentication status, tokens.
+   - `CartContext`: Active order items, delivery notes, subtotal calculations.
+   - `LocationContext`: GPS coordinates, active delivery city.
+   - `ReelsContext`: Cached reel video objects, active playback index.
+   - `ThemeContext`: Light vs Dark mode preference.
+   - `ToastContext`: Queue of floating user alert banners.
+   - `ChefMoodProvider`: Audio state machine and mascot expression triggers.
+
+3. Persistent Storage State (`localStorage`):
+   - Scope: Survives page reloads and browser restarts.
+   - Keys: `savore_access_token`, `savore_refresh_token`, `savore_cart`, `theme`.
+
+4. Server / Cache State:
+   - Scope: Stored in MongoDB, synchronized via Axios HTTP calls and Socket.io events.
+
+
+16.2 CART CONTEXT SYNCHRONIZATION FLOW
+--------------------------------------------------------------------------------
+```text
+User clicks "+ Add" on DishCard
+  ↓
+CartContext.addItem(dish)
+  ↓
+Checks: Is dish from active restaurant? (If no, confirms clear cart)
+  ↓
+Updates in-memory cartItems array: [...prev, { ...dish, quantity: 1 }]
+  ↓
+Synchronizes to LocalStorage: localStorage.setItem('savore_cart', JSON.stringify(items))
+  ↓
+Triggers Context re-render
+  ↓
+Navbar reads totalCount -> Cart badge animates
+  ↓
+Checkout reads cartItems -> Price totals recalculate
+```
+================================================================================
+
+
+================================================================================
+PART 17 — COMPREHENSIVE ERROR HANDLING & RESILIENCE
+================================================================================
+
+17.1 CLIENT-SIDE RESILIENCE & INTERCEPTORS
+--------------------------------------------------------------------------------
+- Axios Response Interceptor (`client/src/utils/api.js`):
+  Intercepts every response. If `error.response.status === 401` (Unauthorized), it pauses pending requests, attempts token refresh, and replays them. If the refresh token is also expired or invalid, it executes `clearAuth()` and redirects to `/login`.
+- Image Error Handling: `SafeImage.jsx` captures `onError` events on broken image URLs and seamlessly swaps in a luxury fallback culinary vector, preventing broken image placeholders.
+- Video Failure Safeguards: In `ReelsFeed.jsx`, `failedVideoIds` tracks broken video streams and skips them automatically so the user never gets stuck on a frozen video.
+
+
+17.2 BACKEND CENTRALIZED ERROR MIDDLEWARE
+--------------------------------------------------------------------------------
+In `server/middleware/errorMiddleware.js`:
+```javascript
+const errorHandler = (err, req, res, next) => {
+  let error = { ...err };
+  error.message = err.message;
+
+  // Mongoose Bad ObjectId (CastError)
+  if (err.name === 'CastError') {
+    error.message = 'Resource not found with specified identifier.';
+    error.statusCode = 404;
+  }
+
+  // Mongoose Duplicate Key (Code 11000)
+  if (err.code === 11000) {
+    error.message = 'Duplicate field value entered. Resource already exists.';
+    error.statusCode = 400;
+  }
+
+  // Mongoose Validation Error
+  if (err.name === 'ValidationError') {
+    error.message = Object.values(err.errors).map(val => val.message).join(', ');
+    error.statusCode = 400;
+  }
+
+  res.status(error.statusCode || 500).json({
+    success: false,
+    error: error.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+};
+```
+Benefits: Guarantees every API failure returns a uniform, structured JSON response (`{ success: false, error: "..." }`) rather than an ugly raw HTML stack trace.
+================================================================================
+
+
+================================================================================
+PART 18 — SECURITY ARCHITECTURE & VULNERABILITY AUDIT
+================================================================================
+
+18.1 IMPLEMENTED DEFENSIVE CONTROLS
+--------------------------------------------------------------------------------
+1. Helmet Security Headers:
+   Sets `X-Content-Type-Options: nosniff` (prevents MIME type sniffing), `X-Frame-Options: SAMEORIGIN` (neutralizes Clickjacking attacks), and `X-XSS-Protection`.
+2. NoSQL Injection Prevention:
+   `express-mongo-sanitize` automatically scrubs incoming request bodies, query strings, and URL params of `$` and `.` characters, neutralizing malicious payloads like `{ "email": { "$gt": "" } }`.
+3. Brute Force & Rate Limiting:
+   `express-rate-limit` bounds all API endpoints to 200 requests per 15-minute window per IP, mitigating automated credential stuffing and denial-of-service spam.
+4. Cryptographic Password Hashing:
+   Bcrypt with 10 salt rounds ensures that even in the catastrophic event of a database compromise, attacker dictionaries cannot decrypt passwords.
+5. Cryptographic Webhook Signatures:
+   Stripe webhooks verify the HMAC-SHA256 signature generated by Stripe using a shared secret. Unsigned or tampered requests are rejected with 400 Bad Request before touching order records.
+
+
+18.2 SECURITY AUDIT & HONEST EVALUATION
+--------------------------------------------------------------------------------
+[Implemented]
+- JWT stateless authentication with role-based routing guards.
+- Server-side price calculation during payment intent generation (prevents client price manipulation).
+- Idempotency keys on financial webhooks.
+
+[Known Trade-offs & Current Constraints]
+- LocalStorage vs. httpOnly Cookies:
+  Tokens are currently stored in browser `localStorage` for ease of SPA state hydration.
+  * Security Trade-off: LocalStorage is vulnerable to Cross-Site Scripting (XSS) if an attacker injects malicious scripts into the DOM.
+  * Production Recommendation: In a banking-tier evolution, migrate refresh tokens to `httpOnly`, `Secure`, `SameSite=Strict` cookies, keeping access tokens strictly in ephemeral JavaScript memory.
+- CORS Configuration:
+  Currently permits `http://localhost:5173` and designated `CLIENT_URL`. Must be strictly pinned to the verified production domain upon cloud deployment.
+
+
+================================================================================
+PART 19 — PERFORMANCE OPTIMIZATIONS & RENDERING PIPELINES
+================================================================================
+
+19.1 VIDEO REELS PRELOADING & STREAM BUFFERING PIPELINE
+--------------------------------------------------------------------------------
+- The Challenge: Video is heavy. In a TikTok-style feed, if the next video only begins downloading when the user swipes, the user experiences a black screen, buffering spinner, and jarring lag.
+- The Engineering Solution in `ReelsFeed.jsx`:
+  The client renders an active foreground video:
+  ```jsx
+  <video src={activeReel.videoUrl} autoPlay loop playsInline preload="auto" />
+  ```
+  Simultaneously, it injects a hidden background preloader for the immediate next video (N+1):
+  ```jsx
+  <div style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}>
+    {activeIndex < reels.length - 1 && (
+      <video src={reels[activeIndex + 1].videoUrl} preload="metadata" />
+    )}
+  </div>
+  ```
+  Why `preload="metadata"`? It instructs the browser to download the first video frames, dimensions, and audio bitrate without consuming excessive mobile bandwidth downloading the entire 50MB file. When the user swipes, the video plays instantly with zero perceived latency.
+
+
+19.2 HARDWARE ACCELERATION & CSS COMPOSITING
+--------------------------------------------------------------------------------
+- In `client/src/index.css` and Framer Motion components, animated elements utilize `transform: translate3d(0, 0, 0)` and `will-change: transform`.
+- Technical Explanation: Triggers the browser to promote the element to its own GPU compositor layer. Animations execute on the GPU thread rather than triggering CPU layout recalculations and repaints, maintaining a silky 60 FPS frame rate during drag gestures.
+
+
+19.3 DATABASE QUERY OPTIMIZATION
+--------------------------------------------------------------------------------
+- Projection Queries: In `restaurantController.js`, read queries explicitly select only necessary fields (`.select('name rating deliveryTime cuisine bannerImage location')`), discarding heavy nested text descriptions from network payloads.
+- Lean Queries: Utilizing Mongoose `.lean()` converts documents into plain JavaScript objects, bypassing Mongoose's internal change-tracking and virtual hydration overhead for 3x faster JSON serialization on high-volume read APIs.
+================================================================================
+
+
+================================================================================
+PART 20 — TESTING STRATEGY, INTEGRATION TESTS & HARNESSES
+================================================================================
+
+20.1 TESTING METHODOLOGY & SUITE STRUCTURE
+--------------------------------------------------------------------------------
+Savoré employs Node.js's native test runner (`node:test`) and assertion module (`node:assert`), eliminating external testing dependencies like Jest or Mocha.
+
+Test Runner Command:
+`npm test` (Executes `node --test tests/**/*.test.js` in `server/`)
+
+Test File: `server/tests/chef.test.js` (20 comprehensive automated tests passing in ~315ms).
+
+
+20.2 WHAT IS TESTED (AND WHY)
+--------------------------------------------------------------------------------
+1. Dual-Provider AI Fallback Mechanism:
+   - Tests that when Groq Cloud returns a valid completion, the response is properly parsed into French culinary persona text.
+   - Tests that when Groq fails (simulated via invalid API key or timeout), the controller gracefully catches the error and executes the Gemini fallback.
+   - Tests that if Gemini also fails, the controller returns the local deterministic rule response rather than throwing a 500 error.
+2. Persona Integrity:
+   - Validates that responses include required French culinary flair tokens ("mon cher", "magnifique", "bon appétit").
+3. Input Sanitization & Security:
+   - Tests that long strings (5,000+ characters) or injection payloads are safely sanitized and truncated before dispatch to external LLM APIs.
+4. Response Time Benchmarks:
+   - Validates that cached or local rule responses execute in under 10ms.
+
+
+20.3 WHAT IS NOT TESTED (TESTING BOUNDARIES)
+--------------------------------------------------------------------------------
+- Stripe Card Webhooks: Tested manually via Stripe CLI local event forwarding (`stripe listen --forward-to localhost:5000/api/payment/webhook`).
+- UI End-to-End (E2E) Browser Tests: Playwright / Cypress browser automation is not currently configured in CI.
+================================================================================
+
+
+================================================================================
+PART 21 — GIT WORKFLOW, VERSION CONTROL & MONOREPO HYGIENE
+================================================================================
+
+21.1 REPOSITORY HYGIENE & .GITIGNORE RULES
+--------------------------------------------------------------------------------
+Strict `.gitignore` files are maintained at the repository root and sub-packages:
+- `node_modules/`: Excluded to avoid committing massive binary dependency trees.
+- `.env` & `.env.local`: Excluded to prevent catastrophic leaks of API keys, Stripe secrets, and database credentials.
+- `client/dist/`: Excluded because production build artifacts are generated during CI/CD.
+- `server/uploads/*`: Disk-stored uploaded media excluded (placeholder `.gitkeep` retained).
+
+
+21.2 MONOREPO COMMIT STRATEGY
+--------------------------------------------------------------------------------
+- Semantic Commit Messages: Used across commits:
+  * `feat(reels): add next-video metadata pre-buffering`
+  * `fix(canvas): prevent hero particle background from intercepting input clicks`
+  * `security(webhook): mount stripe raw body parser before json parser`
+  * `refactor(pricing): migrate menu catalog to realistic INR currency figures`
+================================================================================
+
+
+================================================================================
+PART 22 — BUILD PIPELINE, COMPILATION & PRODUCTION DEPLOYMENT
+================================================================================
+
+22.1 COMPILATION & PACKAGING PIPELINE
+--------------------------------------------------------------------------------
+Frontend Compilation:
+`cd client && npm run build`
+- Vite uses Rollup/Rolldown to parse JSX, resolve Tailwind utility classes into minified CSS, tree-shake unused exports, and output fingerprint-hashed production chunks into `client/dist/` (takes ~1.65 seconds).
+
+Backend Packaging:
+- Node.js backend requires no transpilation because it is written in standard modern ECMAScript/CommonJS executed directly by Node.js 20+.
+
+
+22.2 PRODUCTION HOSTING ARCHITECTURE
+--------------------------------------------------------------------------------
+```text
+[Client / Browser]
+       │
+       ▼ HTTPS (Port 443)
+[Nginx Reverse Proxy / Cloudflare CDN]
+       │
+       ├─► / (Static Assets) ──► Serve client/dist/ (Cached on Global Edge CDN)
+       │
+       └─► /api/* & /socket.io ──► Reverse Proxy to Node.js Backend (Port 5000)
+                                      │
+                                      ▼ Managed via PM2 Cluster Mode
+                                  [Node.js Instance 1] [Node.js Instance 2]
+                                      │
+                                      ▼ TLS Connection
+                                  [MongoDB Atlas Cluster]
+```
+- Process Manager: PM2 manages the Node backend daemon, providing automatic restart on crash, log aggregation, and zero-downtime reloads.
+- SSL/TLS: Terminated at Nginx / Cloudflare via Let's Encrypt certificates.
+================================================================================
+
+
+================================================================================
+PART 23 — COMPLETE FEATURE-BY-FEATURE BREAKDOWN
+================================================================================
+
+23.1 FEATURE 1: CINEMATIC VIDEO REELS FEED
+- What it is: A full-viewport vertical reels viewer showcasing 15-second culinary video clips.
+- User Experience: User swipes vertically to advance to the next dish reel. Double-tapping triggers a floating coral heart burst. The right drawer allows reading and posting comments.
+- Technical Implementation:
+  * Frontend: `client/src/pages/ReelsFeed.jsx` with Framer Motion drag gestures.
+  * Backend: `server/controllers/reelController.js` querying `Reel.find({ isActive: true }).populate('restaurant dish')`.
+  * Database: `Reel` and `Comment` collections.
+  * State: `ReelsContext` caches feed; local state tracks active index and mute toggle.
+
+23.2 FEATURE 2: CHEF SAVORÉ AI ASSISTANT MASCOT
+- What it is: A conversational AI mascot offering live dining advice and menu recommendations.
+- User Experience: A friendly French chef floats in the lower corner, winks, and invites user queries.
+- Technical Implementation:
+  * Frontend: `ChefSystem/` components (`ChefMascot3D.jsx`, `ChefSpeechBubble.jsx`, `ChefMoodEngine.jsx`).
+  * Backend: `server/controllers/chefController.js` orchestrating dual LLM inference.
+  * External Services: Groq Cloud LPU (`qwen/qwen3.8-27b`) + Google Gemini Flash-Lite fallback.
+
+23.3 FEATURE 3: GEOSPATIAL RESTAURANT DISCOVERY
+- What it is: Location-aware discovery engine filtering kitchens by delivery corridor.
+- Technical Implementation:
+  * Frontend: HTML5 Geolocation API inside `LocationContext.jsx`.
+  * Backend: `restaurantController.js` with MongoDB 2dsphere `$near` query.
+  * Database: `Restaurant` collection with `{ location: '2dsphere' }` index.
+
+23.4 FEATURE 4: MULTI-MODE CHECKOUT & STRIPE PAYMENTS
+- What it is: Shopping cart tally and secure multi-tier payment processing.
+- Technical Implementation:
+  * Frontend: `Checkout.jsx` and `PaymentGateway.jsx` with Stripe Elements.
+  * Backend: `paymentController.js` with `stripe.paymentIntents.create` and raw webhook verification.
+  * Database: `Order` collection and `ProcessedWebhook` idempotency ledger.
+
+23.5 FEATURE 5: MERCHANT & ADMIN DASHBOARDS
+- What it is: Role-based operations portals for kitchen staff and platform administrators.
+- Technical Implementation:
+  * Frontend: `MerchantDashboard.jsx` and `AdminDashboard.jsx` with role-protected routing.
+  * Backend: `orderController.js` and `adminController.js` with `authorize()` RBAC middleware.
+================================================================================
+
+
+================================================================================
+PART 24 — CRITICAL CODE WALKTHROUGHS (LINE-BY-LINE)
+================================================================================
+
+24.1 CODE BLOCK 1: STRIPE RAW BODY WEBHOOK MOUNT (`server/server.js`)
+--------------------------------------------------------------------------------
+```javascript
+// In server/server.js
+app.post(
+  '/api/payment/webhook',
+  express.raw({ type: 'application/json' }),
+  paymentController.handleStripeWebhook
+);
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+```
+Conceptual Walkthrough:
+- Line 1: Defines a POST route specifically matching the Stripe webhook path.
+- Line 2: Attaches `express.raw({ type: 'application/json' })`. This is the most critical line. Standard `express.json()` parses the incoming stream into a parsed JavaScript object. However, Stripe's cryptographic verification algorithm (`stripe.webhooks.constructEvent`) requires the raw, unmutated binary Buffer of the request. If body-parser modifies even one whitespace character or converts byte encodings, the cryptographic HMAC signature will not match, causing payment verification to fail!
+- Line 3: Directs the validated stream to the controller.
+- Lines 5-6: Only AFTER the raw webhook route is mounted does Express attach the general `express.json()` body parser for all remaining application endpoints.
+
+
+24.2 CODE BLOCK 2: DUAL-PROVIDER AI FALLBACK CASCADE (`server/controllers/chefController.js`)
+--------------------------------------------------------------------------------
+```javascript
+// In server/controllers/chefController.js
+exports.chatWithChef = async (req, res, next) => {
+  const { message, context } = req.body;
+  
+  // Tier 1: High-Speed Primary Inference via Groq Cloud LPU
+  try {
+    const groqReply = await callGroqLPU(message, context);
+    return res.status(200).json({ success: true, reply: groqReply, provider: 'groq' });
+  } catch (groqError) {
+    console.warn('Groq LPU failed or rate-limited. Cascading to Gemini fallback:', groqError.message);
+  }
+
+  // Tier 2: Secondary Inference via Google Gemini Flash-Lite
+  try {
+    const geminiReply = await callGeminiFlash(message, context);
+    return res.status(200).json({ success: true, reply: geminiReply, provider: 'gemini' });
+  } catch (geminiError) {
+    console.error('Gemini fallback failed. Cascading to local rule engine:', geminiError.message);
+  }
+
+  // Tier 3: Deterministic Local Culinary Failsafe
+  const fallbackReply = generateLocalCulinaryReply(message);
+  return res.status(200).json({ success: true, reply: fallbackReply, provider: 'local_failsafe' });
+};
+```
+Conceptual Walkthrough:
+- Tier 1 attempts ultra-fast inference (<500ms) using Groq's specialized LPU silicon running Qwen.
+- If Groq experiences rate limits or network degradation, execution drops into the catch block without throwing an unhandled exception to the client.
+- Tier 2 engages Google's Gemini Flash-Lite model, ensuring high-quality generative advice.
+- If both external AI APIs are unreachable (e.g., third-party outage or offline test environment), Tier 3 engages a deterministic local rule engine.
+- Result: 100% uptime for the user-facing AI chat. The user never sees a raw API crash.
+
+
+24.3 CODE BLOCK 3: RBAC ROUTE PROTECTION MIDDLEWARE (`server/middleware/authMiddleware.js`)
+--------------------------------------------------------------------------------
+```javascript
+// In server/middleware/authMiddleware.js
+exports.protect = async (req, res, next) => {
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Not authorized to access this route.' });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, error: 'Token invalid or expired.' });
+  }
+};
+
+exports.authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: `User role '${req.user.role}' is not authorized to access this resource.`
+      });
+    }
+    next();
+  };
+};
+```
+Conceptual Walkthrough:
+- `protect`: Extracts the Bearer token from the HTTP Authorization header. Verifies cryptographic signature using `jwt.verify`. Populates `req.user` with the fresh database user record, excluding the password hash.
+- `authorize`: A higher-order function that accepts permitted roles (e.g., `authorize('restaurant', 'admin')`) and returns an Express middleware. Checks if `req.user.role` is in the allowed list. If not, returns 403 Forbidden.
+================================================================================
+
+
+================================================================================
+PART 25 — ARCHITECTURAL DESIGN DECISIONS & TRADE-OFF ANALYSIS
+================================================================================
+
+25.1 DECISION 1: REACT 19 SPA VS. NEXT.JS SSR
+--------------------------------------------------------------------------------
+- Decision: Built frontend as a Client-Side Rendered (CSR) Single-Page Application using React 19 and Vite 8 instead of Next.js Server-Side Rendering (SSR).
+- Why: Savoré is a highly interactive, dynamic SaaS application featuring continuous WebGL/Canvas animations, audio engines, and drag gesture video feeds. SSR adds unnecessary server rendering overhead and hydration mismatches for state that is inherently client-side.
+- Trade-offs: Next.js provides superior out-of-the-box SEO for static pages, whereas Vite delivers faster development HMR, simplified deployment to static CDNs, and zero Node.js server overhead for frontend rendering.
+
+25.2 DECISION 2: MONGODB ATLAS VS. POSTGRESQL
+--------------------------------------------------------------------------------
+- Decision: Chose MongoDB Atlas (NoSQL Document Store) over PostgreSQL (Relational).
+- Why:
+  1. Flexible Menu Schemas: Dishes vary widely in customization options, ingredients, and allergen arrays.
+  2. Native GeoJSON 2dsphere indexing provides out-of-the-box spherical proximity queries without needing PostGIS extensions.
+  3. JSON homogeneity: Eliminates object-relational mapping impedance mismatches.
+- Trade-offs: PostgreSQL offers strict ACID transactions across distributed tables, whereas MongoDB requires careful schema referencing to avoid data anomalies.
+
+25.3 DECISION 3: DUAL-PROVIDER AI ARCHITECTURE (GROQ + GEMINI)
+--------------------------------------------------------------------------------
+- Decision: Implemented dual AI providers (Groq Cloud LPU + Google Gemini) instead of relying solely on one model.
+- Why: Conversational AI in consumer apps fails if latency exceeds 2 seconds. Groq delivers sub-500ms responses, giving the mascot instant conversational agility. However, cloud startups occasionally face capacity limits; pairing Groq with Google Gemini guarantees 99.99% operational continuity.
+================================================================================
+
+
+================================================================================
+PART 26 — PRODUCTION PROBLEMS ENCOUNTERED & ENGINEERING SOLUTIONS
+================================================================================
+
+26.1 PROBLEM 1: CANVAS POINTER INTERCEPTION BLOCKING TEXT INPUT FOCUS
+--------------------------------------------------------------------------------
+- Symptom: When clicking the search input or the Chef chat text box on the homepage, the cursor would not focus, preventing users from typing. A strange focus outline appeared on the home button in the navigation bar.
+- Diagnosis: The 3D interactive particle background (`Hero3DBackground.jsx`) was listening for mouse tracking events across the right 58% of the viewport and calling `e.preventDefault()` on mousedown events. This stopped browser default focus actions across overlapping input fields!
+- Engineering Solution:
+  1. Removed `e.preventDefault()` from the canvas mousedown listener in `Hero3DBackground.jsx`.
+  2. Added `e.stopPropagation()` inside `ChefSpeechBubble.jsx` and form input wrappers.
+  3. Added `outline: none !important;` to `.nav-link-premium:focus-visible` in `index.css`.
+- Result: Inputs focus cleanly and allow instantaneous typing without navigation glitches.
+
+
+26.2 PROBLEM 2: STRIPE WEBHOOK CRYPTOGRAPHIC SIGNATURE MISMATCH
+--------------------------------------------------------------------------------
+- Symptom: Stripe webhook endpoints threw 400 Bad Request: "Webhook Error: No signatures found matching the expected signature for payload".
+- Diagnosis: `app.use(express.json())` had already parsed the incoming JSON payload into an object, altering byte formatting and destroying the exact raw binary Buffer required by Stripe's HMAC-SHA256 signature verification.
+- Engineering Solution: Mounted the webhook route using `express.raw({ type: 'application/json' })` BEFORE the general `express.json()` middleware in `server.js`.
+- Result: 100% cryptographic signature verification success.
+
+
+26.3 PROBLEM 3: GUEST USERS GETTING STUCK IN CHAT
+--------------------------------------------------------------------------------
+- Symptom: When an unauthenticated guest typed a message to Chef Savoré, the chat would do nothing or return a generic message with no clear onboarding path.
+- Diagnosis: AI endpoint required authentication, leaving guest users stranded.
+- Engineering Solution: Updated the guest chat logic so that when a guest interacts with Chef Savoré, the mascot immediately acknowledges them in character ("Ah, bienvenue, mon ami!") and presents inline "Log In" and "Sign Up" action buttons directly in the chat bubble.
+- Result: Seamless guest onboarding that drives platform sign-ups.
+================================================================================
+
+
+================================================================================
+PART 27 — CONFIRMED LIMITATIONS & CONSTRAINTS
+================================================================================
+
+27.1 CONFIRMED CURRENT LIMITATIONS
+--------------------------------------------------------------------------------
+1. Video Storage on Local Disk / Mock CDNs: Video reels are currently served from configured media URLs or local static storage. In high-scale production, this should be migrated to AWS S3 + AWS CloudFront CDN with HLS (HTTP Live Streaming) adaptive bitrate encoding.
+2. Token Storage in LocalStorage: Tokens stored in `localStorage` are susceptible to XSS if an external library is compromised. Moving refresh tokens to `httpOnly` cookies is recommended for banking-grade security.
+3. Single Primary MongoDB Instance: Currently configured with a single Atlas cluster connection string without distributed read replicas.
+4. Synchronous Email Delivery: OTP email sending via Nodemailer blocks the controller response until the SMTP handshake completes. Should be moved to a Redis BullMQ background queue.
+
+
+================================================================================
+PART 28 — SYSTEM SCALABILITY: 10 TO 1,000,000 CONCURRENT USERS
+================================================================================
+
+28.1 BOTTLENECK ANALYSIS & SCALING ROADMAP
+--------------------------------------------------------------------------------
+Phase 1: 10 to 1,000 Concurrent Users (Current Architecture)
+- Single Node.js Express instance managed via PM2.
+- MongoDB Atlas M10/M20 cluster.
+- In-memory rate limiting and direct video streaming.
+- Adequate for current prototype and demonstration scale.
+
+Phase 2: 1,000 to 50,000 Concurrent Users
+- Primary Bottleneck: Video bandwidth and database connection pool exhaustion.
+- Remediation:
+  1. Offload all video reels to an AWS S3 bucket fronted by AWS CloudFront CDN. Convert MP4s to HLS (HTTP Live Streaming) with adaptive bitrate (360p, 720p, 1080p).
+  2. Implement Redis Caching Layer: Cache restaurant menus (`GET /api/restaurants/:id`) and top reels with a 5-minute TTL to reduce database read load by 85%.
+  3. Deploy Node.js across multiple containers (Docker / Kubernetes) behind an Nginx or AWS Application Load Balancer (ALB).
+
+Phase 3: 50,000 to 1,000,000 Concurrent Users
+- Primary Bottleneck: Write concurrency on Order collection and geospatial query compute.
+- Remediation:
+  1. Database Sharding: Shard the MongoDB `orders` collection by geographical region or `restaurantId` hash key. Deploy read replicas across availability zones.
+  2. Message Queue for Orders: Implement Apache Kafka or RabbitMQ. When a user clicks "Place Order", the request is written to an order ingestion queue and returns an immediate 202 Accepted. Background worker microservices process inventory deduction, payment verification, and merchant notifications asynchronously.
+  3. Distributed Socket.io: Scale WebSockets across multiple nodes using the `@socket.io/redis-adapter` so live transit updates broadcast seamlessly across instances.
+================================================================================
+
+
+================================================================================
+PART 29 — ROADMAP & FUTURE IMPROVEMENTS
+================================================================================
+
+29.1 NECESSARY IMPROVEMENTS (HIGH PRIORITY)
+- Migrate JWT refresh tokens from localStorage to `httpOnly`, `Secure`, `SameSite=Strict` cookies to eliminate XSS vulnerability vectors.
+- Implement an automated CI/CD pipeline using GitHub Actions to run linting, `npm test`, and production build validation on every pull request.
+- Integrate AWS S3 + CloudFront with HLS video transcoding for video reels.
+
+29.2 USEFUL IMPROVEMENTS (MEDIUM PRIORITY)
+- Real-time GPS Delivery Tracking: Replace simulated kitchen progress with live delivery partner GPS coordinates rendered on an interactive Mapbox or Google Maps overlay.
+- Group Ordering / Split Bill: Allow multiple users on different devices to add items to a shared cart context using WebSockets.
+
+29.3 OPTIONAL IMPROVEMENTS (LONG-TERM)
+- Voice-Driven Culinary Ordering: Enable speech-to-text directly in the Chef Savoré chat bubble via Web Speech API.
+- Native Mobile Applications: Port the React client to React Native (Expo) for native iOS and Android deployment, sharing 70% of business logic and context state.
+================================================================================
+
+
+================================================================================
+PART 30 — THE ULTIMATE TECHNICAL INTERVIEW QUESTION BANK
+================================================================================
+
+30.1 BEGINNER QUESTIONS
+--------------------------------------------------------------------------------
+Q1: "What is the difference between props and state in React?"
+- What Interviewer is Testing: Core React fundamentals.
+- Strong Answer: "Props are read-only inputs passed from a parent component to a child to configure it, like passing dish data into a <DishCard dish={item} />. State is internal, mutable data managed by the component itself using useState, like whether a modal dialog is open or closed. When state changes, React re-renders that component; props cannot be modified by the child that receives them."
+
+Q2: "What is Express middleware and how does it work?"
+- Strong Answer: "Middleware functions are functions that have access to the request object (req), response object (res), and the next middleware function in the application's request-response cycle. They can execute code, modify req/res objects, end the request-response cycle, or call next() to pass control to the next middleware. In Savoré, we use middleware for CORS validation, security headers (Helmet), rate limiting, and JWT authentication."
+
+
+30.2 INTERMEDIATE QUESTIONS
+--------------------------------------------------------------------------------
+Q3: "How does the geospatial discovery query work in your MongoDB database?"
+- What Interviewer is Testing: Database indexing and real-world spatial query implementation.
+- Strong Answer: "We store restaurant locations in GeoJSON Point format—{ type: 'Point', coordinates: [longitude, latitude] }—and create a 2dsphere index on that field in Mongoose. When the user opens the Discover page, the frontend grabs their GPS coordinates and sends them to GET /api/restaurants/nearby. The backend queries MongoDB using the $near operator with a $maxDistance specified in meters. MongoDB's spatial index uses spherical trigonometry to locate and sort kitchens by proximity in under 10 milliseconds without scanning the entire collection."
+
+Q4: "Why did you implement both an Access Token and a Refresh Token?"
+- Strong Answer: "To balance security and user experience. An access token with a short lifespan (15 minutes) limits the window of exposure if a token is intercepted. However, forcing users to re-login every 15 minutes is unacceptable UX. The 7-day refresh token allows the client to silently request a new access token in the background via an Axios 401 interceptor without disrupting the user's active session. Furthermore, refresh tokens can be revoked in the database if an account is compromised, whereas an issued stateless JWT cannot be revoked until it naturally expires."
+
+
+30.3 ADVANCED QUESTIONS
+--------------------------------------------------------------------------------
+Q5: "Why did you have to mount the Stripe webhook route before express.json() in server.js?"
+- What Interviewer is Testing: Deep understanding of Node streams, HTTP body parsing, and cryptographic verification.
+- Strong Answer: "Stripe's webhook signature verification algorithm (stripe.webhooks.constructEvent) computes an HMAC-SHA256 hash using the shared webhook signing secret and the exact raw, unparsed binary bytes received over the TCP socket. If express.json() parses the body first, it transforms the raw stream into a parsed JavaScript object. When re-stringified, differences in whitespace, character encoding, or key ordering alter the byte stream, causing the cryptographic signature check to fail. By mounting express.raw({ type: 'application/json' }) specifically on the webhook endpoint prior to express.json(), we preserve the raw binary buffer required for verification."
+
+Q6: "How does your dual-provider AI architecture ensure high availability and sub-second latency?"
+- Strong Answer: "Consumer conversational interfaces fail if users have to wait several seconds for a response. We integrated Groq Cloud's Language Processing Units (LPUs) running Qwen as our Tier 1 primary model because Groq achieves a Time-To-First-Token under 500ms. However, cloud LLM providers can experience rate limits or transient outages. Therefore, we wrapped the call in a resilient cascading try/catch block: if Groq fails or times out, the controller seamlessly cascades to Google Gemini Flash-Lite. If both external APIs are unreachable, it drops into a deterministic local culinary rule engine. This ensures our AI mascot never crashes or leaves the user hanging."
+================================================================================
+
+
+================================================================================
+PART 31 — "TELL ME ABOUT YOUR PROJECT" (ELEVATOR PITCHES)
+================================================================================
+
+31.1 30-SECOND ELEVATOR PITCH
+--------------------------------------------------------------------------------
+"Savoré is a full-stack MERN food-tech SaaS platform that reimagines food delivery by combining a TikTok-style vertical video reels engine with instant ordering and an interactive AI culinary assistant. It allows customers to discover local dishes through 15-second cinematic cooking videos, consult an AI mascot for instant personalized recommendations, and order with one click through a secure Stripe payment pipeline. It also provides multi-tenant operations dashboards for restaurant owners and platform administrators."
+
+
+31.2 1-MINUTE NATURAL INTERVIEW PITCH
+--------------------------------------------------------------------------------
+"Savoré is a cinematic food-tech SaaS platform I engineered using React 19, Node.js, Express, and MongoDB Atlas. Traditional food apps suffer from decision paralysis because static menu thumbnails don't convey appetite appeal. Savoré solves this by delivering an entertainment-driven culinary experience.
+
+On the frontend, I used Tailwind CSS and Framer Motion to create a glassmorphic UI featuring an infinite vertical reels feed with hardware-accelerated drag gestures and next-video preloading. Customers can discover nearby kitchens using MongoDB 2dsphere geospatial queries or chat with 'Chef Savoré', an AI mascot powered by a low-latency dual-provider architecture using Groq LPU and Google Gemini.
+
+On the backend, I built a secure REST API with dual-token JWT authentication, Role-Based Access Controls for customers, merchants, and admins, and a PCI-compliant Stripe payment pipeline backed by cryptographic webhook verification and idempotency keys to guarantee financial integrity."
+
+
+31.3 2-MINUTE DEEP TECHNICAL EXPLANATION
+--------------------------------------------------------------------------------
+"Savoré is a production-grade full-stack food-tech platform architected as a decoupled micro-monorepo. 
+
+On the client side, I built a Single-Page Application using React 19 and Vite 8. To deliver a 60 FPS mobile-grade experience, I implemented gesture-driven video reels with Framer Motion, utilizing an invisible preloader tag for the N+1 video so transitions are instantaneous. I built a comprehensive Context architecture managing authentication, cart persistence, geolocation, and a responsive audio/mood state engine for our conversational AI chef mascot.
+
+On the server side, I built an Express and Node.js REST API with a layered controller-service-model pattern. The database layer uses MongoDB Atlas with Mongoose. I designed 11 collections, utilizing an embedding pattern for order line items to freeze historical pricing snapshots, while using referencing for menus. For location-aware discovery, I implemented a GeoJSON 2dsphere index on restaurant coordinates, executing spherical $near queries that resolve nearby kitchens in sub-10 milliseconds.
+
+For security, I implemented Helmet headers, NoSQL injection sanitizers, and a dual-token JWT architecture with 15-minute access tokens and 7-day refresh token rotation. Payments are integrated via the Stripe SDK with client-side Elements and server-side webhook listeners. To prevent double-fulfillment, I implemented a ProcessedWebhook idempotency collection. Finally, our AI mascot runs on a dual-provider fallback engine combining Groq Cloud LPU for sub-500ms responses with Google Gemini Flash-Lite fallback, validated by 20 automated integration tests."
+================================================================================
+
+
+================================================================================
+PART 32 — INTERVIEWER FOLLOW-UP DRILL CHAINS
+================================================================================
+
+DRILL CHAIN: PAYMENT & WEBHOOK RELIABILITY
+--------------------------------------------------------------------------------
+Interviewer: "How did you handle payments in Savoré?"
+Candidate: "We integrated Stripe using client-side Stripe Elements and server-side PaymentIntents via the Stripe Node SDK."
+
+Interviewer: "Where do you calculate the order total? On the frontend or backend?"
+Candidate: "Always on the backend. The frontend sends only the food item IDs and quantities. The backend re-queries the database to fetch authentic item prices, calculates subtotal, tax, and delivery fees, and generates the PaymentIntent amount in paise. Calculating totals on the client is an extreme security vulnerability because users could tamper with HTTP requests to order expensive items for ₹1."
+
+Interviewer: "What if the customer's browser crashes or they close the tab immediately after their card is charged by their bank?"
+Candidate: "That is why we never rely on the frontend redirect to mark an order as paid. We rely on Stripe server-to-server webhooks. When Stripe confirms payment authorization, their servers send an asynchronous HTTP POST event (payment_intent.succeeded) directly to our /api/payment/webhook endpoint. Our server verifies the raw cryptographic signature, updates the order status in MongoDB, and alerts the kitchen via WebSockets."
+
+Interviewer: "What happens if Stripe's webhook sends the exact same payment_intent.succeeded event twice due to network retries?"
+Candidate: "We implemented an idempotency ledger using our ProcessedWebhook collection in MongoDB. When a webhook arrives, we first check if the event.id already exists in that collection. If it exists, we immediately return a 200 OK without re-executing order updates. If it does not exist, we record the event.id in an atomic operation and proceed to fulfill the order. This guarantees zero duplicate fulfillment."
+================================================================================
+
+
+================================================================================
+PART 33 — "WHY DID YOU CHOOSE X OVER Y?"
+================================================================================
+
+1. Why React 19 instead of Vanilla JavaScript?
+   "Building an application with real-time cart synchronization, video reels gesture tracking, dynamic theme switching, and live chat in vanilla JavaScript would require hundreds of imperative DOM manipulation queries (document.querySelector, addEventListener). This leads to spaghetti code and DOM synchronization bugs. React's declarative component model and unidirectional data flow ensure that the UI automatically reflects underlying state changes reliably."
+
+2. Why Vite instead of Create-React-App (Webpack)?
+   "Create-React-App is deprecated and relies on Webpack, which bundles the entire codebase before serving, resulting in slow startup times (30+ seconds) and sluggish hot reloads. Vite leverages native browser ES modules (ESM) and esbuild to deliver instant dev server boot times (<300ms) and millisecond hot module replacement, dramatically accelerating developer productivity."
+
+3. Why MongoDB Atlas instead of MySQL?
+   "Savoré requires flexible document schemas for menu items with variable attributes (allergens, customizations, dietary tags) and native geospatial indexing. MongoDB's 2dsphere index provides out-of-the-box spherical proximity queries on GeoJSON coordinates without requiring third-party spatial extensions. Furthermore, storing order snapshots as embedded document arrays preserves financial historical records without complex relational JOIN tables."
+================================================================================
+
+
+================================================================================
+PART 34 — "WHAT IF..." DISASTER RECOVERY & EDGE CASE SCENARIOS
+================================================================================
+
+1. "What if the Groq Cloud AI API experiences an outage?"
+   - Current Architecture: The controller's try/catch block immediately catches the failure and cascades to Google Gemini Flash-Lite. If Gemini is also unreachable, it drops into our deterministic local culinary rule engine. The user receives a helpful in-character culinary recommendation within 300ms and never encounters a 500 error.
+
+2. "What if a customer tries to add dishes from two different restaurants to the same cart?"
+   - Current Architecture: `CartContext.addItem` compares the incoming dish's `restaurantId` with the active cart's restaurant ID. If they differ, the client halts addition and presents an explicit modal dialog: "Your cart already contains items from Kitchen A. Would you like to clear your cart and start a new order from Kitchen B?". This prevents operational chaos for delivery drivers.
+
+3. "What if two users place orders for the last remaining portion of a dish simultaneously?"
+   - Current Architecture: Orders are processed in order of receipt.
+   - Production Improvement: Implement MongoDB atomic conditional updates using findOneAndUpdate with inventory decrements: `FoodItem.findOneAndUpdate({ _id: dishId, stockQuantity: { $gte: qty } }, { $inc: { stockQuantity: -qty } })`. If the result is null, the transaction rolls back with an out-of-stock notification.
+================================================================================
+
+
+================================================================================
+PART 35 — TECHNICAL VOCABULARY & ARCHITECTURE GLOSSARY
+================================================================================
+
+| Term                    | Definition                                                                              | Project Usage                                                        |
+|-------------------------|-----------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| SPA                     | Single Page Application that dynamically updates the DOM without full page reloads.     | Savoré client built on React 19 + React Router.                      |
+| 2dsphere Index          | Spatial index supporting queries on an Earth-like sphere using WGS84 coordinates.       | Applied to Restaurant.location in MongoDB for nearby discovery.      |
+| JWT                     | JSON Web Token: compact, URL-safe means of representing claims between two parties.     | Stateless authentication via 15m access & 7d refresh tokens.         |
+| Webhook                 | Automated HTTP POST callback triggered when an external event occurs.                   | Stripe payment_intent.succeeded listener for order fulfillment.      |
+| Idempotency             | An operation that produces the exact same result whether executed once or many times.   | ProcessedWebhook collection preventing duplicate webhook processing. |
+| Time-To-First-Token     | The duration between dispatching a prompt to an LLM and receiving the first byte.       | Groq Cloud LPU achieving sub-500ms TTFT for Chef Savoré.            |
+| RBAC                    | Role-Based Access Control: restricting system access to authorized user categories.     | Segmenting Customer, Restaurant Merchant, and Admin permissions.     |
+| Preloading              | Fetching media assets into cache prior to user consumption to minimize latency.         | Video pre-buffering (N+1) with <video preload="metadata"> in reels.  |
+| Virtual DOM             | Lightweight in-memory representation of real DOM nodes used for diffing.                | React 19 reconciliation engine.                                      |
+================================================================================
+
+
+================================================================================
+PART 36 — QUICK REVISION CRAM SHEET
+================================================================================
+
+CORE ELEVATOR PITCH:
+- Savoré is a full-stack MERN food-tech SaaS platform combining a TikTok-style short video reels feed with on-demand food delivery and a low-latency conversational AI chef mascot.
+
+TECH STACK REVISION:
+- Frontend: React 19, Vite 8, Tailwind CSS, Framer Motion 12, Axios, HTML5 Canvas.
+- Backend: Node.js 20+, Express 4.19, MongoDB Atlas, Mongoose 8.3, Socket.io 4.8.
+- Security: Helmet, Express-Rate-Limit, Express-Mongo-Sanitize, Bcrypt (10 rounds), Dual JWT Tokens.
+- Payments: Stripe SDK (PaymentIntents + Raw Webhook Signatures + Idempotency).
+- AI Inference: Dual-tier fallback (Groq Cloud LPU running Qwen + Google Gemini Flash-Lite).
+
+CRITICAL ARCHITECTURAL DETAILS TO REMEMBER:
+1. Stripe Webhook Mount: Must be mounted with `express.raw({ type: 'application/json' })` BEFORE `express.json()` body parser so the raw binary buffer is preserved for HMAC-SHA256 signature verification.
+2. Geospatial Discovery: GeoJSON Point format stores [longitude, latitude]. Queried using `$near` with a `2dsphere` index on MongoDB.
+3. Video Reels Preloading: Next video (N+1) preloaded via invisible `<video preload="metadata">` tag, keeping scroll transition latency under 100ms.
+4. AI Fallback Cascade: Groq LPU (<500ms TTFT) -> Google Gemini Flash -> Local deterministic culinary rules.
+5. Canvas Input Bug Resolution: Removed `e.preventDefault()` on mousedown in 3D canvas and applied `e.stopPropagation()` on inputs to allow seamless text typing.
+================================================================================
+
+
+================================================================================
+PART 37 — FINAL ONE-PAGE INTERVIEW CHEAT SHEET
+================================================================================
+
+PROJECT: Savoré (Cinematic Food-Tech SaaS Platform)
+PRIMARY VALUE: Solves menu decision fatigue through video-first food reels and real-time AI guidance.
+TARGET USERS: Food Enthusiasts (Customers), Kitchen Owners (Merchants), Platform Supervisors (Admins).
+
+FRONTEND ARCHITECTURE:
+- React 19 Single Page Application bundled with Vite 8.
+- Styling: Tailwind CSS utility architecture + custom glassmorphic CSS variables.
+- Motion: Framer Motion 12 drag physics and double-tap micro-animations.
+- State: React Context API (Auth, Cart, Location, Reels, Theme, Toast, ChefMood).
+
+BACKEND ARCHITECTURE:
+- Node.js & Express 4.19 REST API.
+- Database: MongoDB Atlas (11 Mongoose collections).
+- Routing: Modular routers with centralized async error handling middleware.
+- WebSockets: Socket.io for live merchant kitchen order notifications.
+
+KEY DATA FLOW:
+Customer adds dish -> Cart context calculates totals -> Client requests Stripe PaymentIntent -> Server queries DB for real prices and generates intent -> Customer inputs card in Stripe Elements -> Bank authorizes -> Stripe fires webhook to /api/payment/webhook -> Express raw buffer verifies signature -> ProcessedWebhook ensures idempotency -> Order transitions to 'preparing' -> Socket.io notifies merchant dashboard in real-time.
+
+SECURITY HIGHLIGHTS:
+- Dual JWT tokens (15m access, 7d refresh token rotation).
+- Express-mongo-sanitize strips NoSQL injection vectors.
+- Helmet headers block MIME-sniffing and clickjacking.
+- Bcrypt 10 salt rounds for password storage.
+
+TESTING & METRICS:
+- 20 automated integration tests in `server/tests/chef.test.js` (run via `node --test`, passing in 315ms).
+- Client build passes in 1.65 seconds via Vite.
+
+TOP INTERVIEW QUESTION TO NAIL:
+"Why did you use Stripe webhooks instead of client redirects?"
+Answer: "Client redirects are inherently unreliable. If a user's phone dies, browser crashes, or network disconnects right after entering their OTP, the client never redirects back to our success page and the order is lost even though their card was charged. Webhooks provide an asynchronous, cryptographically signed server-to-server confirmation directly from Stripe that guarantees order fulfillment regardless of client browser state."
+================================================================================

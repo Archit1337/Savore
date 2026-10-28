@@ -18,11 +18,9 @@ Explore the visual design and cinematic interactions of Savoré:
 |---|---|
 | ![Cinematic Homepage](./assets/screenshots/homepage.png) | ![Immersive Reels Engine](./assets/screenshots/reels.png) |
 
-| Smart Restaurant Discovery | Seamless Checkout & Stripe |
+| Smart Restaurant Discovery | Chef Savoré AI Assistant |
 |---|---|
-| ![Smart Restaurant Discovery](./assets/screenshots/discovery.png) | ![Seamless Checkout](./assets/screenshots/checkout.png) |
-
-*(To replace these mock layouts with actual screenshots, place high-quality image assets directly inside the `/assets/screenshots/` folder).*
+| ![Smart Restaurant Discovery](./assets/screenshots/discovery.png) | ![Chef Savoré AI Assistant](./assets/screenshots/chef_ai.png) |
 
 ---
 
